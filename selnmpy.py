@@ -17,15 +17,15 @@ NORMAL_LOAD_AMMOUNT = 3
 
 def rand_dist():
 	rand_number = random.randint(1,23)
-	if rand_number in [1,2,3,4]:
+	if rand_number in [1,2,3]:
 		return random.randint(10,3600)
-	elif rand_number in [5,6,7,8]:
+	elif rand_number in [4,5,6]:
 		return random.randint(10,2*3600)
-	elif rand_number in [9,10,11]:
+	elif rand_number in [7,8,9,10]:
 		return random.randint(10,3*3600)
-	elif rand_number in [12,13,14]:
+	elif rand_number in [11,12,13]:
 		return random.randint(10,4*3600)
-	elif rand_number in [15,16]:
+	elif rand_number in [14,15,16]:
 		return random.randint(10,5*3600)
 	elif rand_number in [17,18]:
 		return random.randint(10,6*3600)
