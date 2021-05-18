@@ -107,7 +107,7 @@ def like_all(pagename, first_visit):
 	if first_visit:
 		# Like page
 		log.info("First visit on: "+pagename)
-		os.mkdir(pagename_short)
+		os.mkdir("userdata/"+pagename_short)
 		try:
 			main_element = driver.find_element_by_xpath('//div[@style="top: 56px;"]//div[@aria-label="Like"]')
 			main_element.click()
@@ -198,7 +198,7 @@ def like_rand(pagename, first_visit):
 	if first_visit:
 		# Like page
 		log.info("First visit on: "+pagename)
-		os.mkdir(pagename_short)
+		os.mkdir("userdata/"+pagename_short)
 		try:
 			main_element = driver.find_element_by_xpath('//div[@style="top: 56px;"]//div[@aria-label="Like"]')
 			main_element.click()
@@ -274,8 +274,8 @@ def like_rand(pagename, first_visit):
 			except Exception as e:
 				log.info(e)
 
-		# 1/7 chance of breaking the infinite while loop
-		random_break = random.randint(1,7)
+		# 1/6 chance of breaking the infinite while loop
+		random_break = random.randint(1,6)
 		if random_break == 1:
 			log.info("Random loop break")
 			break
