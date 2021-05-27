@@ -70,14 +70,14 @@ def login():
 	driver.find_element(By.NAME,"pass").send_keys(password)
 	driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
 
-def select_pages():
+def select_pages(categID):
 	load_more(NORMAL_LOAD_AMMOUNT, 3)
 	urls = driver.find_elements_by_tag_name('a')
 	urls = [a.get_attribute('href') for a in urls]
 	return_urls = []
 	for url in urls:
 		if url.endswith('?__tn__=%3C'):
-			return_urls.append(url.split('?__tn__=%3C')[0])
+			return_urls.append((url.split('?__tn__=%3C')[0],categID))
 	return return_urls
 
 def delete_element(element):
@@ -297,9 +297,23 @@ def new_page(pagename):
 def new_keyword(keyword):
 	conn = sqlite3.connect('userdata/pages.db')
 	c = conn.cursor()
-	c.execute('''CREATE TABLE "{}"
-	             ([page] text PRIMARY KEY,
-	              [time] date)'''.format(keyword))
+	c.execute('INSERT INTO categories (category) \
+			  		   VALUES (?)', [keyword])
+	conn.commit()
+	ID = c.lastrowid
+	conn.close()
+	return ID
+
+def create_categ_table():
+	conn = sqlite3.connect('userdata/pages.db')
+	c = conn.cursor()
+	c.execute('''CREATE TABLE categories
+	             ([ID] INTEGER PRIMARY KEY,
+	              [category] text)''')
+	c.execute('''CREATE TABLE pages
+	             ([PID] INTEGER PRIMARY KEY,
+	              [URL] text,
+	              [categID] int)''')
 	conn.commit()
 	conn.close()
 
@@ -320,58 +334,64 @@ def main():
 	console.setFormatter(fileformat)
 	log.addHandler(console)
 
-	keyword = input("Enter search keyword: ")
-	keyword = keyword.replace(" ","+")
-
-	# get tables from database
-	conn = sqlite3.connect('userdata/pages.db')
-	c = conn.cursor()
-	c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-	keywords_in_db = c.fetchall()
-	conn.close()
-
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
 	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
 	exec_path = '/home/'+ os.getlogin() + '/Downloads/geckodriver/geckodriver'
+
+	keyword = input("Enter search keyword: ")
+	keyword = keyword.replace(" ","+")
+
+	try: os.mkdir("userdata")
+	except: pass
 	driver = webdriver.Firefox(executable_path = exec_path,firefox_profile = fx_prof)
-	
+	# get tables from database
+	conn = sqlite3.connect('userdata/pages.db')
+	c = conn.cursor()
+	#c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+	try:
+		c.execute("SELECT category FROM categories")
+	except sqlite3.OperationalError:
+		create_categ_table()
+	keywords_in_db = c.fetchall()
+	conn.close()
+
 	rand_ste = rand_fb_site()
 	driver.get(rand_ste)
 	sleep(5)
 
 	if (keyword,) not in keywords_in_db:
-		new_keyword(keyword)
+		categID = new_keyword(keyword)
 		search_url = 'https://www.facebook.com/search/pages?q=' + keyword
 		log.info("GET: "+ search_url)
 		driver.get(search_url)
 		sleep(5)
 
-		page_urls = select_pages()
+		page_urls = select_pages(categID)
 		info = "Pages selected for keyword '{}':".format(keyword)
 		log.info(info)
 		for page_url in page_urls:
-			log.info("   "+ page_url)
-		
+			log.info("   "+ page_url[0])
+		'''
 		List_of_Tuples = []
 		for page_url in page_urls:
-			List_of_Tuples.append((page_url,get_date()))
-
+			List_of_Tuples.append((page_url,categID))
+		'''
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
-		c.executemany('INSERT INTO "' + keyword + '" (page, time) \
-			  		   VALUES (?, ?)', List_of_Tuples);
+		c.executemany('INSERT INTO pages (URL, categID) \
+			  		   VALUES (?, ?)', page_urls);
 		conn.commit()
 		conn.close()
 
 	# get tables from database
 	conn = sqlite3.connect('userdata/pages.db')
 	c = conn.cursor()
-	c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-	keywords_in_db = c.fetchall()
-
+	c.execute("SELECT URL FROM pages")
+	urls = c.fetchall()
+	'''
 	# database to datastructure
 	urls = []
 	for keyword in keywords_in_db:
@@ -379,6 +399,7 @@ def main():
 		List_of_Tuples = c.fetchall()
 		for tpl in List_of_Tuples:
 			urls.append(tpl[0])
+	'''
 	conn.close()
 	random.shuffle(urls)
 
@@ -389,7 +410,7 @@ def main():
 	urls_in_db = c.fetchall()
 	conn.close()
 
-	for url in urls:
+	for (url,) in urls:
 		log.info("GET: "+ url)
 		driver.get(url)
 		sleep(10)
