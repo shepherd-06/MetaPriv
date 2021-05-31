@@ -87,7 +87,9 @@ def delete_element(element):
 
 
 def like_all(pagename, first_visit):
-	pagename_short = pagename.split('/')[-2]
+	pagename_short = pagename.removeprefix("https://www.facebook.com/")
+	try: pagename_short = pagename_short.split("/")[0]
+	except:pass
 	# Check first element
 	first_element = driver.find_element_by_xpath("//div[@role='article']")
 	try:
@@ -335,7 +337,7 @@ def main():
 	log.addHandler(console)
 
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
-	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
+	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
