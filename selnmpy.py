@@ -190,7 +190,9 @@ def like_all(pagename, first_visit):
 
 
 def like_rand(pagename, first_visit):
-	pagename_short = pagename.split('/')[-2]
+	pagename_short = pagename.removeprefix("https://www.facebook.com/")
+        try: pagename_short = pagename_short.split("/")[0]
+        except:pass
 	# Check Chatbox element and delete it
 	try:
 		chatbox = driver.find_element_by_xpath('//div[starts-with(@aria-label, "Chat with")]')
