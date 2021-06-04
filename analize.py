@@ -13,6 +13,7 @@ import logging
 
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+ONE_HOUR = 3600
 
 def delete_element(element):
 	driver.execute_script("""var element = arguments[0];
@@ -57,6 +58,9 @@ def analize_feed():
 			indx = article_elements.index(last_element)
 			article_elements = article_elements[indx+1:]
 
+		if article_elements == []:
+			break
+
 		for article_element in article_elements:
 			last_element = article_element
 			article_element.location_once_scrolled_into_view
@@ -94,6 +98,14 @@ def analize_feed():
 
 			sleep(random.randint(3,10))
 			del action
+
+		take_break = random.randint(1,10)
+		if take_break == 1:
+			random_time = random.randint(10,ONE_HOUR)
+			sleep(random_time)
+			log.info("Taking a break for {} seconds".format(random_time))
+		
+		sleep(random.randint(3,10))
 
 	conn.close()
 
