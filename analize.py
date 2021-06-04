@@ -102,8 +102,8 @@ def analize_feed():
 		take_break = random.randint(1,10)
 		if take_break == 1:
 			random_time = random.randint(10,ONE_HOUR)
-			sleep(random_time)
 			log.info("Taking a break for {} seconds".format(random_time))
+			sleep(random_time)
 		
 		sleep(random.randint(3,10))
 
