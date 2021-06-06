@@ -32,10 +32,11 @@ def create_analysis_table():
 	             ([post_URL] text PRIMARY KEY,
 	              [page_URL] text,
 	              [post_time] text,
+			[recommended] int,
 	              [time] date)''')
-	c.execute('''CREATE TABLE notifications
-	             ([post_URL] text PRIMARY KEY,
-	              [type] text)''')
+	c.execute('''CREATE TABLE suggested_for_me
+	             ([URL] text PRIMARY KEY,
+			[time] date)''')
 	c.execute('''CREATE TABLE suggested_pages
 					([post_URL] text PRIMARY KEY)''')
 	conn.commit()
@@ -62,20 +63,47 @@ def analize_feed():
 			break
 
 		for article_element in article_elements:
+			recommended = 0
 			last_element = article_element
 			article_element.location_once_scrolled_into_view
 			sleep(2)
+
 			page_name = article_element.find_element_by_xpath(".//a[@role='link']").get_attribute('href')
 			page_name = page_name.split('__cft__')[0]
+
+			try:
+				suggestion_elements = article_element.find_elements_by_xpath(".//div[@aria-label='Suggested for You']//a[@role='link']")
+				suggestion_elements = [a.get_attribute('href') for a in suggestion_elements]
+				for url in suggestion_elements:
+					try:
+						c.execute('INSERT INTO suggested_for_me (URL, time) \
+			  		   		VALUES ("' + url + '","' + get_date() + '")');
+						conn.commit()
+					except sqlite3.IntegrityError:
+						pass
+			except Exception as e:
+				pass
+
+			try:
+				recomended_text = article_element.find_element_by_xpath('.//span [contains( text(), "Recommended Post")]')
+				recommended = 1
+			except Exception as e:
+                                pass
+
 			try:
 				link_element = article_element.find_element_by_xpath('.//a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
 			except NoSuchElementException:
 				continue
+
 			action = ActionChains(driver)
 			try: action.move_to_element(link_element).perform()
 			except: pass
+
 			sleep(3)
-			post_date = driver.find_element_by_xpath('//div[@class="__fb-light-mode"]//span[@dir="auto"]').text
+			try:
+				post_date = driver.find_element_by_xpath('//div[@class="__fb-light-mode"]//span[@class="d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j keod5gw0 nxhoafnm aigsh9s9 tia6h79c fe6kdd0r mau55g9w c8b282yb iv3no6db e9vueds3 j5wam9gi knj5qynh oo9gr5id hzawbc8m"]').text
+			except:
+				continue
 			action.move_by_offset(500, 0).perform()
 			sleep(2)
 
@@ -83,8 +111,8 @@ def analize_feed():
 			post_url = post_url.split('__cft__')[0]
 
 			try:
-				c.execute('INSERT INTO feed (post_URL, page_URL, post_time, time) \
-							VALUES ("' + post_url + '","' + page_name + '","' + post_date + '","' + get_date() + '")');
+				c.execute('INSERT INTO feed (post_URL, page_URL, post_time, recommended, time) \
+							VALUES ("' + post_url + '","' + page_name + '","' + post_date + '","' + str(recommended) + '","' + get_date() + '")');
 				conn.commit()
 			except sqlite3.IntegrityError:
 				continue
@@ -94,17 +122,18 @@ def analize_feed():
 			with open("analysisdata/"+get_date()+".png",'wb') as f:
 				f.write(data)
 
-			log.info("\nPost: {}\nPage: {}\nPost creation date: {}".format(post_url, page_name, post_date))
+			log.info("\nPost: {}\nPage: {}\nPost creation date: {}\nRecommended: {}".format(post_url, page_name, post_date, recommended))
 
 			sleep(random.randint(3,10))
 			del action
-
+			#a=input("pause")
+		'''
 		take_break = random.randint(1,10)
 		if take_break == 1:
 			random_time = random.randint(10,ONE_HOUR)
 			log.info("Taking a break for {} seconds".format(random_time))
 			sleep(random_time)
-		
+		'''
 		sleep(random.randint(3,10))
 
 	conn.close()
@@ -128,7 +157,7 @@ def main():
 	log.addHandler(console)
 
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
-	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
+	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
