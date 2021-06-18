@@ -211,8 +211,12 @@ def like_rand(pagename, first_visit):
 			log.info(e)
 
 	# Delete banner elements
-	banner_1 = driver.find_element_by_xpath('//div[@style="top: 56px;"]')
-	delete_element(banner_1)
+	try:
+		banner_0 = driver.find_element_by_xpath('//div[@style="top: 56px; z-index: 1;"')
+        	delete_element(banner_0)
+	except:
+		banner_1 = driver.find_element_by_xpath('//div[@style="top: 56px;"]')
+		delete_element(banner_1)
 	banner_2 = driver.find_element_by_xpath('//div[@role="banner"]')
 	delete_element(banner_2)
 
