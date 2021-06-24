@@ -101,7 +101,8 @@ def analize_feed():
 
 			sleep(3)
 			try:
-				post_date = driver.find_element_by_xpath('//div[@class="__fb-light-mode"]//span[@class="d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j keod5gw0 nxhoafnm aigsh9s9 tia6h79c fe6kdd0r mau55g9w c8b282yb iv3no6db e9vueds3 j5wam9gi knj5qynh oo9gr5id hzawbc8m"]').text
+				post_date = driver.find_element_by_xpath('//div[@class="__fb-light-mode"]//*').text
+				#<span class="d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua e9vueds3 j5wam9gi knj5qynh oo9gr5id hzawbc8m">Wednesday, June 23, 2021 at 5:30 PM</span>
 			except:
 				continue
 			action.move_by_offset(500, 0).perform()
@@ -115,6 +116,7 @@ def analize_feed():
 							VALUES ("' + post_url + '","' + page_name + '","' + post_date + '","' + str(recommended) + '","' + get_date() + '")');
 				conn.commit()
 			except sqlite3.IntegrityError:
+				print("asd")
 				continue
 
 			# Save screenshot
@@ -157,7 +159,7 @@ def main():
 	log.addHandler(console)
 
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
-	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
+	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
