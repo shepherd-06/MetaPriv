@@ -91,7 +91,7 @@ def analize_feed():
                                 pass
 
 			try:
-				link_element = article_element.find_element_by_xpath('.//a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
+				link_element = article_element.find_element_by_xpath('.//span[@class="tojvnm2t a6sixzi8 abs2jz4q a8s20v7p t1p8iaqh k5wvi7nf q3lfd5jv pk4s997a bipmatt0 cebpdrjk qowsmv63 owwhemhu dp1hu0rb dhp61c6y iyyx5f41"]//a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
 			except NoSuchElementException:
 				continue
 
@@ -159,7 +159,7 @@ def main():
 	log.addHandler(console)
 
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
-	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
+	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
