@@ -25,6 +25,18 @@ def get_date():
 	formatted_date = now.strftime(DATE_FORMAT)
 	return formatted_date
 
+def create_video_feed():
+	conn = sqlite3.connect('analysisdata/suggestions.db')
+	c = conn.cursor()
+	c.execute('''CREATE TABLE video_feed
+	             ([post_URL] text PRIMARY KEY,
+	              [page_URL] text,
+	              [post_time] text,
+			[recommended] int,
+	              [time] date)''')
+	conn.commit()
+	conn.close()
+
 def create_analysis_table():
 	conn = sqlite3.connect('analysisdata/suggestions.db')
 	c = conn.cursor()
@@ -116,7 +128,6 @@ def analize_feed():
 							VALUES ("' + post_url + '","' + page_name + '","' + post_date + '","' + str(recommended) + '","' + get_date() + '")');
 				conn.commit()
 			except sqlite3.IntegrityError:
-				print("asd")
 				continue
 
 			# Save screenshot
