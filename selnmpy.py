@@ -311,9 +311,10 @@ def main():
 	urls_in_db = c.fetchall()
 	conn.close()
 
+	counter = 1
 	for i in range(len(urls)):
-		randn = random.randint(1,10)
-		if randn == 10:
+		#randn = random.randint(1,10)
+		if (counter % 10) == 1:
 			url = urls_2[0][1]
 			urls_2.pop(0)
 		else:
@@ -336,6 +337,6 @@ def main():
 		time_formatted = str(timedelta(seconds = randtime))
 		log.info("Wait for "+ time_formatted + " (hh:mm:ss)")
 		sleep(randtime)
-	
+		counter += 1
 
 main()
