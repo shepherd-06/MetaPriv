@@ -37,6 +37,19 @@ def create_video_feed():
 	conn.commit()
 	conn.close()
 
+def create_main_video_feed():
+	conn = sqlite3.connect('analysisdata/suggestions.db')
+	c = conn.cursor()
+	c.execute('''CREATE TABLE main_video_feed
+	             ([post_URL] text PRIMARY KEY,
+	              [page_URL] text,
+	              [post_time] text,
+	              [description] text,
+	              [follow] int,
+	              [time] date)''')
+	conn.commit()
+	conn.close()
+
 def create_analysis_table():
 	conn = sqlite3.connect('analysisdata/suggestions.db')
 	c = conn.cursor()
@@ -139,14 +152,6 @@ def analize_feed():
 
 			sleep(random.randint(3,10))
 			del action
-			#a=input("pause")
-		'''
-		take_break = random.randint(1,10)
-		if take_break == 1:
-			random_time = random.randint(10,ONE_HOUR)
-			log.info("Taking a break for {} seconds".format(random_time))
-			sleep(random_time)
-		'''
 		sleep(random.randint(3,10))
 
 	conn.close()
@@ -182,10 +187,7 @@ def analize_video_feed():
 			video_link = links[0].get_attribute('href')
 			page_link = links[1].get_attribute('href')
 			description = links[2].text
-			#print(video_link)
-			#print(page_link)
-			#print(desccription)
-			#print()
+
 			time_element = video_element.find_element_by_xpath(".//span[@class='tojvnm2t a6sixzi8 abs2jz4q a8s20v7p t1p8iaqh k5wvi7nf q3lfd5jv pk4s997a bipmatt0 cebpdrjk qowsmv63 owwhemhu dp1hu0rb dhp61c6y iyyx5f41']")
 			action = ActionChains(driver)
 			try: action.move_to_element(time_element).perform()
@@ -213,7 +215,64 @@ def analize_video_feed():
 
 	conn.close()
 
+def analize_main_video_feed():
+	log.info("Analyzing Video feed")
+	conn = sqlite3.connect('analysisdata/suggestions.db')
+	c = conn.cursor()
+	driver.get('https://www.facebook.com/watch/')
 
+	sleep(5)
+	banner = driver.find_element_by_xpath('//div[@role="banner"]')
+	delete_element(banner)
+
+	last_element = ''
+	while True:
+		video_elements = driver.find_elements_by_xpath("//div[@class='j83agx80 cbu4d94t']")
+		if last_element != '':
+			indx = video_elements.index(last_element)
+			video_elements = video_elements[indx+1:]
+
+		if video_elements == []:
+			break
+		follow = 0
+		for video_element in video_elements:
+			last_element = video_element
+			video_element.location_once_scrolled_into_view
+			sleep(2)
+
+			links = video_element.find_elements_by_xpath(".//a[@role='link']")
+			description = video_element.find_element_by_xpath('.//div[@class="n1l5q3vz"]').text
+			#for el in links:
+			#	print(el.get_attribute('href'))
+			page_link = links[0].get_attribute('href')
+			page_link = page_link.split('?__cft__')[0]
+			page_link = page_link.replace("watch/","")
+
+			post_link = links[2].get_attribute('href')
+			post_link = post_link.split('?__cft__')[0]
+			#post_link = video_element.find_element_by_xpath('.//div[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
+			
+
+			post_date = links[2].text
+			try:
+				follow_text = video_element.find_element_by_xpath('.//span [contains( text(), "Follow")]')
+				follow = 1
+			except Exception as e:
+				pass
+
+			try:
+				c.execute('INSERT INTO main_video_feed (post_URL, page_URL, post_time, description, follow, time) \
+							VALUES ("' + post_link + '","' + page_link + '","' + post_date + '","' + description + '","' + str(follow) + '","' + get_date() + '")');
+				conn.commit()
+			except sqlite3.IntegrityError:
+				continue
+
+			log.info("\nPost: {}\nPage: {}\nDescription: {}\nPost creation date: {}\nFollow suggestion: {}".format(post_link, page_link, description, post_date, str(follow)))
+			sleep(random.randint(3,10))
+
+		sleep(random.randint(3,10))
+
+	conn.close()
 
 def main():
 	global driver
@@ -248,9 +307,11 @@ def main():
 
 	#analize_feed()
 	try:
-		create_video_feed()
+		#create_video_feed()
+		create_main_video_feed()
 	except sqlite3.OperationalError:
 		pass
-	analize_video_feed()
+	#analize_video_feed()
+	analize_main_video_feed()
 
 main()
