@@ -32,7 +32,7 @@ def create_video_feed():
 	             ([post_URL] text PRIMARY KEY,
 	              [page_URL] text,
 	              [post_time] text,
-			[recommended] int,
+	              [description] text,
 	              [time] date)''')
 	conn.commit()
 	conn.close()
@@ -151,6 +151,69 @@ def analize_feed():
 
 	conn.close()
 
+def analize_video_feed():
+	log.info("Analyzing Video feed")
+	conn = sqlite3.connect('analysisdata/suggestions.db')
+	c = conn.cursor()
+	driver.get('https://www.facebook.com/watch/latest')
+
+	sleep(5)
+	banner = driver.find_element_by_xpath('//div[@role="banner"]')
+	delete_element(banner)
+
+	last_element = ''
+	while True:
+		video_elements = driver.find_elements_by_xpath("//div[@class='discj3wi ihqw7lf3 s1tcr66n']")
+		if last_element != '':
+			indx = video_elements.index(last_element)
+			video_elements = video_elements[indx+1:]
+
+		if video_elements == []:
+			break
+
+		for video_element in video_elements:
+			last_element = video_element
+			video_element.location_once_scrolled_into_view
+			sleep(2)
+
+			links = video_element.find_elements_by_xpath(".//a[@role='link']")
+			#page_name = page_name.split('__cft__')[0]
+
+			video_link = links[0].get_attribute('href')
+			page_link = links[1].get_attribute('href')
+			description = links[2].text
+			#print(video_link)
+			#print(page_link)
+			#print(desccription)
+			#print()
+			time_element = video_element.find_element_by_xpath(".//span[@class='tojvnm2t a6sixzi8 abs2jz4q a8s20v7p t1p8iaqh k5wvi7nf q3lfd5jv pk4s997a bipmatt0 cebpdrjk qowsmv63 owwhemhu dp1hu0rb dhp61c6y iyyx5f41']")
+			action = ActionChains(driver)
+			try: action.move_to_element(time_element).perform()
+			except: pass
+
+			sleep(3)
+			post_date = driver.find_element_by_xpath('//div[@class="__fb-light-mode"]//*').text
+
+			action.move_by_offset(500, 0).perform()
+			sleep(2)
+			
+			try:
+				c.execute('INSERT INTO video_feed (post_URL, page_URL, post_time, description, time) \
+							VALUES ("' + video_link + '","' + page_link + '","' + post_date + '","' + description + '","' + get_date() + '")');
+				conn.commit()
+			except sqlite3.IntegrityError:
+				continue
+
+			log.info("\nPost: {}\nPage: {}\nDescription: {}\nPost creation date: {}".format(video_link, page_link, description, post_date))
+
+			sleep(random.randint(3,10))
+			del action
+
+		sleep(random.randint(3,10))
+
+	conn.close()
+
+
 
 def main():
 	global driver
@@ -170,7 +233,7 @@ def main():
 	log.addHandler(console)
 
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
-	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
+	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
@@ -183,6 +246,11 @@ def main():
 	if not os.path.isfile('analysisdata/suggestions.db'):
 		create_analysis_table()
 
-	analize_feed()
+	#analize_feed()
+	try:
+		create_video_feed()
+	except sqlite3.OperationalError:
+		pass
+	analize_video_feed()
 
 main()
