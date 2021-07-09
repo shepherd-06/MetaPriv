@@ -242,6 +242,8 @@ def analize_main_video_feed():
 
 			links = video_element.find_elements_by_xpath(".//a[@role='link']")
 			description = video_element.find_element_by_xpath('.//div[@class="n1l5q3vz"]').text
+			description = description.replace("'","%")
+			description = description.replace('"','%')
 			#for el in links:
 			#	print(el.get_attribute('href'))
 			page_link = links[0].get_attribute('href')
@@ -292,7 +294,7 @@ def main():
 	log.addHandler(console)
 
 	profile_path = '/home/'+ os.getlogin() + '/.mozilla/firefox/' 
-	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
+	profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
 	fx_prof = webdriver.FirefoxProfile(profile_path)
 
 	#exec_path = input("Enter geckodriver executable path:")
