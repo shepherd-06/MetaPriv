@@ -16,6 +16,9 @@ DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 NORMAL_LOAD_AMMOUNT = 3
 ONE_HOUR = 3600
 
+
+
+
 def rand_dist():
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
@@ -69,6 +72,32 @@ def login():
 	driver.find_element(By.NAME,"email").send_keys(email)
 	driver.find_element(By.NAME,"pass").send_keys(password)
 	driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
+
+
+def analize_weekly_liked_posts():
+	driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
+	while True:
+		driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+		days = driver.find_elements_by_xpath("//div[@class='kvgmc6g5 sj5x9vvc sjgh65i0 l82x9zwi uo3d90p7 pw54ja7n ue3kfks5 hybvsw6c']")
+		if len(days) > 8:
+			break
+		sleep(5)
+
+	days = days[:7]
+	weekly_amount_of_likes = []
+	for day in days:
+		likes_per_day = day.find_elements_by_xpath(".//div[@class='l9j0dhe7 btwxx1t3 j83agx80']")
+		likes = 0
+		for like in likes_per_day:
+			txt = like.find_element_by_xpath(".//div[@class='qzhwtbm6 knvmm38d']").text
+			if 'likes' or 'reacted' in txt:
+				likes += 1
+		weekly_amount_of_likes.append(likes)
+		likes = 0
+
+	avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
+
+	return avg_amount_of_likes_per_day
 
 def select_pages(categID):
 	load_more(NORMAL_LOAD_AMMOUNT, 3)
@@ -244,12 +273,17 @@ def main():
 	#exec_path = input("Enter geckodriver executable path:")
 	exec_path = '/home/'+ os.getlogin() + '/Downloads/geckodriver/geckodriver'
 
+
+	'''
 	keyword = input("Enter search keyword: ")
 	keyword = keyword.replace(" ","+")
-
+	'''
 	try: os.mkdir("userdata")
 	except: pass
 	driver = webdriver.Firefox(executable_path = exec_path,firefox_profile = fx_prof)
+
+	avg_amount_of_likes_per_day = analize_weekly_liked_posts()
+
 	# get tables from database
 	conn = sqlite3.connect('userdata/pages.db')
 	c = conn.cursor()
