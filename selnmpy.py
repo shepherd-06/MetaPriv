@@ -16,9 +16,6 @@ DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 NORMAL_LOAD_AMMOUNT = 3
 ONE_HOUR = 3600
 
-
-
-
 def rand_dist():
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
@@ -115,7 +112,8 @@ def delete_element(element):
 							""", element)
 
 
-def like_rand(pagename, first_visit):
+def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
+	amount_of_likes = 0
 	pagename_short = pagename.split("https://www.facebook.com/")[1]
 	try: pagename_short = pagename_short.split("/")[0]
 	except:pass
@@ -193,6 +191,7 @@ def like_rand(pagename, first_visit):
 					like_element = article_element.find_element_by_xpath('.//div[@aria-label="Like"]')
 					like_element.location_once_scrolled_into_view
 					like_element.click()
+					amount_of_likes += 1
 
 					# Save post to database
 					c.execute('INSERT INTO "' + pagename + '" (post, time) \
@@ -204,9 +203,10 @@ def like_rand(pagename, first_visit):
 			except Exception as e:
 				log.info(e)
 
-		# 1/6 chance of breaking the infinite while loop
-		random_break = random.randint(1,6)
-		if random_break == 1:
+		random_addition = int(avg_amount_of_likes_per_day*0.2)
+		random_break = random.randint(-random_addition,random_addition)
+		# avg pages per day == 7
+		if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
 			log.info("Random loop break")
 			break
 		sleep(random.randint(3,10))
@@ -273,16 +273,25 @@ def main():
 	#exec_path = input("Enter geckodriver executable path:")
 	exec_path = '/home/'+ os.getlogin() + '/Downloads/geckodriver/geckodriver'
 
-
-	'''
 	keyword = input("Enter search keyword: ")
 	keyword = keyword.replace(" ","+")
-	'''
-	try: os.mkdir("userdata")
-	except: pass
+	eff_privacy = int(input("Enter desired privacy (1-100): "))
+	eff_privacy = eff_privacy / 100
+	
+	try: 
+		os.mkdir("userdata")
+	except FileExistsError:
+		pass
 	driver = webdriver.Firefox(executable_path = exec_path,firefox_profile = fx_prof)
 
-	avg_amount_of_likes_per_day = analize_weekly_liked_posts()
+	if os.path.isfile('userdata/avg_daily_posts'):
+		with open('userdata/avg_daily_posts','r') as f:
+			avg_amount_of_likes_per_day = int(f.read())
+	else:
+		avg_amount_of_likes_per_day = analize_weekly_liked_posts()
+		with open('userdata/avg_daily_posts','w') as f:
+			f.write(str(avg_amount_of_likes_per_day))
+	
 
 	# get tables from database
 	conn = sqlite3.connect('userdata/pages.db')
@@ -324,8 +333,8 @@ def main():
 	c = conn.cursor()
 	c.execute("SELECT * FROM pages")
 	urls = c.fetchall()
-
 	conn.close()
+	'''
 	urls_1 = []
 	urls_2 = []
 
@@ -337,6 +346,7 @@ def main():
 
 	random.shuffle(urls_1)
 	random.shuffle(urls_2)
+	'''
 
 	# get tables from database
 	conn = sqlite3.connect('userdata/likes.db')
@@ -345,24 +355,28 @@ def main():
 	urls_in_db = c.fetchall()
 	conn.close()
 
-	counter = 1
-	for i in range(len(urls)):
+	#counter = 1
+	#for i in range(len(urls)):
+	for url in urls:
 		#randn = random.randint(1,10)
+		'''
 		if (counter % 5) == 1:
 			url = urls_2[0][1]
 			urls_2.pop(0)
 		else:
 			url = urls_1[0][1]
 			urls_1.pop(0)
-
+		'''
+		url = url[1]
 		log.info("GET: "+ url)
 		driver.get(url)
 		sleep(10)
+
 		if ((url,)) in urls_in_db:
-			like_rand(url, False)
+			like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
 		else:
 			new_page(url)
-			like_rand(url, True)
+			like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy)
 
 		rand_site = rand_fb_site()
 		driver.get(rand_site)
