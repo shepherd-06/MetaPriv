@@ -385,6 +385,6 @@ def main():
 		time_formatted = str(timedelta(seconds = randtime))
 		log.info("Wait for "+ time_formatted + " (hh:mm:ss)")
 		sleep(randtime)
-		counter += 1
+		#counter += 1
 
 main()
