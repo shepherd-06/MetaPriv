@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
+from selenium.webdriver.firefox.options import Options
 from time import sleep
 from datetime import datetime, timedelta
 # full imports
@@ -282,7 +283,10 @@ def main():
 		os.mkdir("userdata")
 	except FileExistsError:
 		pass
-	driver = webdriver.Firefox(executable_path = exec_path,firefox_profile = fx_prof)
+	
+	fx_options = Options()
+	fx_options.add_argument("--headless")
+	driver = webdriver.Firefox(executable_path = exec_path,firefox_profile = fx_prof, options = fx_options)
 
 	if os.path.isfile('userdata/avg_daily_posts'):
 		with open('userdata/avg_daily_posts','r') as f:
@@ -347,6 +351,7 @@ def main():
 	random.shuffle(urls_1)
 	random.shuffle(urls_2)
 	'''
+	random.shuffle(urls)
 
 	# get tables from database
 	conn = sqlite3.connect('userdata/likes.db')
