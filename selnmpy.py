@@ -6,16 +6,83 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.firefox.options import Options
 from time import sleep
 from datetime import datetime, timedelta
+from PIL import ImageTk,Image 
+from tkinter import ttk
 # full imports
 import sqlite3
 import logging
 import os
 import random
 import getpass
+import threading
+import tkinter as tk # Python 3.x
+import tkinter.scrolledtext as ScrolledText
+
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 NORMAL_LOAD_AMMOUNT = 3
 ONE_HOUR = 3600
+
+class Userinterface(tk.Frame):
+
+	def __init__(self, parent, *args, **kwargs):
+		tk.Frame.__init__(self, parent, *args, **kwargs)
+		self.mainwindow = parent
+		self.mainwindow.title("FbObfusc")
+
+		#self.mainwindow.option_add('*tearOff', 'FALSE')
+		
+		#self.grid(column=1, row=1, sticky='ew')
+		'''
+		self.grid_columnconfigure(0, weight=1, uniform='a')
+		self.grid_columnconfigure(1, weight=1, uniform='a')
+		self.grid_columnconfigure(2, weight=1, uniform='a')
+		self.grid_columnconfigure(3, weight=1, uniform='a')
+		
+
+		st = ScrolledText.ScrolledText(self, state='disabled')
+		st.configure(font='TkFixedFont')
+		st.grid(column=0, row=2)#, sticky='w', columnspan=2)
+		text_handler = TextHandler(st)
+		'''
+		self.eff_privacy = tk.DoubleVar()
+		slider_label = ttk.Label(self.mainwindow,text='Choose your desired Effective Privacy (0-100):')
+		slider_label.grid(column=0,row=0,sticky='w')
+		slider = ttk.Scale(self.mainwindow,from_=0,to=100,orient='horizontal',
+			command=self.slider_changed,variable=self.eff_privacy,value=50)
+		slider.set(50)
+		slider.grid(column=1,row=0,sticky='we')
+
+		self.value_label = ttk.Label(self.mainwindow,text=self.get_current_value())
+		self.value_label.grid(row=0,column=2)
+
+		self.start_button = tk.Button(self.mainwindow, text="Start", command=self.strt)
+		self.start_button.grid(row=0,column=3,sticky='e')
+
+		photo = ImageTk.PhotoImage(Image.open("Start.png"))
+		self.screeshot_label = tk.Label(self.mainwindow, image = photo)
+		self.screeshot_label.image = photo
+		self.screeshot_label.grid(row=1, column=0,columnspan=4)
+
+
+	def get_current_value(self):
+		return '{: .1f}'.format(self.eff_privacy.get())
+
+	def slider_changed(self,event):
+		self.value_label.configure(text=self.get_current_value())
+
+	def updateimg(self):
+		try:
+			photo = ImageTk.PhotoImage(Image.open(".asd.png"))
+			self.screeshot_label.config(image=photo)
+			self.mainwindow.update_idletasks()
+		except:
+			print("Image error.")
+			pass
+
+	def strt(self):
+		priv = float(self.eff_privacy.get())
+		start_bot(priv)
 
 def rand_dist():
 	rand_number = random.randint(1,23)
@@ -69,7 +136,7 @@ def login():
 	password = getpass.getpass("Enter password: ")
 	driver.find_element(By.NAME,"email").send_keys(email)
 	driver.find_element(By.NAME,"pass").send_keys(password)
-	driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
+	driver.find_element(By.XPATH,"//*[text() = 'log In']").click()
 
 
 def analize_weekly_liked_posts():
@@ -152,6 +219,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 	# Randomly like posts
 	last_element = ''
 	while True:
+		UI.updateimg()
 		article_elements = driver.find_elements_by_xpath("//div[@class='lzcic4wl']")
 		if last_element != '':
 			indx = article_elements.index(last_element)
@@ -167,7 +235,9 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 				continue
 			except NoSuchElementException:
 				pass
-			sleep(random.randint(3,20))
+			sleep(3)
+			UI.updateimg()
+			sleep(random.randint(0,17))
 			try:
 				decide_like = bool(random.randint(0,1))
 				if decide_like:
@@ -179,6 +249,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 					sleep(1)
 					action.move_by_offset(500, 0).perform()
 					sleep(2)
+					UI.updateimg()
 
 					post_url = article_element.find_element_by_xpath('.//a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
 					post_url = post_url.split('__cft__')[0]
@@ -200,6 +271,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 					conn.commit()
 					log.info("Liked {} post on page {}".format(post_url, pagename))
 					sleep(random.randint(1,5))
+					UI.updateimg()
 					del action
 			except Exception as e:
 				log.info(e)
@@ -247,7 +319,12 @@ def create_categ_table():
 	conn.commit()
 	conn.close()
 
-def main():
+def worker():
+	while True:
+		driver.save_screenshot(".asd.png")
+		sleep(1)
+
+def start_bot(eff_privacy):
 	global driver
 	global log
 
@@ -274,10 +351,16 @@ def main():
 	#exec_path = input("Enter geckodriver executable path:")
 	exec_path = '/home/'+ os.getlogin() + '/Downloads/geckodriver/geckodriver'
 
-	keyword = input("Enter search keyword: ")
-	keyword = keyword.replace(" ","+")
-	eff_privacy = int(input("Enter desired privacy (1-100): "))
+	#keyword = input("Enter search keyword: ")
+	#keyword = keyword.replace(" ","+")
+	#eff_privacy = int(input("Enter desired privacy (1-100): "))
+	keyword = "bodybuilding"
+	#try:
+	#eff_privacy = float(self.eff_privacy.get())
 	eff_privacy = eff_privacy / 100
+	#except ValueError:
+		#self.__explanation_text1.configure(text="Length value must be a number.")
+	#	pass
 	
 	try: 
 		os.mkdir("userdata")
@@ -287,6 +370,9 @@ def main():
 	fx_options = Options()
 	fx_options.add_argument("--headless")
 	driver = webdriver.Firefox(executable_path = exec_path,firefox_profile = fx_prof, options = fx_options)
+	driver.set_window_size(1280,1024)
+	t1 = threading.Thread(target=worker, args=[])
+	t1.start()
 
 	if os.path.isfile('userdata/avg_daily_posts'):
 		with open('userdata/avg_daily_posts','r') as f:
@@ -310,14 +396,18 @@ def main():
 
 	rand_ste = rand_fb_site()
 	driver.get(rand_ste)
-	sleep(5)
+	sleep(2)
+	UI.updateimg()
+	sleep(3)
 
 	if (keyword,) not in keywords_in_db:
 		categID = new_keyword(keyword)
 		search_url = 'https://www.facebook.com/search/pages?q=' + keyword
 		log.info("GET: "+ search_url)
 		driver.get(search_url)
-		sleep(5)
+		sleep(2)
+		UI.updateimg()
+		sleep(3)
 
 		page_urls = select_pages(categID)
 		info = "Pages selected for keyword '{}':".format(keyword)
@@ -360,6 +450,7 @@ def main():
 	urls_in_db = c.fetchall()
 	conn.close()
 
+	#driver.save_screenshot("asd.png")
 	#counter = 1
 	#for i in range(len(urls)):
 	for url in urls:
@@ -372,10 +463,13 @@ def main():
 			url = urls_1[0][1]
 			urls_1.pop(0)
 		'''
+
 		url = url[1]
 		log.info("GET: "+ url)
 		driver.get(url)
-		sleep(10)
+		sleep(3)
+		UI.updateimg()
+		sleep(7)
 
 		if ((url,)) in urls_in_db:
 			like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
@@ -387,9 +481,33 @@ def main():
 		driver.get(rand_site)
 		# wait between 10s and 10 hours
 		randtime = rand_dist()
+		sleep(2)
+		UI.updateimg()
 		time_formatted = str(timedelta(seconds = randtime))
 		log.info("Wait for "+ time_formatted + " (hh:mm:ss)")
 		sleep(randtime)
 		#counter += 1
+	t1.join()
+'''
+def stop(self):
+    # Close program function
+	self.mainwindow.destroy()
+
+def start(self):
+    # Start function
+	self.mainwindow.mainloop()
+'''
+
+def main():
+	# Main function
+	#ui = Userinterface()
+	#ui.start()
+	global UI
+
+	root = tk.Tk()
+	UI = Userinterface(root)
+
+	root.mainloop()
+
 
 main()
