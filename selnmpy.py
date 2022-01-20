@@ -16,7 +16,7 @@ import random
 import getpass
 import threading
 import tkinter as tk # Python 3.x
-import tkinter.scrolledtext as ScrolledText
+#import tkinter.scrolledtext as ScrolledText
 
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -48,30 +48,20 @@ class Userinterface(tk.Frame):
 		self.eff_privacy = tk.DoubleVar()
 		slider_label = ttk.Label(self.mainwindow,text='Choose your desired Effective Privacy (0-100):')
 		slider_label.grid(column=0,row=0,sticky='w')
-		slider = ttk.Scale(self.mainwindow,from_=0,to=100,orient='horizontal',
-			command=self.slider_changed,variable=self.eff_privacy,value=50)
-		slider.set(50)
+		slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal',
+			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5)
+		slider.set(55)
 		slider.grid(column=1,row=0,sticky='we')
 
-		self.value_label = ttk.Label(self.mainwindow,text=self.get_current_value())
-		self.value_label.grid(row=0,column=2)
-
 		self.start_button = tk.Button(self.mainwindow, text="Start", command=self.strt)
-		self.start_button.grid(row=0,column=3,sticky='e')
+		self.start_button.grid(row=0,column=2,sticky='e')
 
 		photo = ImageTk.PhotoImage(Image.open("Start.png"))
 		self.screeshot_label = tk.Label(self.mainwindow, image = photo)
 		self.screeshot_label.image = photo
-		self.screeshot_label.grid(row=1, column=0,columnspan=4)
+		self.screeshot_label.grid(row=1, column=0,columnspan=3)
 
-
-	def get_current_value(self):
-		return '{: .1f}'.format(self.eff_privacy.get())
-
-	def slider_changed(self,event):
-		self.value_label.configure(text=self.get_current_value())
-
-	def updateimg(self):
+	def update_ui(self):
 		try:
 			photo = ImageTk.PhotoImage(Image.open(".asd.png"))
 			self.screeshot_label.config(image=photo)
@@ -219,7 +209,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 	# Randomly like posts
 	last_element = ''
 	while True:
-		UI.updateimg()
+		UI.update_ui()
 		article_elements = driver.find_elements_by_xpath("//div[@class='lzcic4wl']")
 		if last_element != '':
 			indx = article_elements.index(last_element)
@@ -236,7 +226,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 			except NoSuchElementException:
 				pass
 			sleep(3)
-			UI.updateimg()
+			UI.update_ui()
 			sleep(random.randint(0,17))
 			try:
 				decide_like = bool(random.randint(0,1))
@@ -249,7 +239,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 					sleep(1)
 					action.move_by_offset(500, 0).perform()
 					sleep(2)
-					UI.updateimg()
+					UI.update_ui()
 
 					post_url = article_element.find_element_by_xpath('.//a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
 					post_url = post_url.split('__cft__')[0]
@@ -271,7 +261,7 @@ def like_rand(pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
 					conn.commit()
 					log.info("Liked {} post on page {}".format(post_url, pagename))
 					sleep(random.randint(1,5))
-					UI.updateimg()
+					UI.update_ui()
 					del action
 			except Exception as e:
 				log.info(e)
@@ -397,7 +387,7 @@ def start_bot(eff_privacy):
 	rand_ste = rand_fb_site()
 	driver.get(rand_ste)
 	sleep(2)
-	UI.updateimg()
+	UI.update_ui()
 	sleep(3)
 
 	if (keyword,) not in keywords_in_db:
@@ -406,7 +396,7 @@ def start_bot(eff_privacy):
 		log.info("GET: "+ search_url)
 		driver.get(search_url)
 		sleep(2)
-		UI.updateimg()
+		UI.update_ui()
 		sleep(3)
 
 		page_urls = select_pages(categID)
@@ -468,7 +458,7 @@ def start_bot(eff_privacy):
 		log.info("GET: "+ url)
 		driver.get(url)
 		sleep(3)
-		UI.updateimg()
+		UI.update_ui()
 		sleep(7)
 
 		if ((url,)) in urls_in_db:
@@ -482,7 +472,7 @@ def start_bot(eff_privacy):
 		# wait between 10s and 10 hours
 		randtime = rand_dist()
 		sleep(2)
-		UI.updateimg()
+		UI.update_ui()
 		time_formatted = str(timedelta(seconds = randtime))
 		log.info("Wait for "+ time_formatted + " (hh:mm:ss)")
 		sleep(randtime)
