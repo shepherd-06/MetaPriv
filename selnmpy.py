@@ -8,7 +8,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
 from time import sleep as Sleep
-#from time import time as Time
+from time import time as Time
 from datetime import datetime, timedelta
 # full imports
 import tkinter as tk
@@ -19,195 +19,26 @@ import random
 import getpass
 import threading
 import sqlite3
-import logging
-import ctypes
 
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 NORMAL_LOAD_AMMOUNT = 3
 ONE_HOUR = 3600
-quit_driver = mp.Value('b', False)
+QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
+WAITING_LONG = mp.Value('b', False)
+
+#########################################################################################################################
 
 class BOT:
 
-	def load_more(self, n, sec):
-		# Scroll down n times to load more elements
-		for i in range(n):
-			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-			sleep(sec)
-			if quit_driver.value: break
-
-	def login(self, ):
-		write_log(get_date()+": "+"Logging in")
-		self.driver.get("https://www.facebook.com")
-		self.driver.find_element(By.XPATH,"//*[text() = 'Accept All']").click()
-		sleep(1)
-		if quit_driver.value: return
-		email = input("Enter email: ")
-		password = getpass.getpass("Enter password: ")
-		self.driver.find_element(By.NAME,"email").send_keys(email)
-		self.driver.find_element(By.NAME,"pass").send_keys(password)
-		self.driver.find_element(By.XPATH,"//*[text() = 'log In']").click()
-
-	def analize_weekly_liked_posts(self, ):
-		write_log(get_date()+": "+"Analyzing daily Facebook interaction...")
-		self.driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
-		while True:
-			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-			days = self.driver.find_elements(By.XPATH, "//div[@class='kvgmc6g5 sj5x9vvc sjgh65i0 l82x9zwi uo3d90p7 pw54ja7n ue3kfks5 hybvsw6c']")
-			if len(days) > 8:
-				break
-			sleep(5)
-			if quit_driver.value: break
-
-		days = days[:7]
-		weekly_amount_of_likes = []
-		for day in days:
-			likes_per_day = day.find_elements(By.XPATH, ".//div[@class='l9j0dhe7 btwxx1t3 j83agx80']")
-			likes = 0
-			for like in likes_per_day:
-				txt = like.find_element(By.XPATH, ".//div[@class='qzhwtbm6 knvmm38d']").text
-				if 'likes' or 'reacted' in txt:
-					likes += 1
-			weekly_amount_of_likes.append(likes)
-			likes = 0
-
-		avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
-
-		return avg_amount_of_likes_per_day
-
-	def select_pages(self, categID):
-		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
-		urls = self.driver.find_elements(By.TAGNAME,'a')
-		urls = [a.get_attribute('href') for a in urls]
-		return_urls = []
-		for url in urls:
-			if url.endswith('?__tn__=%3C'):
-				return_urls.append((url.split('?__tn__=%3C')[0],categID))
-		return return_urls
-
-	def delete_element(self, element):
-		self.driver.execute_script("""var element = arguments[0];
-								element.parentNode.removeChild(element);
-								""", element)
-
-
-	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
-		amount_of_likes = 0
-		pagename_short = pagename.split("https://www.facebook.com/")[1]
-		try: pagename_short = pagename_short.split("/")[0]
-		except:pass
-		# Check Chatbox element and delete it
-		try:
-			chatbox = self.driver.find_element(By.XPATH, '//div[starts-with(@aria-label, "Chat with")]')
-			self.delete_element(chatbox)
-		except NoSuchElementException: 
-			pass
-
-		if first_visit:
-			# Like page
-			write_log(get_date()+": "+"First visit on: "+pagename)
-			os.mkdir("userdata/"+pagename_short)
-			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Like"]')
-				main_element.click()
-			except Exception as e:
-				write_log(get_date()+": "+e)
-
-		# Delete banner elements
-		try:
-			banner_0 = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]')
-			self.delete_element(banner_0)
-		except:
-			banner_1 = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
-			self.delete_element(banner_1)
-		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
-		self.delete_element(banner_2)
-
-		# Connect to database
-		conn = sqlite3.connect('userdata/likes.db')
-		c = conn.cursor()
-
-		# Randomly like posts
-		last_element = ''
-		while True:
-			if quit_driver.value: break
-			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
-			if last_element != '':
-				indx = article_elements.index(last_element)
-				article_elements = article_elements[indx+1:]
-
-			# Go through every element
-			for article_element in article_elements:
-				if quit_driver.value: break
-				last_element = article_element
-				article_element.location_once_scrolled_into_view
-				try:
-					check_if_liked = article_element.find_element(By.XPATH, './/div[@aria-label="Remove Like"]')
-					sleep(random.randint(3,7))
-					if quit_driver.value: break
-					continue
-				except NoSuchElementException:
-					pass
-				sleep(random.randint(3,20))
-				if quit_driver.value: break
-				try:
-					decide_like = bool(random.randint(0,1))
-					if decide_like:
-						link_element = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
-
-						action = ActionChains(self.driver)
-						try: action.move_to_element(link_element).perform()
-						except: pass
-						if quit_driver.value: break
-						sleep(1)
-						action.move_by_offset(500, 0).perform()
-						sleep(2)
-						if quit_driver.value: break
-						
-						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
-						post_url = post_url.split('__cft__')[0]
-					
-						# Save screenshot
-						data = article_element.screenshot_as_png
-						with open("userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
-							f.write(data)
-
-						# Like post
-						like_element = article_element.find_element(By.XPATH, './/div[@aria-label="Like"]')
-						like_element.location_once_scrolled_into_view
-						like_element.click()
-						amount_of_likes += 1
-
-						# Save post to database
-						c.execute('INSERT INTO "' + pagename + '" (post, time) \
-								VALUES ("' + post_url + '","' + get_date() + '")');
-						conn.commit()
-						write_log(get_date()+": "+"Liked {} post on page {}".format(post_url, pagename))
-						sleep(random.randint(1,5))
-						if quit_driver.value: break
-						del action
-				except Exception as e:
-					write_log(get_date()+": "+e)
-
-			random_addition = int(avg_amount_of_likes_per_day*0.2)
-			random_break = random.randint(-random_addition,random_addition)
-			# avg pages per day == 7
-			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
-				write_log(get_date()+": "+"Random loop break")
-				break
-			sleep(random.randint(3,10))
-			if quit_driver.value: break
-
-		conn.close()
-
-	def take_screenshot(self, ):
-		while not quit_driver.value:
-			self.driver.save_screenshot(".screenshot.png")
-			sleep(1)
-
 	def start_bot(self, eff_privacy):
+		if not os.path.isfile('bot_logs.log'):
+			text = get_date()+": "+"First launch\n"
+			print(text)
+			with open("bot_logs.log", "w") as f:
+				f.write(text)
+
 		profile_path = '.mozilla/firefox/' #'/home/'+ os.getlogin() + 
 		try:
 			profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
@@ -261,7 +92,7 @@ class BOT:
 		rand_ste = rand_fb_site()
 		self.driver.get(rand_ste)
 		sleep(5)
-		if quit_driver.value: self.quit_bot(t1)
+		if QUIT_DRIVER.value: self.quit_bot(t1)
 
 		if (keyword,) not in keywords_in_db:
 			categID = new_keyword(keyword)
@@ -269,7 +100,7 @@ class BOT:
 			write_log(get_date()+": "+"GET: "+ search_url)
 			self.driver.get(search_url)
 			sleep(5)
-			if quit_driver.value: self.quit_bot(t1)
+			if QUIT_DRIVER.value: self.quit_bot(t1)
 
 			page_urls = self.select_pages(categID)
 			info = "Pages selected for keyword '{}':".format(keyword)
@@ -300,21 +131,11 @@ class BOT:
 		conn.close()
 
 		for url in urls:
-			#randn = random.randint(1,10)
-			'''
-			if (counter % 5) == 1:
-				url = urls_2[0][1]
-				urls_2.pop(0)
-			else:
-				url = urls_1[0][1]
-				urls_1.pop(0)
-			'''
-
 			url = url[1]
 			write_log(get_date()+": "+"GET: "+ url)
 			self.driver.get(url)
 			sleep(10)
-			if quit_driver.value: break
+			if QUIT_DRIVER.value: break
 
 			if ((url,)) in urls_in_db:
 				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
@@ -326,14 +147,193 @@ class BOT:
 			self.driver.get(rand_site)
 			# wait between 10s and 10 hours
 			randtime = rand_dist()
+			if not QUIT_DRIVER.value:
+				time_formatted = str(timedelta(seconds = randtime))
+				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
 			sleep(2)
-			if quit_driver.value: break
-			time_formatted = str(timedelta(seconds = randtime))
-			write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
-			sleep(randtime)
-			if quit_driver.value: break
+			if QUIT_DRIVER.value: break
+			sleep(randtime, True)
+			if QUIT_DRIVER.value: break
 
 		self.quit_bot(t1)
+
+	def load_more(self, n, sec):
+		# Scroll down n times to load more elements
+		for i in range(n):
+			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+			sleep(sec)
+			if QUIT_DRIVER.value: break
+
+	def login(self, ):
+		write_log(get_date()+": "+"Logging in")
+		self.driver.get("https://www.facebook.com")
+		self.driver.find_element(By.XPATH,"//*[text() = 'Accept All']").click()
+		sleep(1)
+		if QUIT_DRIVER.value: return
+		email = input("Enter email: ")
+		password = getpass.getpass("Enter password: ")
+		self.driver.find_element(By.NAME,"email").send_keys(email)
+		self.driver.find_element(By.NAME,"pass").send_keys(password)
+		self.driver.find_element(By.XPATH,"//*[text() = 'log In']").click()
+
+	def analize_weekly_liked_posts(self, ):
+		write_log(get_date()+": "+"Analyzing daily Facebook interaction...")
+		self.driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
+		while True:
+			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+			days = self.driver.find_elements(By.XPATH, "//div[@class='kvgmc6g5 sj5x9vvc sjgh65i0 l82x9zwi uo3d90p7 pw54ja7n ue3kfks5 hybvsw6c']")
+			if len(days) > 8:
+				break
+			sleep(5)
+			if QUIT_DRIVER.value: break
+
+		days = days[:7]
+		weekly_amount_of_likes = []
+		for day in days:
+			likes_per_day = day.find_elements(By.XPATH, ".//div[@class='l9j0dhe7 btwxx1t3 j83agx80']")
+			likes = 0
+			for like in likes_per_day:
+				txt = like.find_element(By.XPATH, ".//div[@class='qzhwtbm6 knvmm38d']").text
+				if 'likes' or 'reacted' in txt:
+					likes += 1
+			weekly_amount_of_likes.append(likes)
+			likes = 0
+
+		avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
+		return avg_amount_of_likes_per_day
+
+	def select_pages(self, categID):
+		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
+		urls = self.driver.find_elements(By.TAG_NAME,'a')
+		urls = [a.get_attribute('href') for a in urls]
+		return_urls = []
+		for url in urls:
+			if url.endswith('?__tn__=%3C'):
+				return_urls.append((url.split('?__tn__=%3C')[0],categID))
+		return return_urls
+
+	def delete_element(self, element):
+		self.driver.execute_script("""var element = arguments[0];
+								element.parentNode.removeChild(element);
+								""", element)
+
+
+	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
+		amount_of_likes = 0
+		pagename_short = pagename.split("https://www.facebook.com/")[1]
+		try: pagename_short = pagename_short.split("/")[0]
+		except:pass
+		# Check Chatbox element and delete it
+		try:
+			chatbox = self.driver.find_element(By.XPATH, '//div[starts-with(@aria-label, "Chat with")]')
+			self.delete_element(chatbox)
+		except NoSuchElementException: 
+			pass
+
+		if first_visit:
+			# Like page
+			write_log(get_date()+": "+"First visit on: "+pagename)
+			os.mkdir("userdata/"+pagename_short)
+			try:
+				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Like"]')
+				main_element.click()
+			except Exception as e:
+				write_log(get_date()+": "+e)
+
+		# Delete banner elements
+		try:
+			banner_0 = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]')
+			self.delete_element(banner_0)
+		except:
+			banner_1 = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
+			self.delete_element(banner_1)
+		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
+		self.delete_element(banner_2)
+
+		# for adding a random value between -40% and +40% to the avg_amount_of_likes_per_day variable 
+		random_addition = int(avg_amount_of_likes_per_day*0.4)
+		random_break = random.randint(-random_addition,random_addition)
+
+		# Connect to database
+		conn = sqlite3.connect('userdata/likes.db')
+		c = conn.cursor()
+
+		# Randomly like posts
+		last_element = ''
+		while True:
+			if QUIT_DRIVER.value: break
+			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
+			if last_element != '':
+				indx = article_elements.index(last_element)
+				article_elements = article_elements[indx+1:]
+
+			# Go through every element
+			for article_element in article_elements:
+				if QUIT_DRIVER.value: break
+				last_element = article_element
+				article_element.location_once_scrolled_into_view
+				try:
+					check_if_liked = article_element.find_element(By.XPATH, './/div[@aria-label="Remove Like"]')
+					sleep(random.randint(3,7))
+					if QUIT_DRIVER.value: break
+					continue
+				except NoSuchElementException:
+					pass
+				sleep(random.randint(3,20))
+				if QUIT_DRIVER.value: break
+				try:
+					decide_like = bool(random.randint(0,1))
+					if decide_like:
+						link_element = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
+
+						action = ActionChains(self.driver)
+						try: action.move_to_element(link_element).perform()
+						except: pass
+						if QUIT_DRIVER.value: break
+						sleep(1)
+						action.move_by_offset(500, 0).perform()
+						sleep(2)
+						if QUIT_DRIVER.value: break
+						
+						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
+						post_url = post_url.split('__cft__')[0]
+					
+						# Save screenshot
+						data = article_element.screenshot_as_png
+						with open("userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
+							f.write(data)
+
+						# Like post
+						like_element = article_element.find_element(By.XPATH, './/div[@aria-label="Like"]')
+						like_element.location_once_scrolled_into_view
+						like_element.click()
+						amount_of_likes += 1
+
+						# Save post to database
+						c.execute('INSERT INTO "' + pagename + '" (post, time) \
+								VALUES ("' + post_url + '","' + get_date() + '")');
+						conn.commit()
+						write_log(get_date()+": "+"Liked {} post on page {}".format(post_url, pagename))
+						sleep(random.randint(1,5))
+						if QUIT_DRIVER.value: break
+						del action
+				except Exception as e:
+					write_log(get_date()+": "+e)
+
+			# avg pages per day == 7
+			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
+				write_log(get_date()+": "+"Random loop break")
+				break
+			sleep(random.randint(3,10))
+			if QUIT_DRIVER.value: break
+
+		conn.close()
+
+	def take_screenshot(self, ):
+		while not QUIT_DRIVER.value:
+			if not WAITING_LONG.value:
+				self.driver.save_screenshot(".screenshot.png")
+			sleep(1)
 		
 	def quit_bot(self, thread):
 		self.driver.quit()
@@ -344,6 +344,7 @@ class BOT:
 class Userinterface(tk.Frame):
 
 	def __init__(self, parent, *args, **kwargs):
+		self.BOT_started = False
 		tk.Frame.__init__(self, parent, *args, **kwargs)
 		self.mainwindow = parent
 		self.mainwindow.title("FbObfusc")
@@ -351,8 +352,6 @@ class Userinterface(tk.Frame):
 		self.mainwindow.option_add('*tearOff', 'FALSE')
 		self.mainwindow.protocol('WM_DELETE_WINDOW', self.close)
 		
-		self.BOT_started = False
-
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
 		self.slider_label = tk.Label(self.mainwindow,text='Effective Privacy (0-100):')
@@ -361,9 +360,11 @@ class Userinterface(tk.Frame):
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5)
 		self.slider.set(55)
 		self.slider.grid(column=1,row=0,sticky='we')
+
 		########### Start button ###########
 		self.start_button = tk.Button(self.mainwindow, text="Start", command=self.strt)
 		self.start_button.grid(row=0,column=2,sticky='e')
+
 		########### Screenshot ###########
 		image = Image.open("Start.png")
 		resized_image = image.resize((800, 600))
@@ -371,6 +372,7 @@ class Userinterface(tk.Frame):
 		self.screeshot_label = tk.Label(self.mainwindow, image = photo)
 		self.screeshot_label.image = photo
 		self.screeshot_label.grid(row=1, column=0,columnspan=3)
+
 		########### Logs ###########
 		self.grid(column=0, row=3, sticky='ew', columnspan=3)
 		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=12, width=112)
@@ -389,23 +391,24 @@ class Userinterface(tk.Frame):
 		return last_line
 
 	def update_ui(self):
-		last_log = self.get_last_log()
-		if last_log != self.previous_last_log:
-			self.textbox.configure(state='normal')
-			self.textbox.insert(tk.END, last_log)
-			self.textbox.configure(state='disabled')
-		self.previous_last_log = last_log
-		self.textbox.yview(tk.END)
-		try:
-			image = Image.open(".screenshot.png")
-			resized_image = image.resize((800, 600))
-			photo = ImageTk.PhotoImage(resized_image)
-			self.screeshot_label.image = photo
-			self.screeshot_label.config(image=photo)
-			self.mainwindow.update_idletasks()
-		except:
-			#print("Image error")
-			pass
+		if not WAITING_LONG.value:
+			last_log = self.get_last_log()
+			if last_log != self.previous_last_log:
+				self.textbox.configure(state='normal')
+				self.textbox.insert(tk.END, last_log)
+				self.textbox.configure(state='disabled')
+			self.previous_last_log = last_log
+			self.textbox.yview(tk.END)
+			try:
+				image = Image.open(".screenshot.png")
+				resized_image = image.resize((800, 600))
+				photo = ImageTk.PhotoImage(resized_image)
+				self.screeshot_label.image = photo
+				self.screeshot_label.config(image=photo)
+				self.mainwindow.update_idletasks()
+			except:
+				#print("Image error")
+				pass
 		self.mainwindow.after(2000,self.update_ui)
 
 	def strt(self):
@@ -416,7 +419,11 @@ class Userinterface(tk.Frame):
 		self.BOT = BOT()
 		self.bot_process = mp.Process(target=self.BOT.start_bot,args=[priv])
 		self.bot_process.start()
-		self.previous_last_log = self.get_last_log()
+		self.textbox.configure(state='normal')
+		self.textbox.insert(tk.END, get_date()+": "+"Bot process started...\n")
+		self.textbox.configure(state='disabled')
+		try: self.previous_last_log = self.get_last_log()
+		except FileNotFoundError: sleep(3); self.previous_last_log = self.get_last_log()
 		self.BOT_started = True
 		self.start_button["state"] = "disabled"
 		self.slider["state"] = "disabled"
@@ -426,29 +433,31 @@ class Userinterface(tk.Frame):
 	def close(self):
 		BREAK_SLEEP.value = True
 		if self.BOT_started:
-			quit_driver_signal()
+			QUIT_DRIVER.value = True
 			self.bot_process.join()
+			os.remove(".screenshot.png")
 		self.mainwindow.destroy()
 		
-def quit_driver_signal(): quit_driver.value = True
+#########################################################################################################################
 
 def write_log(text):
 	print(text)
 	with open("bot_logs.log",'a') as f:
 		f.write(text+'\n')
 
-def sleep(seconds):
+def sleep(seconds, long_wait = False):
+	if long_wait:
+		WAITING_LONG.value = True
 	time = 0
 	while True:
-		#t0 = Time()
 		Sleep(1-0.003)
-		#print(BREAK_SLEEP.value)
 		time += 1
 		if BREAK_SLEEP.value:
 			break
 		if time == seconds:
 			break
-		#print("[*] Ellapsed time:", Time() - t0, "seconds")
+	if long_wait:
+		WAITING_LONG.value = False
 
 def rand_dist():
 	rand_number = random.randint(1,23)
