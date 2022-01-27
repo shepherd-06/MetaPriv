@@ -1,5 +1,15 @@
 # partial imports
-from PIL import ImageTk,Image 
+from PIL import ImageTk,Image
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import ActionChains
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
+from webdriver_manager.firefox import GeckoDriverManager
+from time import sleep as Sleep
+#from time import time as Time
+from datetime import datetime, timedelta
 # full imports
 import tkinter as tk
 import tkinter.scrolledtext as ScrolledText
@@ -12,23 +22,12 @@ import sqlite3
 import logging
 import ctypes
 
-#import sys
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver import ActionChains
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
-from webdriver_manager.firefox import GeckoDriverManager
-from time import sleep as Sleep
-from datetime import datetime, timedelta
-
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 NORMAL_LOAD_AMMOUNT = 3
 ONE_HOUR = 3600
 quit_driver = mp.Value('b', False)
-BREAK_SLEEP = False
+BREAK_SLEEP = mp.Value('b', False)
 
 class BOT:
 
@@ -37,12 +36,14 @@ class BOT:
 		for i in range(n):
 			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 			sleep(sec)
+			if quit_driver.value: break
 
 	def login(self, ):
 		write_log(get_date()+": "+"Logging in")
 		self.driver.get("https://www.facebook.com")
 		self.driver.find_element(By.XPATH,"//*[text() = 'Accept All']").click()
 		sleep(1)
+		if quit_driver.value: return
 		email = input("Enter email: ")
 		password = getpass.getpass("Enter password: ")
 		self.driver.find_element(By.NAME,"email").send_keys(email)
@@ -50,6 +51,7 @@ class BOT:
 		self.driver.find_element(By.XPATH,"//*[text() = 'log In']").click()
 
 	def analize_weekly_liked_posts(self, ):
+		write_log(get_date()+": "+"Analyzing daily Facebook interaction...")
 		self.driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
 		while True:
 			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -57,6 +59,7 @@ class BOT:
 			if len(days) > 8:
 				break
 			sleep(5)
+			if quit_driver.value: break
 
 		days = days[:7]
 		weekly_amount_of_likes = []
@@ -75,8 +78,8 @@ class BOT:
 		return avg_amount_of_likes_per_day
 
 	def select_pages(self, categID):
-		load_more(NORMAL_LOAD_AMMOUNT, 3)
-		urls = self.driver.find_elements_by_tag_name('a')
+		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
+		urls = self.driver.find_elements(By.TAGNAME,'a')
 		urls = [a.get_attribute('href') for a in urls]
 		return_urls = []
 		for url in urls:
@@ -128,9 +131,8 @@ class BOT:
 
 		# Randomly like posts
 		last_element = ''
-		while not quit_driver.value:
-			#self.update_ui()
-			
+		while True:
+			if quit_driver.value: break
 			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
 			if last_element != '':
 				indx = article_elements.index(last_element)
@@ -143,15 +145,13 @@ class BOT:
 				article_element.location_once_scrolled_into_view
 				try:
 					check_if_liked = article_element.find_element(By.XPATH, './/div[@aria-label="Remove Like"]')
-					if quit_driver.value: break
 					sleep(random.randint(3,7))
+					if quit_driver.value: break
 					continue
 				except NoSuchElementException:
 					pass
+				sleep(random.randint(3,20))
 				if quit_driver.value: break
-				sleep(3)
-				#self.update_ui()
-				sleep(random.randint(0,17))
 				try:
 					decide_like = bool(random.randint(0,1))
 					if decide_like:
@@ -165,8 +165,7 @@ class BOT:
 						action.move_by_offset(500, 0).perform()
 						sleep(2)
 						if quit_driver.value: break
-						#self.update_ui()
-
+						
 						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
 						post_url = post_url.split('__cft__')[0]
 					
@@ -186,9 +185,8 @@ class BOT:
 								VALUES ("' + post_url + '","' + get_date() + '")');
 						conn.commit()
 						write_log(get_date()+": "+"Liked {} post on page {}".format(post_url, pagename))
-						if quit_driver.value: break
 						sleep(random.randint(1,5))
-						#self.update_ui()
+						if quit_driver.value: break
 						del action
 				except Exception as e:
 					write_log(get_date()+": "+e)
@@ -199,25 +197,17 @@ class BOT:
 			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
 				write_log(get_date()+": "+"Random loop break")
 				break
-			if quit_driver.value: break
 			sleep(random.randint(3,10))
+			if quit_driver.value: break
 
 		conn.close()
 
-	def worker(self, ):
+	def take_screenshot(self, ):
 		while not quit_driver.value:
 			self.driver.save_screenshot(".screenshot.png")
 			sleep(1)
 
 	def start_bot(self, eff_privacy):
-		#global driver
-		#global log
-
-		#quit_driver.value = False
-		#log = Log()
-
-		#info
-		
 		profile_path = '.mozilla/firefox/' #'/home/'+ os.getlogin() + 
 		try:
 			profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
@@ -232,7 +222,7 @@ class BOT:
 		#keyword = input("Enter search keyword: ")
 		#keyword = keyword.replace(" ","+")
 		#eff_privacy = int(input("Enter desired privacy (1-100): "))
-		keyword = "bodybuilding"
+		keyword = "snowboarding"
 		eff_privacy = eff_privacy / 100
 		
 		try: 
@@ -246,11 +236,8 @@ class BOT:
 		fx_options.add_argument("--headless")
 		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 		self.driver.set_window_size(1280,1024)
-		t1 = threading.Thread(target=self.worker, args=[])
+		t1 = threading.Thread(target=self.take_screenshot, args=[])
 		t1.start()
-
-		#t2 = threading.Thread(target=self.worker2, args=[])
-		#t2.start()
 
 		if os.path.isfile('userdata/avg_daily_posts'):
 			with open('userdata/avg_daily_posts','r') as f:
@@ -260,7 +247,6 @@ class BOT:
 			with open('userdata/avg_daily_posts','w') as f:
 				f.write(str(avg_amount_of_likes_per_day))
 		
-
 		# get tables from database
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
@@ -268,25 +254,22 @@ class BOT:
 		try:
 			c.execute("SELECT category FROM categories")
 		except sqlite3.OperationalError:
-			self.create_categ_table()
+			create_categ_table()
 		keywords_in_db = c.fetchall()
 		conn.close()
 
 		rand_ste = rand_fb_site()
 		self.driver.get(rand_ste)
-		sleep(2)
-		#self.update_ui()
-		sleep(3)
+		sleep(5)
+		if quit_driver.value: self.quit_bot(t1)
 
 		if (keyword,) not in keywords_in_db:
 			categID = new_keyword(keyword)
 			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
-			#print("GET: "+ search_url)
 			write_log(get_date()+": "+"GET: "+ search_url)
 			self.driver.get(search_url)
-			sleep(2)
-			#self.update_ui()
-			sleep(3)
+			sleep(5)
+			if quit_driver.value: self.quit_bot(t1)
 
 			page_urls = self.select_pages(categID)
 			info = "Pages selected for keyword '{}':".format(keyword)
@@ -307,19 +290,6 @@ class BOT:
 		c.execute("SELECT * FROM pages")
 		urls = c.fetchall()
 		conn.close()
-		'''
-		urls_1 = []
-		urls_2 = []
-
-		for url in urls:
-			if url[2] == 1:
-				urls_1.append(url)
-			else:
-				urls_2.append(url)
-
-		random.shuffle(urls_1)
-		random.shuffle(urls_2)
-		'''
 		random.shuffle(urls)
 
 		# get tables from database
@@ -329,9 +299,6 @@ class BOT:
 		urls_in_db = c.fetchall()
 		conn.close()
 
-		#driver.save_screenshot("screenshot.png")
-		#counter = 1
-		#for i in range(len(urls)):
 		for url in urls:
 			#randn = random.randint(1,10)
 			'''
@@ -346,8 +313,8 @@ class BOT:
 			url = url[1]
 			write_log(get_date()+": "+"GET: "+ url)
 			self.driver.get(url)
-			if quit_driver.value: break
 			sleep(10)
+			if quit_driver.value: break
 
 			if ((url,)) in urls_in_db:
 				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
@@ -355,24 +322,24 @@ class BOT:
 				new_page(url)
 				self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy)
 			
-			if quit_driver.value:
-				break
 			rand_site = rand_fb_site()
 			self.driver.get(rand_site)
 			# wait between 10s and 10 hours
 			randtime = rand_dist()
 			sleep(2)
-			
+			if quit_driver.value: break
 			time_formatted = str(timedelta(seconds = randtime))
 			write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
-			if quit_driver.value: break
 			sleep(randtime)
-			#counter += 1
-		#t2.join()
-		self.driver.quit()
-		t1.join()
+			if quit_driver.value: break
 
-###########################################################################
+		self.quit_bot(t1)
+		
+	def quit_bot(self, thread):
+		self.driver.quit()
+		thread.join()
+
+#########################################################################################################################
 
 class Userinterface(tk.Frame):
 
@@ -388,12 +355,12 @@ class Userinterface(tk.Frame):
 
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
-		slider_label = tk.Label(self.mainwindow,text='Effective Privacy (0-100):')
-		slider_label.grid(column=0,row=0,sticky='w')
-		slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal',
+		self.slider_label = tk.Label(self.mainwindow,text='Effective Privacy (0-100):')
+		self.slider_label.grid(column=0,row=0,sticky='w')
+		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal',
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5)
-		slider.set(55)
-		slider.grid(column=1,row=0,sticky='we')
+		self.slider.set(55)
+		self.slider.grid(column=1,row=0,sticky='we')
 		########### Start button ###########
 		self.start_button = tk.Button(self.mainwindow, text="Start", command=self.strt)
 		self.start_button.grid(row=0,column=2,sticky='e')
@@ -406,9 +373,9 @@ class Userinterface(tk.Frame):
 		self.screeshot_label.grid(row=1, column=0,columnspan=3)
 		########### Logs ###########
 		self.grid(column=0, row=3, sticky='ew', columnspan=3)
-		self.t = ScrolledText.ScrolledText(self,state='disabled', height=12, width=112)
-		self.t.configure(font='TkFixedFont')
-		self.t.grid(column=0, row=3, sticky='w', columnspan=3)
+		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=12, width=112)
+		self.textbox.configure(font='TkFixedFont')
+		self.textbox.grid(column=0, row=3, sticky='w', columnspan=3)
 		
 	def get_last_log(self):
 		with open('bot_logs.log','rb') as f:
@@ -424,11 +391,11 @@ class Userinterface(tk.Frame):
 	def update_ui(self):
 		last_log = self.get_last_log()
 		if last_log != self.previous_last_log:
-			self.t.configure(state='normal')
-			self.t.insert(tk.END, last_log)
-			self.t.configure(state='disabled')
+			self.textbox.configure(state='normal')
+			self.textbox.insert(tk.END, last_log)
+			self.textbox.configure(state='disabled')
 		self.previous_last_log = last_log
-		self.t.yview(tk.END)
+		self.textbox.yview(tk.END)
 		try:
 			image = Image.open(".screenshot.png")
 			resized_image = image.resize((800, 600))
@@ -442,29 +409,25 @@ class Userinterface(tk.Frame):
 		self.mainwindow.after(2000,self.update_ui)
 
 	def strt(self):
+		self.textbox.configure(state='normal')
+		self.textbox.insert(tk.END, get_date()+": "+"Starting bot...\n")
+		self.textbox.configure(state='disabled')
 		priv = int(self.eff_privacy.get())
 		self.BOT = BOT()
-		self.bot_process = mp.Process(target=self.str_BOT,args=[priv])
+		self.bot_process = mp.Process(target=self.BOT.start_bot,args=[priv])
 		self.bot_process.start()
 		self.previous_last_log = self.get_last_log()
-		self.mainwindow.after(2000,self.update_ui)
 		self.BOT_started = True
-
-	def str_BOT(self, priv):
-		self.BOT.start_bot(priv)
-
-	def openNewWindow(self):
-		self.newWindow = tk.Toplevel(self.mainwindow)
-		self.newWindow.title("New Window")
-		self.newWindow.geometry("200x200")
-		tk.Label(self.newWindow,text ="Closing application").pack()
+		self.start_button["state"] = "disabled"
+		self.slider["state"] = "disabled"
+		sleep(3)
+		self.mainwindow.after(2000,self.update_ui)
 		
 	def close(self):
-		BREAK_SLEEP = True
+		BREAK_SLEEP.value = True
 		if self.BOT_started:
 			quit_driver_signal()
 			self.bot_process.join()
-			print("Processes joined")
 		self.mainwindow.destroy()
 		
 def quit_driver_signal(): quit_driver.value = True
@@ -477,12 +440,15 @@ def write_log(text):
 def sleep(seconds):
 	time = 0
 	while True:
-		Sleep(1)
+		#t0 = Time()
+		Sleep(1-0.003)
+		#print(BREAK_SLEEP.value)
 		time += 1
-		if BREAK_SLEEP:
+		if BREAK_SLEEP.value:
 			break
 		if time == seconds:
 			break
+		#print("[*] Ellapsed time:", Time() - t0, "seconds")
 
 def rand_dist():
 	rand_number = random.randint(1,23)
