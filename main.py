@@ -1,5 +1,4 @@
 # partial imports
-from PIL import ImageTk,Image
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
@@ -61,7 +60,6 @@ class BOT:
 			pass
 		
 		fx_options = Options()
-
 		profile_path = os.getcwd()+'/fx_profile'
 		if profile_exists:
 			fx_options.add_argument("--profile")
@@ -69,7 +67,7 @@ class BOT:
 		fx_options.add_argument("--headless")
 		
 		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
-		self.driver.set_window_size(1280,1024)
+		self.driver.set_window_size(1400,700)
 		sleep(3)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
 
@@ -388,16 +386,14 @@ class Userinterface(tk.Frame):
 		self.start_button.grid(row=0,column=2,sticky='e')
 
 		########### Screenshot ###########
-		image = Image.open(os.getcwd()+'/'+"Start.png")
-		resized_image = image.resize((800, 600))
-		photo = ImageTk.PhotoImage(resized_image)
+		photo = tk.PhotoImage(file=os.getcwd()+'/'+"Start.png")
 		self.screeshot_label = tk.Label(self.mainwindow, image = photo)
 		self.screeshot_label.image = photo
 		self.screeshot_label.grid(row=1, column=0,columnspan=3)
 
 		########### Logs ###########
 		self.grid(column=0, row=3, sticky='ew', columnspan=3)
-		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=12, width=112)
+		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=12, width=198)
 		self.textbox.configure(font='TkFixedFont')
 		self.textbox.grid(column=0, row=3, sticky='w', columnspan=3)
 		
@@ -422,9 +418,7 @@ class Userinterface(tk.Frame):
 			self.previous_last_log = last_log
 			self.textbox.yview(tk.END)
 			try:
-				image = Image.open(os.getcwd()+'/'+".screenshot.png")
-				resized_image = image.resize((800, 600))
-				photo = ImageTk.PhotoImage(resized_image)
+				photo = tk.PhotoImage(file=os.getcwd()+'/'+".screenshot.png")
 				self.screeshot_label.image = photo
 				self.screeshot_label.config(image=photo)
 				self.mainwindow.update_idletasks()
@@ -457,7 +451,10 @@ class Userinterface(tk.Frame):
 		if self.BOT_started:
 			QUIT_DRIVER.value = True
 			self.bot_process.join()
-			os.remove(".screenshot.png")
+			try:
+				os.remove(".screenshot.png")
+			except FileNotFoundError:
+				pass
 		self.mainwindow.destroy()
 		
 #########################################################################################################################
