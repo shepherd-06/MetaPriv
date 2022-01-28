@@ -20,10 +20,9 @@ import random
 import getpass
 import threading
 import sqlite3
-
 # imports from created files 
-from first_launch_class import First_launch_UI
-from password_class import Enter_Password_UI
+from firstlaunchclass import First_launch_UI
+from passwordclass import Enter_Password_UI
 from crypto import Hash, aes_encrypt, aes_decrypt
 
 
@@ -39,17 +38,17 @@ class BOT:
 
 	def start_bot(self, eff_privacy, key):
 		tempdirs = []
-		profile_exists = os.path.isdir('fx_profile')
+		profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
 		if not profile_exists:
 			tempdirs = os.listdir(gettempdir())
 
-		if not os.path.isfile('bot_logs.log'):
+		if not os.path.isfile(os.getcwd()+'/bot_logs.log'):
 			text = get_date()+": "+"First launch\n"
 			print(text)
-			with open("bot_logs.log", "w") as f:
+			with open(os.getcwd()+'/'+"bot_logs.log", "w") as f:
 				f.write(text)
 
-		with open('.saved_data','r') as f:
+		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
 			keyword = text[2]
@@ -57,39 +56,29 @@ class BOT:
 		eff_privacy = eff_privacy / 100
 		
 		try: 
-			os.mkdir("userdata")
+			os.mkdir(os.getcwd()+"/userdata")
 		except FileExistsError:
 			pass
 		
 		fx_options = Options()
 
-		profile_path = '/home/'+ os.getlogin() + '/facebook_obfuscator/fx_profile'
-		fx_options.add_argument("--profile")
-		fx_options.add_argument(profile_path)
-		fx_options.add_argument("--headless")
+		profile_path = os.getcwd()+'/fx_profile'
 		if profile_exists:
-			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
-		else:
-			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()))
+			fx_options.add_argument("--profile")
+			fx_options.add_argument(profile_path)
+		fx_options.add_argument("--headless")
+		
+		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 		self.driver.set_window_size(1280,1024)
 		sleep(3)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
 
 		t1 = threading.Thread(target=self.take_screenshot, args=[])
 		t1.start()
-
-		if os.path.isfile('userdata/avg_daily_posts'):
-			with open('userdata/avg_daily_posts','r') as f:
-				avg_amount_of_likes_per_day = int(f.read())
-		else:
-			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts()
-			with open('userdata/avg_daily_posts','w') as f:
-				f.write(str(avg_amount_of_likes_per_day))
 		
 		# get tables from database
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
-
 		try:
 			c.execute("SELECT category FROM categories")
 		except sqlite3.OperationalError:
@@ -111,6 +100,14 @@ class BOT:
 						scr = gettempdir() + '/' + i
 						os.remove(scr+'/lock')
 						copytree(scr, profile_path)
+
+		if os.path.isfile(os.getcwd()+'/'+'userdata/avg_daily_posts'):
+			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','r') as f:
+				avg_amount_of_likes_per_day = int(f.read())
+		else:
+			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts()
+			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','w') as f:
+				f.write(str(avg_amount_of_likes_per_day))
 
 		if (keyword,) not in keywords_in_db:
 			categID = new_keyword(keyword)
@@ -163,7 +160,7 @@ class BOT:
 			
 			rand_site = rand_fb_site()
 			self.driver.get(rand_site)
-			# wait between 10s and 10 hours
+			# wait between 10 s and 10 h
 			randtime = rand_dist()
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
@@ -183,13 +180,13 @@ class BOT:
 			if QUIT_DRIVER.value: break
 
 	def login(self, key):
-		write_log(get_date()+": "+"Logging in")
+		write_log(get_date()+": "+"Logging in...")
 		self.driver.get("https://www.facebook.com")
 		self.driver.find_element(By.XPATH,"//*[text() = 'Allow All Cookies']").click()
 		sleep(1)
 		if QUIT_DRIVER.value: return
 
-		with open('.saved_data','r') as f:
+		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
 			email = text[0]
@@ -258,7 +255,7 @@ class BOT:
 		if first_visit:
 			# Like page
 			write_log(get_date()+": "+"First visit on: "+pagename)
-			os.mkdir("userdata/"+pagename_short)
+			os.mkdir(os.getcwd()+'/'+"userdata/"+pagename_short)
 			try:
 				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Like"]')
 				main_element.click()
@@ -325,7 +322,7 @@ class BOT:
 					
 						# Save screenshot
 						data = article_element.screenshot_as_png
-						with open("userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
+						with open(os.getcwd()+'/'+"userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
 							f.write(data)
 
 						# Like post
@@ -357,7 +354,7 @@ class BOT:
 	def take_screenshot(self, ):
 		while not QUIT_DRIVER.value:
 			if not WAITING_LONG.value:
-				self.driver.save_screenshot(".screenshot.png")
+				self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
 			sleep(1)
 		
 	def quit_bot(self, thread):
@@ -391,7 +388,7 @@ class Userinterface(tk.Frame):
 		self.start_button.grid(row=0,column=2,sticky='e')
 
 		########### Screenshot ###########
-		image = Image.open("Start.png")
+		image = Image.open(os.getcwd()+'/'+"Start.png")
 		resized_image = image.resize((800, 600))
 		photo = ImageTk.PhotoImage(resized_image)
 		self.screeshot_label = tk.Label(self.mainwindow, image = photo)
@@ -405,7 +402,7 @@ class Userinterface(tk.Frame):
 		self.textbox.grid(column=0, row=3, sticky='w', columnspan=3)
 		
 	def get_last_log(self):
-		with open('bot_logs.log','rb') as f:
+		with open(os.getcwd()+'/'+'bot_logs.log','rb') as f:
 			try:
 				f.seek(-2, os.SEEK_END)
 				while f.read(1) != b'\n':
@@ -425,7 +422,7 @@ class Userinterface(tk.Frame):
 			self.previous_last_log = last_log
 			self.textbox.yview(tk.END)
 			try:
-				image = Image.open(".screenshot.png")
+				image = Image.open(os.getcwd()+'/'+".screenshot.png")
 				resized_image = image.resize((800, 600))
 				photo = ImageTk.PhotoImage(resized_image)
 				self.screeshot_label.image = photo
@@ -545,7 +542,7 @@ def rand_fb_site():
 
 def write_log(text):
 	print(text)
-	with open("bot_logs.log",'a') as f:
+	with open(os.getcwd()+'/'+"bot_logs.log",'a') as f:
 		f.write(text+'\n')
 
 def get_date():
@@ -554,7 +551,7 @@ def get_date():
 	return formatted_date
 
 def main():
-	if not os.path.isfile('.saved_data'):
+	if not os.path.isfile(os.getcwd()+'/'+'.saved_data'):
 		first_launch = First_launch_UI()
 		first_launch.start()
 		key = first_launch.h_password
@@ -567,14 +564,6 @@ def main():
 		key = check_pass.h_password
 		check_pass.stop()
 		del check_pass
-
-	'''
-	with open('.saved_data','r') as f:
-		text = f.read()
-		text = text.split('\n')
-		encp = text[1]
-	print(aes_decrypt(encp,key))
-	'''
 
 	root = tk.Tk()
 	root.resizable(False, False)

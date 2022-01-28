@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 from crypto import Hash
 from base64 import b64encode
@@ -51,7 +52,7 @@ class Create_Password_UI(tk.Tk):
 		self.destroy()
 
 	def close(self):
-		exit()
+		sys.exit()
 
 class Enter_Password_UI(tk.Tk):
 	def __init__(self, parent):

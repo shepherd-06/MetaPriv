@@ -1,9 +1,10 @@
 import os
+import sys
 import tkinter as tk
 from base64 import b64encode
 # imports from created files 
 from crypto import Hash, aes_encrypt
-from password_class import Create_Password_UI
+from passwordclass import Create_Password_UI
 
 
 INFO_TEXT = """Welcome to MetaPriv!
@@ -75,7 +76,7 @@ class First_launch_UI:
 		if self.browser.get() == '':
 			self.comment.configure(text="Choose Browser.")
 			return
-		with open('.saved_data','w') as f:
+		with open(os.getcwd()+'/'+'.saved_data','w') as f:
 			f.write(self.Email.get()+'\n')
 			f.write(aes_encrypt(self.Password.get(),self.h_password)+'\n')
 			f.write(self.Keyword.get()+'\n')
@@ -88,7 +89,7 @@ class First_launch_UI:
 		self.mainwindow.mainloop()
 
 	def close(self):
-		exit()
+		sys.exit()
 
 	def choose_password(self):
 		passwrd_class = Create_Password_UI(None)
