@@ -1,4 +1,6 @@
 import tkinter as tk
+from crypto import Hash
+from base64 import b64encode
 
 
 class Create_Password_UI(tk.Tk):
@@ -22,7 +24,7 @@ class Create_Password_UI(tk.Tk):
 		self.comment.grid(row=3, column=0)
 
 		self.check_box = tk.Checkbutton(self, text='Show password', command=self.showpass).grid(row=3, column=1)
-		self.OK_button = tk.Button(self, text="continue", command=self.check_pass).grid(row=3, column=2)
+		self.OK_button = tk.Button(self, text="Continue", command=self.check_pass).grid(row=3, column=2)
 
 	def showpass(self):
 		if self.hidden:
@@ -43,6 +45,54 @@ class Create_Password_UI(tk.Tk):
 		elif len(self.password) < 8:
 			self.comment.configure(text="Min 8 characters!")
 		else:
+			self.quit()
+
+	def stop(self):
+		self.destroy()
+
+	def close(self):
+		exit()
+
+class Enter_Password_UI(tk.Tk):
+	def __init__(self, parent):
+		tk.Tk.__init__(self,parent)
+		self.parent = parent
+		self.protocol('WM_DELETE_WINDOW', self.close)
+		self.grid()
+
+		tk.Label(self, text="Enter password: ").grid(row=1, column=0)
+		self.Password = tk.Entry(self,show='*')
+		self.Password.grid(row=1, column=1, columnspan=2)
+		self.hidden = True
+
+		self.comment = tk.Label(self, text="")
+		self.comment.grid(row=2, column=0)
+
+		self.check_box = tk.Checkbutton(self, text='Show password', command=self.showpass).grid(row=2, column=1)
+		self.OK_button = tk.Button(self, text="Continue", command=self.check_pass).grid(row=2, column=2)
+
+	def showpass(self):
+		if self.hidden:
+			self.Password.configure(show='')
+			self.hidden = False
+		else:
+			self.Password.configure(show='*')
+			self.hidden = True
+
+	def check_pass(self):
+		with open('.saved_data','r') as f:
+			text = f.read()
+			text = text.split('\n')
+			salt = text[4]
+			h_salted_password_compare = text[5]
+
+		self.password = self.Password.get()
+		h_salted_password = b64encode(Hash(salt + self.password)).decode('utf-8')
+
+		if h_salted_password != h_salted_password_compare:
+			self.comment.configure(text="Wrong password, retry!")
+		else:
+			self.h_password = Hash(self.password)
 			self.quit()
 
 	def stop(self):

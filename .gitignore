@@ -1,7 +1,8 @@
 *.log
-.mozilla/
+fx_profile/
 userdata/
 analysisdata/
 .screenshot.png
 .saved_data
 __pycache__/
+tst.py

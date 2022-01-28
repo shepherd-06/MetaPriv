@@ -8,7 +8,9 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
 from time import sleep as Sleep
-from datetime import timedelta
+from datetime import timedelta, datetime
+from tempfile import gettempdir
+from shutil import copytree
 # full imports
 import tkinter as tk
 import tkinter.scrolledtext as ScrolledText
@@ -18,9 +20,11 @@ import random
 import getpass
 import threading
 import sqlite3
+
 # imports from created files 
 from first_launch_class import First_launch_UI
-from other_functions import write_log, rand_dist, rand_fb_site, get_date
+from password_class import Enter_Password_UI
+from crypto import Hash, aes_encrypt, aes_decrypt
 
 
 NORMAL_LOAD_AMMOUNT = 5
@@ -33,28 +37,23 @@ WAITING_LONG = mp.Value('b', False)
 
 class BOT:
 
-	def start_bot(self, eff_privacy):
+	def start_bot(self, eff_privacy, key):
+		tempdirs = []
+		profile_exists = os.path.isdir('fx_profile')
+		if not profile_exists:
+			tempdirs = os.listdir(gettempdir())
+
 		if not os.path.isfile('bot_logs.log'):
 			text = get_date()+": "+"First launch\n"
 			print(text)
 			with open("bot_logs.log", "w") as f:
 				f.write(text)
 
-		profile_path = '.mozilla/firefox/' #'/home/'+ os.getlogin() + 
-		try:
-			profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-esr')][0]
-		except IndexError:
-			profile_path += [a for a in os.listdir(profile_path) if a.endswith('.default-release')][0]
-		#fx_prof = webdriver.FirefoxProfile(profile_path)
+		with open('.saved_data','r') as f:
+			text = f.read()
+			text = text.split('\n')
+			keyword = text[2]
 
-		#exec_path = input("Enter geckodriver executable path:")
-		#exec_path = '/home/'+ os.getlogin() + '/Downloads/geckodriver/geckodriver'
-		#ser = Service(exec_path)
-
-		#keyword = input("Enter search keyword: ")
-		#keyword = keyword.replace(" ","+")
-		#eff_privacy = int(input("Enter desired privacy (1-100): "))
-		keyword = "snowboarding"
 		eff_privacy = eff_privacy / 100
 		
 		try: 
@@ -63,11 +62,19 @@ class BOT:
 			pass
 		
 		fx_options = Options()
+
+		profile_path = '/home/'+ os.getlogin() + '/facebook_obfuscator/fx_profile'
 		fx_options.add_argument("--profile")
 		fx_options.add_argument(profile_path)
 		fx_options.add_argument("--headless")
-		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
+		if profile_exists:
+			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
+		else:
+			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()))
 		self.driver.set_window_size(1280,1024)
+		sleep(3)
+		if QUIT_DRIVER.value: self.quit_bot(t1)
+
 		t1 = threading.Thread(target=self.take_screenshot, args=[])
 		t1.start()
 
@@ -94,6 +101,16 @@ class BOT:
 		self.driver.get(rand_ste)
 		sleep(5)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
+
+		if not profile_exists:
+			self.login(key)
+			tempdirs_2 = os.listdir(gettempdir())
+			for i in tempdirs_2:
+				if i not in tempdirs:
+					if 'mozprofile' in i:
+						scr = gettempdir() + '/' + i
+						os.remove(scr+'/lock')
+						copytree(scr, profile_path)
 
 		if (keyword,) not in keywords_in_db:
 			categID = new_keyword(keyword)
@@ -165,17 +182,24 @@ class BOT:
 			sleep(sec)
 			if QUIT_DRIVER.value: break
 
-	def login(self, ):
+	def login(self, key):
 		write_log(get_date()+": "+"Logging in")
 		self.driver.get("https://www.facebook.com")
-		self.driver.find_element(By.XPATH,"//*[text() = 'Accept All']").click()
+		self.driver.find_element(By.XPATH,"//*[text() = 'Allow All Cookies']").click()
 		sleep(1)
 		if QUIT_DRIVER.value: return
-		email = input("Enter email: ")
-		password = getpass.getpass("Enter password: ")
+
+		with open('.saved_data','r') as f:
+			text = f.read()
+			text = text.split('\n')
+			email = text[0]
+			encp = text[1]
+		password = aes_decrypt(encp, key)
+
 		self.driver.find_element(By.NAME,"email").send_keys(email)
 		self.driver.find_element(By.NAME,"pass").send_keys(password)
-		self.driver.find_element(By.XPATH,"//*[text() = 'log In']").click()
+		self.driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
+		sleep(3)
 
 	def analize_weekly_liked_posts(self, ):
 		write_log(get_date()+": "+"Analyzing daily Facebook interaction...")
@@ -344,7 +368,7 @@ class BOT:
 
 class Userinterface(tk.Frame):
 
-	def __init__(self, parent, *args, **kwargs):
+	def __init__(self, parent, key, *args, **kwargs):
 		self.BOT_started = False
 		tk.Frame.__init__(self, parent, *args, **kwargs)
 		self.mainwindow = parent
@@ -355,7 +379,7 @@ class Userinterface(tk.Frame):
 		
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
-		self.slider_label = tk.Label(self.mainwindow,text='Effective Privacy (0-100):')
+		self.slider_label = tk.Label(self.mainwindow,text='Enter desired privacy level (0-100):')
 		self.slider_label.grid(column=0,row=0,sticky='w')
 		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal',
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5)
@@ -363,7 +387,7 @@ class Userinterface(tk.Frame):
 		self.slider.grid(column=1,row=0,sticky='we')
 
 		########### Start button ###########
-		self.start_button = tk.Button(self.mainwindow, text="Start", command=self.strt)
+		self.start_button = tk.Button(self.mainwindow, text="Start", command= lambda: self.strt(key) )
 		self.start_button.grid(row=0,column=2,sticky='e')
 
 		########### Screenshot ###########
@@ -412,13 +436,13 @@ class Userinterface(tk.Frame):
 				pass
 		self.mainwindow.after(2000,self.update_ui)
 
-	def strt(self):
+	def strt(self,key):
 		self.textbox.configure(state='normal')
 		self.textbox.insert(tk.END, get_date()+": "+"Starting bot...\n")
 		self.textbox.configure(state='disabled')
 		priv = int(self.eff_privacy.get())
 		self.BOT = BOT()
-		self.bot_process = mp.Process(target=self.BOT.start_bot,args=[priv])
+		self.bot_process = mp.Process(target=self.BOT.start_bot,args=[priv, key])
 		self.bot_process.start()
 		self.textbox.configure(state='normal')
 		self.textbox.insert(tk.END, get_date()+": "+"Bot process started...\n")
@@ -487,16 +511,74 @@ def create_categ_table():
 	conn.commit()
 	conn.close()
 
+def rand_dist():
+	rand_number = random.randint(1,23)
+	if rand_number in [1,2,3]:
+		return random.randint(10,ONE_HOUR)
+	elif rand_number in [4,5,6]:
+		return random.randint(ONE_HOUR,2*ONE_HOUR)
+	elif rand_number in [7,8,9,10]:
+		return random.randint(2*ONE_HOUR,3*ONE_HOUR)
+	elif rand_number in [11,12,13]:
+		return random.randint(3*ONE_HOUR,4*ONE_HOUR)
+	elif rand_number in [14,15,16]:
+		return random.randint(4*ONE_HOUR,5*ONE_HOUR)
+	elif rand_number in [17,18]:
+		return random.randint(5*ONE_HOUR,6*ONE_HOUR)
+	elif rand_number in [19,20]:
+		return random.randint(6*ONE_HOUR,7*ONE_HOUR)
+	elif rand_number in [21]:
+		return random.randint(7*ONE_HOUR,8*ONE_HOUR)
+	elif rand_number in [22]:
+		return random.randint(8*ONE_HOUR,9*ONE_HOUR)
+	elif rand_number in [23]:
+		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
+
+def rand_fb_site():
+	marketplace = 'https://www.facebook.com/marketplace/?ref=bookmark'
+	notifications = "https://www.facebook.com/notifications"
+	friends = 'https://www.facebook.com/friends'
+	settings = 'https://www.facebook.com/settings/?tab=account'
+	welcome_pg = 'https://www.facebook.com/?sk=welcome'
+	sites = [marketplace,notifications,friends,settings,welcome_pg]
+	return sites[random.randint(0,4)]
+
+def write_log(text):
+	print(text)
+	with open("bot_logs.log",'a') as f:
+		f.write(text+'\n')
+
+def get_date():
+	now = datetime.now()
+	formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
+	return formatted_date
+
 def main():
 	if not os.path.isfile('.saved_data'):
 		first_launch = First_launch_UI()
 		first_launch.start()
 		key = first_launch.h_password
 		del first_launch
+	else:
+		check_pass = Enter_Password_UI(None)
+		check_pass.title("Enter password")
+		check_pass.resizable(False, False)
+		check_pass.mainloop()
+		key = check_pass.h_password
+		check_pass.stop()
+		del check_pass
+
+	'''
+	with open('.saved_data','r') as f:
+		text = f.read()
+		text = text.split('\n')
+		encp = text[1]
+	print(aes_decrypt(encp,key))
+	'''
 
 	root = tk.Tk()
 	root.resizable(False, False)
-	Userinterface(root)
+	Userinterface(root,key)
 	root.mainloop()
 	
 main()

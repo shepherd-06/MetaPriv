@@ -1,8 +1,8 @@
 import os
 import tkinter as tk
-from base64 import b64encode, b64decode
+from base64 import b64encode
 # imports from created files 
-from crypto import Hash, aes_encrypt, aes_decrypt
+from crypto import Hash, aes_encrypt
 from password_class import Create_Password_UI
 
 
@@ -77,7 +77,7 @@ class First_launch_UI:
 			return
 		with open('.saved_data','w') as f:
 			f.write(self.Email.get()+'\n')
-			f.write(b64encode(aes_encrypt(self.Password.get(),self.h_password)).decode('utf-8')+'\n')
+			f.write(aes_encrypt(self.Password.get(),self.h_password)+'\n')
 			f.write(self.Keyword.get()+'\n')
 			f.write(self.browser.get()+'\n')
 			f.write(self.salt+'\n')
