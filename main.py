@@ -16,7 +16,6 @@ from time import sleep as Sleep
 from datetime import timedelta, datetime
 from tempfile import gettempdir
 from shutil import copytree
-from numpy import zeros, uint8
 # full imports
 import tkinter as tk
 import tkinter.scrolledtext as ScrolledText
