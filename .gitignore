@@ -3,3 +3,5 @@
 userdata/
 analysisdata/
 .screenshot.png
+.saved_data
+__pycache__/
