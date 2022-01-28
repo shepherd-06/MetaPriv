@@ -1,15 +1,22 @@
-# partial imports
+# selenium imports
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
+## for firefox
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
+## for chrome
+from selenium.webdriver.chrome.options import Options as COptions
+from selenium.webdriver.chrome.service import Service as CService
+from webdriver_manager.chrome import ChromeDriverManager
+# partial imports
 from time import sleep as Sleep
 from datetime import timedelta, datetime
 from tempfile import gettempdir
 from shutil import copytree
+from numpy import zeros, uint8
 # full imports
 import tkinter as tk
 import tkinter.scrolledtext as ScrolledText
@@ -25,7 +32,7 @@ from passwordclass import Enter_Password_UI
 from crypto import Hash, aes_encrypt, aes_decrypt
 
 
-NORMAL_LOAD_AMMOUNT = 5
+NORMAL_LOAD_AMMOUNT = 7
 ONE_HOUR = 3600
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
@@ -36,10 +43,10 @@ WAITING_LONG = mp.Value('b', False)
 class BOT:
 
 	def start_bot(self, eff_privacy, key):
-		tempdirs = []
-		profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
-		if not profile_exists:
-			tempdirs = os.listdir(gettempdir())
+		with open(os.getcwd()+'/'+'.saved_data','r') as f:
+			text = f.read()
+			text = text.split('\n')
+			browser = text[3]
 
 		if not os.path.isfile(os.getcwd()+'/bot_logs.log'):
 			text = get_date()+": "+"First launch\n"
@@ -47,32 +54,55 @@ class BOT:
 			with open(os.getcwd()+'/'+"bot_logs.log", "w") as f:
 				f.write(text)
 
+		tempdirs = []
+		if browser == 'Firefox':
+			profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
+			if not profile_exists:
+				tempdirs = os.listdir(gettempdir())
+
+			fx_options = Options()
+			profile_path = os.getcwd()+'/fx_profile'
+			if profile_exists:
+				fx_options.add_argument("--profile")
+				fx_options.add_argument(profile_path)
+			fx_options.add_argument("--headless")
+			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
+
+		elif browser == 'Chrome':
+			profile_exists = os.path.isdir(os.getcwd()+'/ch_profile')
+			if not profile_exists:
+				tempdirs = os.listdir(gettempdir())
+
+			ch_options = COptions()
+			prefs = {"profile.default_content_setting_values.notifications" : 2}
+			ch_options.add_experimental_option("prefs",prefs)
+			ch_options.add_argument("--disable-infobars")
+			ch_options.add_argument("--headless")
+
+			profile_path = os.getcwd()+'/ch_profile'
+			if profile_exists:
+				argumnt = "--user-data-dir="+profile_path
+				ch_options.add_argument(argumnt)
+			self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
+
+		self.driver.set_window_size(1400,700)
+
+		eff_privacy = eff_privacy / 100
 		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
 			keyword = text[2]
 
-		eff_privacy = eff_privacy / 100
-		
-		try: 
-			os.mkdir(os.getcwd()+"/userdata")
-		except FileExistsError:
-			pass
-		
-		fx_options = Options()
-		profile_path = os.getcwd()+'/fx_profile'
-		if profile_exists:
-			fx_options.add_argument("--profile")
-			fx_options.add_argument(profile_path)
-		fx_options.add_argument("--headless")
-		
-		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
-		self.driver.set_window_size(1400,700)
 		sleep(3)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
 
 		t1 = threading.Thread(target=self.take_screenshot, args=[])
 		t1.start()
+
+		try: 
+			os.mkdir(os.getcwd()+"/userdata")
+		except FileExistsError:
+			pass
 		
 		# get tables from database
 		conn = sqlite3.connect('userdata/pages.db')
@@ -86,19 +116,33 @@ class BOT:
 
 		rand_ste = rand_fb_site()
 		self.driver.get(rand_ste)
+
 		sleep(5)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
-
+		
 		if not profile_exists:
 			self.login(key)
 			tempdirs_2 = os.listdir(gettempdir())
-			for i in tempdirs_2:
-				if i not in tempdirs:
-					if 'mozprofile' in i:
-						scr = gettempdir() + '/' + i
-						os.remove(scr+'/lock')
-						copytree(scr, profile_path)
+			if browser == 'Firefox':
+				for i in tempdirs_2:
+					if i not in tempdirs:
+						if 'mozprofile' in i:
+							write_log(get_date()+": "+"Copying profile folder...")
+							src = gettempdir() + '/' + i
+							os.remove(src+'/lock')
+							copytree(src, profile_path)
+			elif browser == 'Chrome':
+				for i in tempdirs_2:
+					if i not in tempdirs:
+						if 'com.google.Chrome' in i:
+							src = gettempdir()+ '/' + i
+							if "Default" in os.listdir(src):
+								write_log(get_date()+": "+"Copying profile folder... (~30s)")
+								sleep(30)
+								if QUIT_DRIVER.value: self.quit_bot(t1)
+								copytree(src, profile_path)
 
+		
 		if os.path.isfile(os.getcwd()+'/'+'userdata/avg_daily_posts'):
 			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','r') as f:
 				avg_amount_of_likes_per_day = int(f.read())
@@ -307,12 +351,13 @@ class BOT:
 						link_element = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
 
 						action = ActionChains(self.driver)
-						try: action.move_to_element(link_element).perform()
-						except: pass
+						#try: 
+						action.move_to_element(link_element).perform()
+						#except: pass
 						if QUIT_DRIVER.value: break
-						sleep(1)
-						action.move_by_offset(500, 0).perform()
-						sleep(2)
+						sleep(4)
+						#action.move_by_offset(500, 0).perform()
+						#sleep(2)
 						if QUIT_DRIVER.value: break
 						
 						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
@@ -338,7 +383,7 @@ class BOT:
 						if QUIT_DRIVER.value: break
 						del action
 				except Exception as e:
-					write_log(get_date()+": "+e)
+					print(get_date()+":","DEBUG:", e)
 
 			# avg pages per day == 7
 			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
@@ -386,9 +431,8 @@ class Userinterface(tk.Frame):
 		self.start_button.grid(row=0,column=2,sticky='e')
 
 		########### Screenshot ###########
-		photo = tk.PhotoImage(file=os.getcwd()+'/'+"Start.png")
-		self.screeshot_label = tk.Label(self.mainwindow, image = photo)
-		self.screeshot_label.image = photo
+		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=700, background='gray85').grid(row=1, column=0,columnspan=3)
+		self.screeshot_label = tk.Label(self.mainwindow)
 		self.screeshot_label.grid(row=1, column=0,columnspan=3)
 
 		########### Logs ###########

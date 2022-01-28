@@ -1,5 +1,6 @@
 *.log
 fx_profile/
+ch_profile/
 userdata/
 analysisdata/
 .screenshot.png
