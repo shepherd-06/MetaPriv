@@ -42,176 +42,182 @@ WAITING_LONG = mp.Value('b', False)
 class BOT:
 
 	def start_bot(self, eff_privacy, key):
-		with open(os.getcwd()+'/'+'.saved_data','r') as f:
-			text = f.read()
-			text = text.split('\n')
-			browser = text[3]
-
-		if not os.path.isfile(os.getcwd()+'/bot_logs.log'):
-			text = get_date()+": "+"First launch\n"
-			print(text)
-			with open(os.getcwd()+'/'+"bot_logs.log", "w") as f:
-				f.write(text)
-
-		tempdirs = []
-		if browser == 'Firefox':
-			profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
-			if not profile_exists:
-				tempdirs = os.listdir(gettempdir())
-
-			fx_options = Options()
-			profile_path = os.getcwd()+'/fx_profile'
-			if profile_exists:
-				fx_options.add_argument("--profile")
-				fx_options.add_argument(profile_path)
-			fx_options.add_argument("--headless")
-			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
-
-		elif browser == 'Chrome':
-			profile_exists = os.path.isdir(os.getcwd()+'/ch_profile')
-			if not profile_exists:
-				tempdirs = os.listdir(gettempdir())
-
-			ch_options = COptions()
-			prefs = {"profile.default_content_setting_values.notifications" : 2}
-			ch_options.add_experimental_option("prefs",prefs)
-			ch_options.add_argument("--disable-infobars")
-			ch_options.add_argument("--headless")
-
-			profile_path = os.getcwd()+'/ch_profile'
-			if profile_exists:
-				argumnt = "--user-data-dir="+profile_path
-				ch_options.add_argument(argumnt)
-			self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
-
-		self.driver.set_window_size(1400,700)
-
-		eff_privacy = eff_privacy / 100
-		with open(os.getcwd()+'/'+'.saved_data','r') as f:
-			text = f.read()
-			text = text.split('\n')
-			keyword = text[2]
-
-		sleep(3)
-		if QUIT_DRIVER.value: self.quit_bot(t1)
-
-		t1 = threading.Thread(target=self.take_screenshot, args=[])
-		t1.start()
-
-		try: 
-			os.mkdir(os.getcwd()+"/userdata")
-		except FileExistsError:
-			pass
-		
-		# get tables from database
-		conn = sqlite3.connect('userdata/pages.db')
-		c = conn.cursor()
 		try:
-			c.execute("SELECT category FROM categories")
-		except sqlite3.OperationalError:
-			create_categ_table()
-		keywords_in_db = c.fetchall()
-		conn.close()
+			with open(os.getcwd()+'/'+'.saved_data','r') as f:
+				text = f.read()
+				text = text.split('\n')
+				browser = text[3]
 
-		rand_ste = rand_fb_site()
-		self.driver.get(rand_ste)
+			if not os.path.isfile(os.getcwd()+'/bot_logs.log'):
+				text = get_date()+": "+"First launch\n"
+				print(text)
+				with open(os.getcwd()+'/'+"bot_logs.log", "w") as f:
+					f.write(text)
 
-		sleep(5)
-		if QUIT_DRIVER.value: self.quit_bot(t1)
-		
-		if not profile_exists:
-			self.login(key)
-			tempdirs_2 = os.listdir(gettempdir())
+			tempdirs = []
 			if browser == 'Firefox':
-				for i in tempdirs_2:
-					if i not in tempdirs:
-						if 'mozprofile' in i:
-							write_log(get_date()+": "+"Copying profile folder...")
-							src = gettempdir() + '/' + i
-							os.remove(src+'/lock')
-							copytree(src, profile_path)
+				profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
+				if not profile_exists:
+					tempdirs = os.listdir(gettempdir())
+
+				fx_options = Options()
+				profile_path = os.getcwd()+'/fx_profile'
+				if profile_exists:
+					fx_options.add_argument("--profile")
+					fx_options.add_argument(profile_path)
+				fx_options.add_argument("--headless")
+				self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
+				self.driver.set_window_size(1400,814)
+
 			elif browser == 'Chrome':
-				for i in tempdirs_2:
-					if i not in tempdirs:
-						if 'com.google.Chrome' in i:
-							src = gettempdir()+ '/' + i
-							if "Default" in os.listdir(src):
-								write_log(get_date()+": "+"Copying profile folder... (~30s)")
-								sleep(30)
-								if QUIT_DRIVER.value: self.quit_bot(t1)
-								copytree(src, profile_path)
+				profile_exists = os.path.isdir(os.getcwd()+'/ch_profile')
+				if not profile_exists:
+					tempdirs = os.listdir(gettempdir())
 
-		
-		if os.path.isfile(os.getcwd()+'/'+'userdata/avg_daily_posts'):
-			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','r') as f:
-				avg_amount_of_likes_per_day = int(f.read())
-		else:
-			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts()
-			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','w') as f:
-				f.write(str(avg_amount_of_likes_per_day))
+				ch_options = COptions()
+				prefs = {"profile.default_content_setting_values.notifications" : 2}
+				ch_options.add_experimental_option("prefs",prefs)
+				ch_options.add_argument("--disable-infobars")
+				ch_options.add_argument("--headless")
 
-		if (keyword,) not in keywords_in_db:
-			categID = new_keyword(keyword)
-			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
-			write_log(get_date()+": "+"GET: "+ search_url)
-			self.driver.get(search_url)
-			sleep(5)
+				profile_path = os.getcwd()+'/ch_profile'
+				if profile_exists:
+					argumnt = "--user-data-dir="+profile_path
+					ch_options.add_argument(argumnt)
+				self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
+				self.driver.set_window_size(1400,700)
+
+			eff_privacy = eff_privacy / 100
+			with open(os.getcwd()+'/'+'.saved_data','r') as f:
+				text = f.read()
+				text = text.split('\n')
+				keyword = text[2]
+
+			sleep(3)
 			if QUIT_DRIVER.value: self.quit_bot(t1)
 
-			page_urls = self.select_pages(categID)
-			info = "Pages selected for keyword '{}':".format(keyword)
-			write_log(get_date()+": "+info)
-			for page_url in page_urls:
-				write_log(get_date()+": "+"   "+ page_url[0])
+			t1 = threading.Thread(target=self.take_screenshot, args=[])
+			t1.start()
 
+			try: 
+				os.mkdir(os.getcwd()+"/userdata")
+			except FileExistsError:
+				pass
+			
+			# get tables from database
 			conn = sqlite3.connect('userdata/pages.db')
 			c = conn.cursor()
-			c.executemany('INSERT INTO pages (URL, categID) \
-				  		   VALUES (?, ?)', page_urls);
-			conn.commit()
+			try:
+				c.execute("SELECT category FROM categories")
+			except sqlite3.OperationalError:
+				create_categ_table()
+			keywords_in_db = c.fetchall()
 			conn.close()
 
-		# get tables from database
-		conn = sqlite3.connect('userdata/pages.db')
-		c = conn.cursor()
-		c.execute("SELECT * FROM pages")
-		urls = c.fetchall()
-		conn.close()
-		random.shuffle(urls)
+			rand_ste = rand_fb_site()
+			self.driver.get(rand_ste)
 
-		# get tables from database
-		conn = sqlite3.connect('userdata/likes.db')
-		c = conn.cursor()
-		c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-		urls_in_db = c.fetchall()
-		conn.close()
-
-		for url in urls:
-			url = url[1]
-			write_log(get_date()+": "+"GET: "+ url)
-			self.driver.get(url)
-			sleep(10)
-			if QUIT_DRIVER.value: break
-
-			if ((url,)) in urls_in_db:
-				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
-			else:
-				new_page(url)
-				self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy)
+			sleep(5)
+			if QUIT_DRIVER.value: self.quit_bot(t1)
 			
-			rand_site = rand_fb_site()
-			self.driver.get(rand_site)
-			# wait between 10 s and 10 h
-			randtime = rand_dist()
-			if not QUIT_DRIVER.value:
-				time_formatted = str(timedelta(seconds = randtime))
-				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
-			sleep(2)
-			if QUIT_DRIVER.value: break
-			sleep(randtime, True)
-			if QUIT_DRIVER.value: break
+			if not profile_exists:
+				self.login(key)
+				tempdirs_2 = os.listdir(gettempdir())
+				if browser == 'Firefox':
+					for i in tempdirs_2:
+						if i not in tempdirs:
+							if 'mozprofile' in i:
+								write_log(get_date()+": "+"Copying profile folder...")
+								src = gettempdir() + '/' + i
+								os.remove(src+'/lock')
+								copytree(src, profile_path)
+				elif browser == 'Chrome':
+					for i in tempdirs_2:
+						if i not in tempdirs:
+							if 'com.google.Chrome' in i:
+								src = gettempdir()+ '/' + i
+								if "Default" in os.listdir(src):
+									write_log(get_date()+": "+"Copying profile folder... (~30s)")
+									sleep(30)
+									if QUIT_DRIVER.value: self.quit_bot(t1)
+									copytree(src, profile_path)
 
-		self.quit_bot(t1)
+			
+			if os.path.isfile(os.getcwd()+'/'+'userdata/avg_daily_posts'):
+				with open(os.getcwd()+'/'+'userdata/avg_daily_posts','r') as f:
+					avg_amount_of_likes_per_day = int(f.read())
+			else:
+				avg_amount_of_likes_per_day = self.analize_weekly_liked_posts()
+				if QUIT_DRIVER.value: self.quit_bot(t1)
+				with open(os.getcwd()+'/'+'userdata/avg_daily_posts','w') as f:
+					f.write(str(avg_amount_of_likes_per_day))
+
+			if (keyword,) not in keywords_in_db:
+				categID = new_keyword(keyword)
+				search_url = 'https://www.facebook.com/search/pages?q=' + keyword
+				write_log(get_date()+": "+"GET: "+ search_url)
+				self.driver.get(search_url)
+				sleep(5)
+				if QUIT_DRIVER.value: self.quit_bot(t1)
+
+				page_urls = self.select_pages(categID)
+				if QUIT_DRIVER.value: self.quit_bot(t1)
+				info = "Pages selected for keyword '{}':".format(keyword)
+				write_log(get_date()+": "+info)
+				for page_url in page_urls:
+					write_log(get_date()+": "+"   "+ page_url[0])
+
+				conn = sqlite3.connect('userdata/pages.db')
+				c = conn.cursor()
+				c.executemany('INSERT INTO pages (URL, categID) \
+					  		   VALUES (?, ?)', page_urls);
+				conn.commit()
+				conn.close()
+
+			# get tables from database
+			conn = sqlite3.connect('userdata/pages.db')
+			c = conn.cursor()
+			c.execute("SELECT * FROM pages")
+			urls = c.fetchall()
+			conn.close()
+			random.shuffle(urls)
+
+			# get tables from database
+			conn = sqlite3.connect('userdata/likes.db')
+			c = conn.cursor()
+			c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+			urls_in_db = c.fetchall()
+			conn.close()
+			if QUIT_DRIVER.value: self.quit_bot(t1)
+
+			for url in urls:
+				url = url[1]
+				write_log(get_date()+": "+"GET: "+ url)
+				self.driver.get(url)
+				sleep(10)
+				if QUIT_DRIVER.value: break
+
+				if ((url,)) in urls_in_db:
+					self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
+				else:
+					new_page(url)
+					self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy)
+				
+				rand_site = rand_fb_site()
+				self.driver.get(rand_site)
+				# wait between 10 s and 10 h
+				randtime = rand_dist()
+				if not QUIT_DRIVER.value:
+					time_formatted = str(timedelta(seconds = randtime))
+					write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
+				sleep(2)
+				if QUIT_DRIVER.value: break
+				sleep(randtime, True)
+				if QUIT_DRIVER.value: break
+
+			self.quit_bot(t1)
+		except:
+			self.quit_bot()
 
 	def load_more(self, n, sec):
 		# Scroll down n times to load more elements
@@ -248,7 +254,7 @@ class BOT:
 			if len(days) > 8:
 				break
 			sleep(5)
-			if QUIT_DRIVER.value: break
+			if QUIT_DRIVER.value: return
 
 		days = days[:7]
 		weekly_amount_of_likes = []
@@ -271,6 +277,7 @@ class BOT:
 		urls = [a.get_attribute('href') for a in urls]
 		return_urls = []
 		for url in urls:
+			if QUIT_DRIVER.value: return
 			if url.endswith('?__tn__=%3C'):
 				return_urls.append((url.split('?__tn__=%3C')[0],categID))
 		return return_urls
@@ -399,9 +406,10 @@ class BOT:
 				self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
 			sleep(1)
 		
-	def quit_bot(self, thread):
+	def quit_bot(self, thread = None):
 		self.driver.quit()
-		thread.join()
+		if thread != None:
+			thread.join()
 
 #########################################################################################################################
 
