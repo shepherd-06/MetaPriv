@@ -37,8 +37,26 @@ QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
 WAITING_LONG = mp.Value('b', False)
 W = 'white'
-INFO_TEXT = """  Choose desired noise level. 100 means double the amount of your normal traffic. \
-Value can be changed on next run. To exit, close the window (wait a few seconds)"""
+INFO_TEXT = """[*] INFO [*]
+In this window you should choose your desired privacy level. 
+Choose 100 to have the noise amount as double the amount of 
+your normal traffic. You can be change the privacy value 
+on your next run. 
+
+If this is your first run, MetaPriv will analize your daily 
+interaction with Facebook from the last week and, based on 
+that and your input, decide how much noise to add to your 
+Facebook account. 
+
+To start adding noise to your account, press the button Start.
+To exit MetaPriv, close the window by pressing X on your window 
+border. Sometimes it may take few seconds to close. 
+
+If you want to reset MetaPriv, delete the hidden saved_data
+file. Note that your local password will not work anymore.
+For more information please refer to the documentation in the
+github repository.
+"""
 
 #########################################################################################################################
 
@@ -213,7 +231,7 @@ class BOT:
 				if not QUIT_DRIVER.value:
 					time_formatted = str(timedelta(seconds = randtime))
 					write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
-				sleep(2)
+				sleep(5)
 				if QUIT_DRIVER.value: break
 				sleep(randtime, True)
 				if QUIT_DRIVER.value: break
@@ -365,8 +383,8 @@ class BOT:
 						#except: pass
 						if QUIT_DRIVER.value: break
 						sleep(4)
-						#action.move_by_offset(500, 0).perform()
-						#sleep(2)
+						action.move_by_offset(500, 0).perform()
+						sleep(2)
 						if QUIT_DRIVER.value: break
 						
 						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
@@ -435,19 +453,19 @@ class Userinterface(tk.Frame):
 		self.mainwindow.grid_columnconfigure(1, weight=1)
 		self.mainwindow.grid_columnconfigure(2, weight=1)
 		
-		########### Screenshot ###########
+		########### Canvas ###########
 		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=700, background=W)
 		self.canvas.grid(row=1, column=0,columnspan=3)
 
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
-		#self.slider_label = tk.Label(self.mainwindow,text='Privacy:', font=50, background=W)
-		#self.slider_label.grid(column=0,row=1,sticky='nw')
+		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
+			font=('TkFixedFont', 20, '')).grid(row=1, column=1,sticky='n')
 		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5,length=1000,width=18,
-			label=INFO_TEXT,font=15,troughcolor='grey',highlightbackground=W)
+			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.set(55)
-		self.slider.grid(column=0,row=1,sticky='new', columnspan=3)
+		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
 
 		########### Start button ###########
 		self.start_button = tk.Button(self.mainwindow, text="Start", command= lambda: self.strt(key),
@@ -455,11 +473,11 @@ class Userinterface(tk.Frame):
 		self.start_button.grid(row=1,column=2,sticky='ne')
 		
 		########### Logs ###########
-		self.grid(column=0, row=3, sticky='ew', columnspan=3)
+		self.grid(column=0, row=2, sticky='ew', columnspan=3)
 		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=154, 
 			background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
-		self.textbox.grid(column=0, row=3, sticky='w', columnspan=3)
+		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
 		
 	def get_last_log(self):
 		with open(os.getcwd()+'/'+'bot_logs.log','rb') as f:
@@ -508,8 +526,10 @@ class Userinterface(tk.Frame):
 		self.start_button["state"] = "disabled"
 		self.slider["state"] = "disabled"
 		sleep(5)
+		########### Screenshot ###########
 		self.screeshot_label = tk.Label(self.mainwindow)
 		self.screeshot_label.grid(row=1, column=0,columnspan=3)
+
 		self.mainwindow.after(0,self.update_ui)
 		
 	def close(self):
