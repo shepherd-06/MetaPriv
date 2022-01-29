@@ -36,6 +36,9 @@ ONE_HOUR = 3600
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
 WAITING_LONG = mp.Value('b', False)
+W = 'white'
+INFO_TEXT = """  Choose desired noise level. 100 means double the amount of your normal traffic. \
+Value can be changed on next run. To exit, close the window (wait a few seconds)"""
 
 #########################################################################################################################
 
@@ -423,29 +426,39 @@ class Userinterface(tk.Frame):
 
 		self.mainwindow.option_add('*tearOff', 'FALSE')
 		self.mainwindow.protocol('WM_DELETE_WINDOW', self.close)
+
+		self.mainwindow.grid_rowconfigure(0, weight=1)
+		self.mainwindow.grid_rowconfigure(1, weight=1)
+		self.mainwindow.grid_rowconfigure(2, weight=1)
+		self.mainwindow.grid_rowconfigure(3, weight=1)
+		self.mainwindow.grid_columnconfigure(0, weight=1)
+		self.mainwindow.grid_columnconfigure(1, weight=1)
+		self.mainwindow.grid_columnconfigure(2, weight=1)
 		
+		########### Screenshot ###########
+		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=700, background=W)
+		self.canvas.grid(row=1, column=0,columnspan=3)
+
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
-		self.slider_label = tk.Label(self.mainwindow,text='Enter desired privacy level (0-100):')
-		self.slider_label.grid(column=0,row=0,sticky='w')
-		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal',
-			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5)
+		#self.slider_label = tk.Label(self.mainwindow,text='Privacy:', font=50, background=W)
+		#self.slider_label.grid(column=0,row=1,sticky='nw')
+		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
+			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5,length=1000,width=18,
+			label=INFO_TEXT,font=15,troughcolor='grey',highlightbackground=W)
 		self.slider.set(55)
-		self.slider.grid(column=1,row=0,sticky='we')
+		self.slider.grid(column=0,row=1,sticky='new', columnspan=3)
 
 		########### Start button ###########
-		self.start_button = tk.Button(self.mainwindow, text="Start", command= lambda: self.strt(key) )
-		self.start_button.grid(row=0,column=2,sticky='e')
-
-		########### Screenshot ###########
-		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=700, background='gray85').grid(row=1, column=0,columnspan=3)
-		self.screeshot_label = tk.Label(self.mainwindow)
-		self.screeshot_label.grid(row=1, column=0,columnspan=3)
-
+		self.start_button = tk.Button(self.mainwindow, text="Start", command= lambda: self.strt(key),
+			font=10, background=W)
+		self.start_button.grid(row=1,column=2,sticky='ne')
+		
 		########### Logs ###########
 		self.grid(column=0, row=3, sticky='ew', columnspan=3)
-		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=12, width=198)
-		self.textbox.configure(font='TkFixedFont')
+		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=154, 
+			background='black')
+		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=3, sticky='w', columnspan=3)
 		
 	def get_last_log(self):
@@ -494,8 +507,10 @@ class Userinterface(tk.Frame):
 		except FileNotFoundError: sleep(3); self.previous_last_log = self.get_last_log()
 		self.start_button["state"] = "disabled"
 		self.slider["state"] = "disabled"
-		sleep(3)
-		self.mainwindow.after(2000,self.update_ui)
+		sleep(5)
+		self.screeshot_label = tk.Label(self.mainwindow)
+		self.screeshot_label.grid(row=1, column=0,columnspan=3)
+		self.mainwindow.after(0,self.update_ui)
 		
 	def close(self):
 		BREAK_SLEEP.value = True
