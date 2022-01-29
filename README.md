@@ -1,4 +1,4 @@
-# facebook_obfuscator
+# MetaPriv
 Requirements:
 - python3
 - python3 libraries: pip install -r requirements.txt
