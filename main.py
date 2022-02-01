@@ -16,6 +16,7 @@ from time import sleep as Sleep
 from datetime import timedelta, datetime
 from tempfile import gettempdir
 from shutil import copytree
+from base64 import b64encode
 # full imports
 import tkinter as tk
 import tkinter.scrolledtext as ScrolledText
@@ -25,6 +26,7 @@ import random
 import getpass
 import threading
 import sqlite3
+import sys
 # imports from created files 
 from firstlaunchclass import First_launch_UI
 from passwordclass import Enter_Password_UI
@@ -62,35 +64,47 @@ github repository.
 
 class BOT:
 
-	def update_keyword(self, new_word = None):
+	def update_keyword(self, key, new_word = None):
 		filepath = os.getcwd()+'/'+'.saved_data'
 		with open(filepath, "r") as f1:
 		   text = f1.read()
 		text = text.split('\n')
 		if new_word == None:
-			keyword_line = text[2]
+			keyword_line = aes_decrypt(text[2],key)
 			word, usage_number = keyword_line.split('|')
 			usage_number = int(usage_number) + 1
 		else:
 			word = new_word
 			usage_number = 0
-		text[2] = word + '|' + str(usage_number)
+		text[2] = aes_encrypt(word + '|' + str(usage_number),key)
+		new_hmac = b64encode(Hash(text[4] + text[2])).decode('utf-8')
+		text[6] = new_hmac
 		text = '\n'.join(text)
 		with open(filepath, "w") as f2:
 			f2.write(text)
 
-	def check_keyword(self):
+	def check_keyword(self,key):
 		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
-			keyword_line = text[2].split('|')
-			keyword = keyword_line[0]
-			usage_number = int(keyword_line[1])
+			keyword_line = text[2]
+			dec_keyword = aes_decrypt(keyword_line,key).split('|')
+			keyword = dec_keyword[0]
+			usage_number = int(dec_keyword[1])
+			salt = text[4]
+			HMAC = text[6]
+
+		hmac = b64encode(Hash(salt + keyword_line)).decode('utf-8')
+		if hmac != HMAC:
+			print("[!] Protocol broken!!!")
+			write_log("[!] Protocol broken!!!",key)
+			self.quit_bot()
+			sys.exit()
 
 		return keyword, usage_number
 
-	def gen_keyword(self, keyword, browser):
-		write_log(get_date()+": "+"Genarating new keyword...")
+	def gen_keyword(self, keyword, browser, key):
+		write_log(get_date()+": "+"Generating new keyword...",key)
 		br_options = Options()
 		br_options.add_argument("--headless")
 
@@ -111,53 +125,60 @@ class BOT:
 
 		temp_driver.quit()
 		pseudo_random_word = words[random.randint(0,4)]
-		write_log(get_date()+": "+"Done! New keyword: "+pseudo_random_word)
-		self.update_keyword(pseudo_random_word)
+		write_log(get_date()+": "+"Done! New keyword: "+pseudo_random_word,key)
+		sleep(2)
+		self.update_keyword(key, pseudo_random_word)
 		return pseudo_random_word
 
 	def start_bot(self, eff_privacy, key):
 		#try:
+		# Browser input
 		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
-			browser = text[3]
+			browser = aes_decrypt(text[3],key)
 
+		# Create log file
 		if not os.path.isfile(os.getcwd()+'/bot_logs.log'):
 			text = get_date()+": "+"First launch\n"
 			print(text)
 			with open(os.getcwd()+'/'+"bot_logs.log", "w") as f:
-				f.write(text)
+				f.write(aes_encrypt(text,key))
 
 		tempdirs = []
+		# Start webdriver
 		if browser == 'Firefox':
+			# Check if browser profile folder exists
 			profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
 			if not profile_exists:
 				tempdirs = os.listdir(gettempdir())
-
+			# webdriver options
 			fx_options = Options()
 			profile_path = os.getcwd()+'/fx_profile'
 			if profile_exists:
 				fx_options.add_argument("--profile")
 				fx_options.add_argument(profile_path)
 			fx_options.add_argument("--headless")
+			# Start
 			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 			self.driver.set_window_size(1400,814)
 
 		elif browser == 'Chrome':
+			# Check if browser profile folder exists
 			profile_exists = os.path.isdir(os.getcwd()+'/ch_profile')
 			if not profile_exists:
 				tempdirs = os.listdir(gettempdir())
-
+			# webdriver options
 			ch_options = COptions()
 			prefs = {"profile.default_content_setting_values.notifications" : 2}
 			ch_options.add_experimental_option("prefs",prefs)
 			ch_options.add_argument("--disable-infobars")
 			ch_options.add_argument("--headless")
-
 			profile_path = os.getcwd()+'/ch_profile'
 			if profile_exists:
 				argumnt = "--user-data-dir="+profile_path
 				ch_options.add_argument(argumnt)
+			# Start
 			self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
 			self.driver.set_window_size(1400,700)
 
@@ -166,20 +187,24 @@ class BOT:
 		sleep(3)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
 
+		# Start taking screenshots of the headless browser every second on different thread
 		t1 = threading.Thread(target=self.take_screenshot, args=[])
 		t1.start()
 
+		# Create userdata folder if it does not exist
 		try: 
 			os.mkdir(os.getcwd()+"/userdata")
 		except FileExistsError:
 			pass
 
+		# Open random Facebook site
 		rand_ste = rand_fb_site()
 		self.driver.get(rand_ste)
 
 		sleep(5)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
 		
+		# Create browser profile folder
 		if not profile_exists:
 			self.login(key)
 			tempdirs_2 = os.listdir(gettempdir())
@@ -187,7 +212,7 @@ class BOT:
 				for i in tempdirs_2:
 					if i not in tempdirs:
 						if 'mozprofile' in i:
-							write_log(get_date()+": "+"Copying profile folder...")
+							write_log(get_date()+": "+"Copying profile folder...",key)
 							src = gettempdir() + '/' + i
 							os.remove(src+'/lock')
 							copytree(src, profile_path)
@@ -197,34 +222,34 @@ class BOT:
 						if 'com.google.Chrome' in i:
 							src = gettempdir()+ '/' + i
 							if "Default" in os.listdir(src):
-								write_log(get_date()+": "+"Copying profile folder... (~30s)")
+								write_log(get_date()+": "+"Copying profile folder... (~30s)",key)
 								sleep(30)
 								if QUIT_DRIVER.value: self.quit_bot(t1)
 								copytree(src, profile_path)
 
 		
-		if os.path.isfile(os.getcwd()+'/'+'userdata/avg_daily_posts'):
-			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','r') as f:
-				avg_amount_of_likes_per_day = int(f.read())
+		if os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
+			with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
+				avg_amount_of_likes_per_day = int(aes_decrypt(f.read(),key))
 		else:
-			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts()
+			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts(key)
 			if QUIT_DRIVER.value: self.quit_bot(t1)
-			with open(os.getcwd()+'/'+'userdata/avg_daily_posts','w') as f:
-				f.write(str(avg_amount_of_likes_per_day))
+			with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+				f.write(aes_encrypt(str(avg_amount_of_likes_per_day),key))
 		
-		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy)
+		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
 		self.quit_bot(t1)
 		#except:
 		#	self.quit_bot()
 
-	def generate_noise(self, browser, avg_amount_of_likes_per_day, eff_privacy):
+	def generate_noise(self, browser, avg_amount_of_likes_per_day, eff_privacy, key):
 		if QUIT_DRIVER.value: return
-		keyword = self.pages_based_on_keyword(browser)
+		enc_keyword = self.pages_based_on_keyword(browser, key)
 		if QUIT_DRIVER.value: return
 
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
-		c.execute('SELECT ID FROM categories WHERE category IS "'+keyword+'"')
+		c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
 		ID = c.fetchall()
 		c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID[0][0]))
 		urls = c.fetchall()
@@ -239,45 +264,49 @@ class BOT:
 		conn.close()
 
 		for (url,) in urls:
-			write_log(get_date()+": "+"GET: "+ url)
+			url = aes_decrypt(url, key)
+			write_log(get_date()+": "+"GET: "+ url,key)
 			self.driver.get(url)
 			sleep(10)
 			if QUIT_DRIVER.value: break
 
 			if ((url,)) in liked_pages_urls:
-				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy)
+				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy, key)
 			else:
-				new_page(url)
-				self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy)
+				new_page(aes_encrypt(url,key))
+				self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy, key)
 
-			self.update_keyword()
+			self.update_keyword(key)
 			rand_site = rand_fb_site()
 			self.driver.get(rand_site)
 			# wait between 10 s and 10 h
 			randtime = rand_dist()
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
-				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)")
+				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)",key)
 			sleep(5)
 			if QUIT_DRIVER.value: break
 			sleep(randtime, True)
 			if QUIT_DRIVER.value: break
 
-		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy)
+		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
 
-	def pages_based_on_keyword(self,browser):
-		keyword, usage_number = self.check_keyword()
-		
+	def pages_based_on_keyword(self, browser, key):
+		keyword, usage_number = self.check_keyword(key)
+		enc_keyword = aes_encrypt(keyword, key)
+
 		# get tables from database
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
+		# See if db exists. Otherwise, create it 
 		try:
 			c.execute("SELECT category FROM categories")
 		except sqlite3.OperationalError:
 			create_categ_table()
 		keywords_in_db = c.fetchall()
+		# Select URLs of respective keyword
 		try:
-			c.execute('SELECT ID FROM categories WHERE category IS "'+keyword+'"')
+			c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
 			ID = c.fetchall()
 			c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID[0][0]))
 			urls = c.fetchall()
@@ -286,23 +315,24 @@ class BOT:
 		
 		nr_of_urls = len(urls)
 		if usage_number >= nr_of_urls:
-			keyword = self.gen_keyword(keyword, browser)
+			keyword = self.gen_keyword(keyword, browser, key)
+			enc_keyword = aes_encrypt(keyword, key)
 		if QUIT_DRIVER.value: return
 
 		if (keyword,) not in keywords_in_db:
-			categID = new_keyword(keyword)
+			categID = new_keyword(enc_keyword)
 			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
-			write_log(get_date()+": "+"GET: "+ search_url)
+			write_log(get_date()+": "+"GET: "+ search_url,key)
 			self.driver.get(search_url)
 			sleep(5)
 			if QUIT_DRIVER.value: return
 
-			page_urls = self.select_pages(categID)
+			page_urls = self.select_pages(categID, key)
 			if QUIT_DRIVER.value: return
 			info = "Pages selected for keyword '{}':".format(keyword)
-			write_log(get_date()+": "+info)
+			write_log(get_date()+": "+info,key)
 			for page_url in page_urls:
-				write_log(get_date()+": "+"   "+ page_url[0])
+				write_log(get_date()+": "+"   "+ aes_decrypt(page_url[0],key),key)
 
 			conn = sqlite3.connect('userdata/pages.db')
 			c = conn.cursor()
@@ -311,7 +341,7 @@ class BOT:
 			conn.commit()
 			conn.close()
 
-		return keyword
+		return enc_keyword
 
 
 	def load_more(self, n, sec):
@@ -322,7 +352,7 @@ class BOT:
 			if QUIT_DRIVER.value: break
 
 	def login(self, key):
-		write_log(get_date()+": "+"Logging in...")
+		write_log(get_date()+": "+"Logging in...",key)
 		self.driver.get("https://www.facebook.com")
 		self.driver.find_element(By.XPATH,"//*[text() = 'Allow All Cookies']").click()
 		sleep(1)
@@ -331,7 +361,7 @@ class BOT:
 		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
-			email = text[0]
+			email = aes_decrypt(text[0],key)
 			encp = text[1]
 		password = aes_decrypt(encp, key)
 
@@ -340,8 +370,8 @@ class BOT:
 		self.driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
 		sleep(3)
 
-	def analize_weekly_liked_posts(self, ):
-		write_log(get_date()+": "+"Analyzing daily Facebook interaction...")
+	def analize_weekly_liked_posts(self, key):
+		write_log(get_date()+": "+"Analyzing daily Facebook interaction...",key)
 		self.driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
 		while True:
 			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -366,7 +396,7 @@ class BOT:
 		avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
 		return avg_amount_of_likes_per_day
 
-	def select_pages(self, categID):
+	def select_pages(self, categID, key):
 		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
 		urls = self.driver.find_elements(By.TAG_NAME,'a')
 		urls = [a.get_attribute('href') for a in urls]
@@ -374,10 +404,12 @@ class BOT:
 		for url in urls:
 			if QUIT_DRIVER.value: return
 			if url.endswith('?__tn__=%3C'):
-				return_urls.append((url.split('?__tn__=%3C')[0],categID))
+				enc_url = aes_encrypt(url.split('?__tn__=%3C')[0], key)
+				return_urls.append((enc_url,categID))
 
 		rand_number = random.randint(8,15)
 		return return_urls[:rand_number]
+		#return return_urls[:1]
 
 	def delete_element(self, element):
 		self.driver.execute_script("""var element = arguments[0];
@@ -385,9 +417,9 @@ class BOT:
 								""", element)
 
 
-	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy):
+	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy, key):
 		amount_of_likes = 0
-		pagename_short = pagename.split("https://www.facebook.com/")[1]
+		#pagename_short = pagename.split("https://www.facebook.com/")[1]
 		try: pagename_short = pagename_short.split("/")[0]
 		except:pass
 		# Check Chatbox element and delete it
@@ -399,8 +431,8 @@ class BOT:
 
 		if first_visit:
 			# Like page
-			write_log(get_date()+": "+"First visit on: "+pagename)
-			os.mkdir(os.getcwd()+'/'+"userdata/"+pagename_short)
+			write_log(get_date()+": "+"First visit on: "+pagename,key)
+			#os.mkdir(os.getcwd()+'/'+"userdata/"+pagename_short)
 			try:
 				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Like"]')
 				main_element.click()
@@ -469,9 +501,9 @@ class BOT:
 						post_url = post_url.split('__cft__')[0]
 					
 						# Save screenshot
-						data = article_element.screenshot_as_png
-						with open(os.getcwd()+'/'+"userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
-							f.write(data)
+						#data = article_element.screenshot_as_png
+						#with open(os.getcwd()+'/'+"userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
+						#	f.write(data)
 
 						# Like post
 						like_element = article_element.find_element(By.XPATH, './/div[@aria-label="Like"]')
@@ -480,10 +512,10 @@ class BOT:
 						amount_of_likes += 1
 
 						# Save post to database
-						c.execute('INSERT INTO "' + pagename + '" (post, time) \
-								VALUES ("' + post_url + '","' + get_date() + '")');
+						c.execute('INSERT INTO "' + aes_encrypt(pagename,key) + '" (post, time) \
+								VALUES ("' + aes_encrypt(post_url,key) + '","' + get_date() + '")');
 						conn.commit()
-						write_log(get_date()+": "+"Liked {} post on page {}".format(post_url, pagename))
+						write_log(get_date()+": "+"Liked {} post on page {}".format(post_url, pagename),key)
 						sleep(random.randint(1,5))
 						if QUIT_DRIVER.value: break
 						del action
@@ -492,7 +524,7 @@ class BOT:
 
 			# avg pages per day == 7
 			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
-				write_log(get_date()+": "+"Random loop break")
+				write_log(get_date()+": "+"Random loop break",key)
 				break
 			sleep(random.randint(3,10))
 			if QUIT_DRIVER.value: break
@@ -518,11 +550,11 @@ class Userinterface(tk.Frame):
 		self.BOT_started = False
 		tk.Frame.__init__(self, parent, *args, **kwargs)
 		self.mainwindow = parent
-		self.mainwindow.title("MetaPriv")
 
+		# Window options
+		self.mainwindow.title("MetaPriv")
 		self.mainwindow.option_add('*tearOff', 'FALSE')
 		self.mainwindow.protocol('WM_DELETE_WINDOW', self.close)
-
 		self.mainwindow.grid_rowconfigure(0, weight=1)
 		self.mainwindow.grid_rowconfigure(1, weight=1)
 		self.mainwindow.grid_rowconfigure(2, weight=1)
@@ -557,7 +589,8 @@ class Userinterface(tk.Frame):
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
 		
-	def get_last_log(self):
+	def get_last_log(self, key):
+		# Get last line in bot_logs.log
 		with open(os.getcwd()+'/'+'bot_logs.log','rb') as f:
 			try:
 				f.seek(-2, os.SEEK_END)
@@ -566,17 +599,20 @@ class Userinterface(tk.Frame):
 			except OSError:
 				f.seek(0)
 			last_line = f.readline().decode()
+			last_line = aes_decrypt(last_line, key)
 		return last_line
 
-	def update_ui(self):
+	def update_ui(self, key):
 		if not WAITING_LONG.value:
-			last_log = self.get_last_log()
+			# Update logs
+			last_log = self.get_last_log(key)
 			if last_log != self.previous_last_log:
 				self.textbox.configure(state='normal')
-				self.textbox.insert(tk.END, last_log)
+				self.textbox.insert(tk.END, last_log+"\n")
 				self.textbox.configure(state='disabled')
 			self.previous_last_log = last_log
 			self.textbox.yview(tk.END)
+			# Update screenshot
 			try:
 				photo = tk.PhotoImage(file=os.getcwd()+'/'+".screenshot.png")
 				self.screeshot_label.image = photo
@@ -585,13 +621,16 @@ class Userinterface(tk.Frame):
 			except:
 				#print("Image error")
 				pass
-		self.mainwindow.after(2000,self.update_ui)
+		# Recursion
+		self.mainwindow.after(2000,self.update_ui, key)
 
 	def strt(self,key):
+		# Get inputs
 		self.textbox.configure(state='normal')
 		self.textbox.insert(tk.END, get_date()+": "+"Starting bot...\n")
 		self.textbox.configure(state='disabled')
 		priv = int(self.eff_privacy.get())
+		# Start BOT on different core
 		self.BOT = BOT()
 		self.bot_process = mp.Process(target=self.BOT.start_bot,args=[priv, key])
 		self.bot_process.start()
@@ -599,16 +638,18 @@ class Userinterface(tk.Frame):
 		self.textbox.insert(tk.END, get_date()+": "+"Bot process started...\n")
 		self.textbox.configure(state='disabled')
 		self.BOT_started = True
-		try: self.previous_last_log = self.get_last_log()
-		except FileNotFoundError: sleep(3); self.previous_last_log = self.get_last_log()
+		# Get the last log
+		try: self.previous_last_log = self.get_last_log(key)
+		except FileNotFoundError: sleep(3); self.previous_last_log = self.get_last_log(key)
+		# Disable inputs
 		self.start_button["state"] = "disabled"
 		self.slider["state"] = "disabled"
 		sleep(5)
 		########### Screenshot ###########
 		self.screeshot_label = tk.Label(self.mainwindow)
 		self.screeshot_label.grid(row=1, column=0,columnspan=3)
-
-		self.mainwindow.after(0,self.update_ui)
+		# Start recursive update
+		self.mainwindow.after(0,self.update_ui, key)
 		
 	def close(self):
 		BREAK_SLEEP.value = True
@@ -628,6 +669,7 @@ def sleep(seconds, long_wait = False):
 		WAITING_LONG.value = True
 	time = 0
 	while True:
+		# Computation time. On average waiting time == seconds
 		Sleep(1-0.003)
 		time += 1
 		if BREAK_SLEEP.value:
@@ -670,6 +712,7 @@ def create_categ_table():
 	conn.close()
 
 def rand_dist():
+	#return 10
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
@@ -691,6 +734,7 @@ def rand_dist():
 		return random.randint(8*ONE_HOUR,9*ONE_HOUR)
 	elif rand_number in [23]:
 		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
+	
 
 def rand_fb_site():
 	marketplace = 'https://www.facebook.com/marketplace/?ref=bookmark'
@@ -701,10 +745,10 @@ def rand_fb_site():
 	sites = [marketplace,notifications,friends,settings,welcome_pg]
 	return sites[random.randint(0,4)]
 
-def write_log(text):
+def write_log(text,key):
 	print(text)
 	with open(os.getcwd()+'/'+"bot_logs.log",'a') as f:
-		f.write(text+'\n')
+		f.write('\n'+aes_encrypt(text,key))
 
 def get_date():
 	now = datetime.now()
@@ -712,12 +756,13 @@ def get_date():
 	return formatted_date
 
 def main():
+	# Check if program was launched
 	if not os.path.isfile(os.getcwd()+'/'+'.saved_data'):
 		first_launch = First_launch_UI()
 		first_launch.start()
 		key = first_launch.h_password
 		del first_launch
-	else:
+	else: # If not, prompt password
 		check_pass = Enter_Password_UI(None)
 		check_pass.title("Enter password")
 		check_pass.resizable(False, False)
