@@ -106,16 +106,17 @@ class BOT:
 	def gen_keyword(self, keyword, browser, key):
 		# Generate new keywords from https://relatedwords.org
 		write_log(get_date()+": "+"Generating new keyword...",key)
-		br_options = Options()
-		br_options.add_argument("--headless")
 		# Open temporary driver
 		if browser == "Firefox":
-			temp_driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = br_options)
+			fx_options = Options()
+			fx_options.add_argument("--headless")
+			temp_driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 		elif browser == "Chrome":
+			ch_options = COptions()
 			prefs = {"profile.default_content_setting_values.notifications" : 2}
-			br_options.add_experimental_option("prefs",prefs)
-			br_options.add_argument("--disable-infobars")
-			temp_driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = br_options)
+			ch_options.add_experimental_option("prefs",prefs)
+			ch_options.add_argument("--disable-infobars")
+			temp_driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
 		url = 'https://relatedwords.org/relatedto/' + keyword
 		temp_driver.get(url)
 		word_elements = temp_driver.find_elements(By.XPATH, "//a[@class='item']")[:5]
