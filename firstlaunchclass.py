@@ -79,7 +79,7 @@ class First_launch_UI:
 		with open(os.getcwd()+'/'+'.saved_data','w') as f:
 			f.write(self.Email.get()+'\n')
 			f.write(aes_encrypt(self.Password.get(),self.h_password)+'\n')
-			f.write(self.Keyword.get()+'\n')
+			f.write(self.Keyword.get()+'|0\n')
 			f.write(self.browser.get()+'\n')
 			f.write(self.salt+'\n')
 			f.write(b64encode(self.h_salted_password).decode('utf-8'))
