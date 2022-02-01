@@ -65,6 +65,7 @@ github repository.
 class BOT:
 
 	def update_keyword(self, key, new_word = None):
+		# Increment keyword usage in file
 		filepath = os.getcwd()+'/'+'.saved_data'
 		with open(filepath, "r") as f1:
 		   text = f1.read()
@@ -93,21 +94,21 @@ class BOT:
 			usage_number = int(dec_keyword[1])
 			salt = text[4]
 			HMAC = text[6]
-
+		# Verify keyword integrity
 		hmac = b64encode(Hash(salt + keyword_line)).decode('utf-8')
 		if hmac != HMAC:
 			print("[!] Protocol broken!!!")
 			write_log("[!] Protocol broken!!!",key)
 			self.quit_bot()
 			sys.exit()
-
 		return keyword, usage_number
 
 	def gen_keyword(self, keyword, browser, key):
+		# Generate new keywords from https://relatedwords.org
 		write_log(get_date()+": "+"Generating new keyword...",key)
 		br_options = Options()
 		br_options.add_argument("--headless")
-
+		# Open temporary driver
 		if browser == "Firefox":
 			temp_driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = br_options)
 		elif browser == "Chrome":
@@ -118,12 +119,13 @@ class BOT:
 		url = 'https://relatedwords.org/relatedto/' + keyword
 		temp_driver.get(url)
 		word_elements = temp_driver.find_elements(By.XPATH, "//a[@class='item']")[:5]
-
+		# Get words
 		words = []
 		for word_element in word_elements:
 			words.append(word_element.text)
-
+		# Close driver
 		temp_driver.quit()
+		# Choose a random word from top 5 
 		pseudo_random_word = words[random.randint(0,4)]
 		write_log(get_date()+": "+"Done! New keyword: "+pseudo_random_word,key)
 		sleep(2)
@@ -131,7 +133,6 @@ class BOT:
 		return pseudo_random_word
 
 	def start_bot(self, eff_privacy, key):
-		#try:
 		# Browser input
 		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
@@ -227,7 +228,7 @@ class BOT:
 								if QUIT_DRIVER.value: self.quit_bot(t1)
 								copytree(src, profile_path)
 
-		
+		# Get avg amount of likes per day 
 		if os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
 			with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
 				avg_amount_of_likes_per_day = int(aes_decrypt(f.read(),key))
@@ -247,6 +248,7 @@ class BOT:
 		enc_keyword = self.pages_based_on_keyword(browser, key)
 		if QUIT_DRIVER.value: return
 
+		# get urls from database based on current keyword
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
 		c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
@@ -256,7 +258,7 @@ class BOT:
 		conn.close()
 		random.shuffle(urls)
 
-		# get tables from database
+		# get urls from liked pages from database
 		conn = sqlite3.connect('userdata/likes.db')
 		c = conn.cursor()
 		c.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -269,14 +271,15 @@ class BOT:
 			self.driver.get(url)
 			sleep(10)
 			if QUIT_DRIVER.value: break
-
+			# Start liking
 			if ((url,)) in liked_pages_urls:
 				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy, key)
 			else:
 				new_page(aes_encrypt(url,key))
 				self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy, key)
-
+			# Increment keyword usage
 			self.update_keyword(key)
+			# Go to random FB site
 			rand_site = rand_fb_site()
 			self.driver.get(rand_site)
 			# wait between 10 s and 10 h
@@ -292,9 +295,9 @@ class BOT:
 		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
 
 	def pages_based_on_keyword(self, browser, key):
+		# Get current keyword and how many times it was used
 		keyword, usage_number = self.check_keyword(key)
 		enc_keyword = aes_encrypt(keyword, key)
-
 		# get tables from database
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
@@ -312,13 +315,13 @@ class BOT:
 			urls = c.fetchall()
 		except: urls = []
 		conn.close()
-		
+		# Generate new keyword if done with urls from db
 		nr_of_urls = len(urls)
 		if usage_number >= nr_of_urls:
 			keyword = self.gen_keyword(keyword, browser, key)
 			enc_keyword = aes_encrypt(keyword, key)
 		if QUIT_DRIVER.value: return
-
+		# Add new keyword to db
 		if (keyword,) not in keywords_in_db:
 			categID = new_keyword(enc_keyword)
 			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
@@ -326,14 +329,14 @@ class BOT:
 			self.driver.get(search_url)
 			sleep(5)
 			if QUIT_DRIVER.value: return
-
+			# GET FB URLs based on keyword
 			page_urls = self.select_pages(categID, key)
 			if QUIT_DRIVER.value: return
 			info = "Pages selected for keyword '{}':".format(keyword)
 			write_log(get_date()+": "+info,key)
 			for page_url in page_urls:
 				write_log(get_date()+": "+"   "+ aes_decrypt(page_url[0],key),key)
-
+			# Save URLs to db
 			conn = sqlite3.connect('userdata/pages.db')
 			c = conn.cursor()
 			c.executemany('INSERT INTO pages (URL, categID) \
@@ -352,25 +355,28 @@ class BOT:
 			if QUIT_DRIVER.value: break
 
 	def login(self, key):
+		# Log in to Facebook
 		write_log(get_date()+": "+"Logging in...",key)
 		self.driver.get("https://www.facebook.com")
 		self.driver.find_element(By.XPATH,"//*[text() = 'Allow All Cookies']").click()
 		sleep(1)
 		if QUIT_DRIVER.value: return
-
+		# Decrypt password
 		with open(os.getcwd()+'/'+'.saved_data','r') as f:
 			text = f.read()
 			text = text.split('\n')
 			email = aes_decrypt(text[0],key)
 			encp = text[1]
 		password = aes_decrypt(encp, key)
-
+		# Input email and password, then click Log In button.
 		self.driver.find_element(By.NAME,"email").send_keys(email)
 		self.driver.find_element(By.NAME,"pass").send_keys(password)
 		self.driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
 		sleep(3)
 
+
 	def analize_weekly_liked_posts(self, key):
+		# Analize daily Facebook interaction in the last 7 days, based on Facebook logs
 		write_log(get_date()+": "+"Analyzing daily Facebook interaction...",key)
 		self.driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
 		while True:
@@ -383,6 +389,7 @@ class BOT:
 
 		days = days[:7]
 		weekly_amount_of_likes = []
+		# How many posts per day
 		for day in days:
 			likes_per_day = day.find_elements(By.XPATH, ".//div[@class='l9j0dhe7 btwxx1t3 j83agx80']")
 			likes = 0
@@ -393,8 +400,10 @@ class BOT:
 			weekly_amount_of_likes.append(likes)
 			likes = 0
 
+		# Take average
 		avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
 		return avg_amount_of_likes_per_day
+
 
 	def select_pages(self, categID, key):
 		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
@@ -409,7 +418,7 @@ class BOT:
 
 		rand_number = random.randint(8,15)
 		return return_urls[:rand_number]
-		#return return_urls[:1]
+
 
 	def delete_element(self, element):
 		self.driver.execute_script("""var element = arguments[0];
@@ -457,10 +466,11 @@ class BOT:
 		conn = sqlite3.connect('userdata/likes.db')
 		c = conn.cursor()
 
-		# Randomly like posts
+		# Randomly like posts in an infinite while loop until broken
 		last_element = ''
 		while True:
 			if QUIT_DRIVER.value: break
+			# Find article elements
 			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
 			if last_element != '':
 				indx = article_elements.index(last_element)
@@ -483,20 +493,16 @@ class BOT:
 				try:
 					decide_like = bool(random.randint(0,1))
 					if decide_like:
+						# Find and focus a post element that uncovers the post url.
 						link_element = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]')
-
 						action = ActionChains(self.driver)
-						#try: 
 						action.move_to_element(link_element).perform()
-
-						#except: pass
 						if QUIT_DRIVER.value: break
 						sleep(3)
 						dots_elemn = article_element.find_element(By.XPATH, './/div[@class="nqmvxvec j83agx80 jnigpg78 cxgpxx05 dflh9lhu sj5x9vvc scb9dxdr odw8uiq3"]')
 						action.move_to_element(dots_elemn).perform()
 						sleep(2)
 						if QUIT_DRIVER.value: break
-						
 						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
 						post_url = post_url.split('__cft__')[0]
 					
@@ -522,7 +528,7 @@ class BOT:
 				except Exception as e:
 					print(get_date()+":","DEBUG:", e)
 
-			# avg pages per day == 7
+			# avg pages per day == 7. Break loop based on input privacy level.
 			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
 				write_log(get_date()+": "+"Random loop break",key)
 				break
@@ -532,12 +538,14 @@ class BOT:
 		conn.close()
 
 	def take_screenshot(self, ):
+		# Take a browser screenshot every second
 		while not QUIT_DRIVER.value:
 			if not WAITING_LONG.value:
 				self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
 			sleep(1)
 		
 	def quit_bot(self, thread = None):
+		# Exit webdriver
 		self.driver.quit()
 		if thread != None:
 			thread.join()
@@ -669,7 +677,7 @@ def sleep(seconds, long_wait = False):
 		WAITING_LONG.value = True
 	time = 0
 	while True:
-		# Computation time. On average waiting time == seconds
+		# Computation time. On average the waiting time == seconds parameter
 		Sleep(1-0.003)
 		time += 1
 		if BREAK_SLEEP.value:
@@ -680,6 +688,7 @@ def sleep(seconds, long_wait = False):
 		WAITING_LONG.value = False
 
 def new_page(pagename):
+	# Add a new page to database
 	conn = sqlite3.connect('userdata/likes.db')
 	c = conn.cursor()
 	c.execute('''CREATE TABLE "{}"
@@ -689,6 +698,7 @@ def new_page(pagename):
 	conn.close()
 
 def new_keyword(keyword):
+	# Add a new keyword to database
 	conn = sqlite3.connect('userdata/pages.db')
 	c = conn.cursor()
 	c.execute('INSERT INTO categories (category) \
@@ -699,6 +709,7 @@ def new_keyword(keyword):
 	return ID
 
 def create_categ_table():
+	# Create pages database to store page urls based on a keyword
 	conn = sqlite3.connect('userdata/pages.db')
 	c = conn.cursor()
 	c.execute('''CREATE TABLE categories
@@ -712,7 +723,7 @@ def create_categ_table():
 	conn.close()
 
 def rand_dist():
-	#return 10
+	# Retur random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
@@ -737,6 +748,7 @@ def rand_dist():
 	
 
 def rand_fb_site():
+	# Return a random FB site so GET while waiting
 	marketplace = 'https://www.facebook.com/marketplace/?ref=bookmark'
 	notifications = "https://www.facebook.com/notifications"
 	friends = 'https://www.facebook.com/friends'
@@ -746,23 +758,25 @@ def rand_fb_site():
 	return sites[random.randint(0,4)]
 
 def write_log(text,key):
+	# Write and print logs
 	print(text)
 	with open(os.getcwd()+'/'+"bot_logs.log",'a') as f:
 		f.write('\n'+aes_encrypt(text,key))
 
 def get_date():
+	# Get formatted date for logs
 	now = datetime.now()
 	formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 	return formatted_date
 
 def main():
-	# Check if program was launched
+	# Check if program was launched before
 	if not os.path.isfile(os.getcwd()+'/'+'.saved_data'):
 		first_launch = First_launch_UI()
 		first_launch.start()
 		key = first_launch.h_password
 		del first_launch
-	else: # If not, prompt password
+	else: # If yes, prompt password
 		check_pass = Enter_Password_UI(None)
 		check_pass.title("Enter password")
 		check_pass.resizable(False, False)
@@ -771,6 +785,7 @@ def main():
 		check_pass.stop()
 		del check_pass
 
+	# Start main UI
 	root = tk.Tk()
 	root.resizable(False, False)
 	Userinterface(root,key)
