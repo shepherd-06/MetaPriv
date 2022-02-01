@@ -113,6 +113,7 @@ class BOT:
 			temp_driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 		elif browser == "Chrome":
 			ch_options = COptions()
+			ch_options.add_argument("--headless")
 			prefs = {"profile.default_content_setting_values.notifications" : 2}
 			ch_options.add_experimental_option("prefs",prefs)
 			ch_options.add_argument("--disable-infobars")
