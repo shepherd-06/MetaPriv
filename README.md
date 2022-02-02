@@ -16,7 +16,9 @@ On Linux (tested on Manjaro):
 4. On next runs:
 	- Input the password you created on the first run.
 	- Choose desired privacy level and click start.
+
 OR:
 Download executable from: https://github.com/ctrgrb/MetaPriv/releases/tag/v0.1 and run.
+
 On Windows:
 1. Working on it...
