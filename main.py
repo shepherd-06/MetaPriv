@@ -78,7 +78,7 @@ class BOT:
 			word = new_word
 			usage_number = 0
 		text[2] = aes_encrypt(word + '|' + str(usage_number),key)
-		new_hmac = b64encode(Hash(text[4] + text[2])).decode('utf-8')
+		new_hmac = b64encode(Hash(b64encode(key).decode('utf-8') + text[4] + text[2])).decode('utf-8')
 		text[6] = new_hmac
 		text = '\n'.join(text)
 		with open(filepath, "w") as f2:
@@ -237,8 +237,9 @@ class BOT:
 		else:
 			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts(key)
 			if QUIT_DRIVER.value: self.quit_bot(t1)
-			with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
-				f.write(aes_encrypt(str(avg_amount_of_likes_per_day),key))
+			if not QUIT_DRIVER.value:
+				with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+					f.write(aes_encrypt(str(avg_amount_of_likes_per_day),key))
 		
 		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
 		self.quit_bot(t1)

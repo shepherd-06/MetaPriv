@@ -91,7 +91,7 @@ class First_launch_UI:
 			f.write(aes_encrypt(self.browser.get(),self.h_password)+'\n')
 			f.write(self.salt+'\n')
 			f.write(b64encode(self.h_salted_password).decode('utf-8')+'\n')
-			f.write(b64encode(Hash(self.salt + enc_keyword)).decode('utf-8'))
+			f.write(b64encode(Hash(b64encode(self.h_password).decode('utf-8') + self.salt + enc_keyword)).decode('utf-8'))
 		self.mainwindow.destroy()
 
 	def start(self):
