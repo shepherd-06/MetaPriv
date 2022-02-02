@@ -300,40 +300,42 @@ class BOT:
 		# Get current keyword and how many times it was used
 		keyword, usage_number = self.check_keyword(key)
 		enc_keyword = aes_encrypt(keyword, key)
-		# get tables from database
+
+		# See if db exists. Otherwise, create it 
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
-		# See if db exists. Otherwise, create it 
 		try:
 			c.execute("SELECT category FROM categories")
 		except sqlite3.OperationalError:
 			create_categ_table()
+		# then, get the keywords from the db
 		keywords_in_db = c.fetchall()
+
 		# Select URLs of respective keyword
-		try:
+		if (enc_keyword,) in keywords_in_db:
 			c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
 			ID = c.fetchall()
 			c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID[0][0]))
 			urls = c.fetchall()
-		except: urls = []
-		conn.close()
-		# Generate new keyword if done with urls from db
-		nr_of_urls = len(urls)
-		if usage_number >= nr_of_urls:
-			keyword = self.gen_keyword(keyword, browser, key)
-			enc_keyword = aes_encrypt(keyword, key)
-		if QUIT_DRIVER.value: return
+			conn.close()
+			# Generate new keyword if done with urls from db
+			nr_of_urls = len(urls)
+			if usage_number >= nr_of_urls:
+				keyword = self.gen_keyword(keyword, browser, key)
+				enc_keyword = aes_encrypt(keyword, key)
+		#if QUIT_DRIVER.value: return
+
 		# Add new keyword to db
-		if (keyword,) not in keywords_in_db:
+		if (enc_keyword,) not in keywords_in_db:
 			categID = new_keyword(enc_keyword)
 			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
 			write_log(get_date()+": "+"GET: "+ search_url,key)
 			self.driver.get(search_url)
 			sleep(5)
-			if QUIT_DRIVER.value: return
+			#if QUIT_DRIVER.value: return
 			# GET FB URLs based on keyword
 			page_urls = self.select_pages(categID, key)
-			if QUIT_DRIVER.value: return
+			#if QUIT_DRIVER.value: return
 			info = "Pages selected for keyword '{}':".format(keyword)
 			write_log(get_date()+": "+info,key)
 			for page_url in page_urls:
@@ -662,6 +664,7 @@ class Userinterface(tk.Frame):
 		self.mainwindow.after(0,self.update_ui, key)
 		
 	def close(self):
+		self.mainwindow.destroy()
 		BREAK_SLEEP.value = True
 		if self.BOT_started:
 			QUIT_DRIVER.value = True
@@ -670,7 +673,6 @@ class Userinterface(tk.Frame):
 				os.remove(".screenshot.png")
 			except FileNotFoundError:
 				pass
-		self.mainwindow.destroy()
 		
 #########################################################################################################################
 
