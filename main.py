@@ -78,8 +78,10 @@ class BOT:
 			word = new_word
 			usage_number = 0
 		text[2] = aes_encrypt(word + '|' + str(usage_number),key)
-		new_hmac = b64encode(Hash(b64encode(key).decode('utf-8') + text[4] + text[2])).decode('utf-8')
+		timestamp = get_date()
+		new_hmac = b64encode(Hash(b64encode(key).decode('utf-8') + timestamp + text[2])).decode('utf-8')
 		text[6] = new_hmac
+		text[7] = timestamp
 		text = '\n'.join(text)
 		with open(filepath, "w") as f2:
 			f2.write(text)
@@ -92,10 +94,10 @@ class BOT:
 			dec_keyword = aes_decrypt(keyword_line,key).split('|')
 			keyword = dec_keyword[0]
 			usage_number = int(dec_keyword[1])
-			salt = text[4]
+			timestamp = text[7]
 			HMAC = text[6]
 		# Verify keyword integrity
-		hmac = b64encode(Hash(b64encode(key).decode('utf-8') + salt + keyword_line)).decode('utf-8')
+		hmac = b64encode(Hash(b64encode(key).decode('utf-8') + timestamp + keyword_line)).decode('utf-8')
 		if hmac != HMAC:
 			write_log("[!] Protocol broken!!!",key)
 			self.quit_bot()

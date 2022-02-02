@@ -5,6 +5,7 @@ from base64 import b64encode
 # imports from created files 
 from crypto import Hash, aes_encrypt
 from passwordclass import Create_Password_UI
+from datetime import datetime
 
 
 INFO_TEXT = """Welcome to MetaPriv!
@@ -15,6 +16,12 @@ This is a one time input, as new keywords
 will be generated automatically and the 
 login will happen from a browser profile 
 folder after the first run.\n"""
+
+def get_date():
+	# Get formatted date for logs
+	now = datetime.now()
+	formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
+	return formatted_date
 
 class First_launch_UI:
 	def __init__(self):
@@ -91,7 +98,10 @@ class First_launch_UI:
 			f.write(aes_encrypt(self.browser.get(),self.h_password)+'\n')
 			f.write(self.salt+'\n')
 			f.write(b64encode(self.h_salted_password).decode('utf-8')+'\n')
-			f.write(b64encode(Hash(b64encode(self.h_password).decode('utf-8') + self.salt + enc_keyword)).decode('utf-8'))
+			timestmap = get_date()
+			f.write(b64encode(Hash(b64encode(self.h_password).decode('utf-8') + timestmap + enc_keyword)).decode('utf-8')+'\n')
+			f.write(timestmap)
+
 		self.mainwindow.destroy()
 
 	def start(self):
