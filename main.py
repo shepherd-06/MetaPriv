@@ -33,7 +33,7 @@ from passwordclass import Enter_Password_UI
 from crypto import Hash, aes_encrypt, aes_decrypt
 
 
-NORMAL_LOAD_AMMOUNT = 5
+NORMAL_LOAD_AMMOUNT = 2
 ONE_HOUR = 3600
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
@@ -331,7 +331,7 @@ class BOT:
 			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
 			write_log(get_date()+": "+"GET: "+ search_url,key)
 			self.driver.get(search_url)
-			sleep(5)
+			sleep(3)
 			#if QUIT_DRIVER.value: return
 			# GET FB URLs based on keyword
 			page_urls = self.select_pages(categID, key)
@@ -415,7 +415,6 @@ class BOT:
 		urls = [a.get_attribute('href') for a in urls]
 		return_urls = []
 		for url in urls:
-			if QUIT_DRIVER.value: return
 			if url.endswith('?__tn__=%3C'):
 				enc_url = aes_encrypt(url.split('?__tn__=%3C')[0], key)
 				return_urls.append((enc_url,categID))
