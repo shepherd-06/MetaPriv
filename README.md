@@ -1,4 +1,18 @@
 # MetaPriv
+An automated tool that allows Facebook users to obfuscate their data and conceal
+their real interests and habits from Facebook
+
+How it works:
+
+1. Opens a browser instance – Firefox or Chrome/Chromium.
+2. Opens https://www.facebook.com and logs in.
+3. Opens https://www.facebook.com/search/pages?q=keyword, collects data related to that keyword and stores the corresponding URLs in a database.
+4. Selects a random URL from the database and opens it in the browser.
+5. Clicks the page’s ”like” button then moves to the first post element.
+6. Waits between 3 and 10 seconds. Decides whether to like the post, then moves to the next element.
+7. Repeats step 6 in a loop. When moving to the next element, the page will scroll down, loading more post elements.
+8. Breaks the loop based on an inputted privacy value, then goes back to step 4 and repeats the remaining steps.
+
 Requirements:
 - python3
 - python3 libraries: pip install -r requirements.txt
