@@ -8,10 +8,6 @@ Requirements:
 On Linux (tested on Manjaro):
 1. Install the requirements.
 2. Run command: python main.py
-or:
-1. Run executable from folder. Created with pyinstaller.
-2. With this, you don't need the requirements.
-
 3. On first run: 
 	- Create a password. It will be used to encrypt your credentials, database and logs.
 	- Input facebook credentials, a seed keyword and your preferred browser (Firefox/Chrome).
