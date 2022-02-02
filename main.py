@@ -95,9 +95,8 @@ class BOT:
 			salt = text[4]
 			HMAC = text[6]
 		# Verify keyword integrity
-		hmac = b64encode(Hash(salt + keyword_line)).decode('utf-8')
+		hmac = b64encode(Hash(b64encode(key).decode('utf-8') + salt + keyword_line)).decode('utf-8')
 		if hmac != HMAC:
-			print("[!] Protocol broken!!!")
 			write_log("[!] Protocol broken!!!",key)
 			self.quit_bot()
 			sys.exit()
