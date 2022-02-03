@@ -167,4 +167,5 @@ Consists of 4 files:
 	- Each table has a post column (stores the encrypted url of a liked post from that page) and a time column (stores the timestamp)
 
 Optional:
+
 By uncommenting the Save screenshot part from the loop in BOT.like_rand, the program can take screenshots of every post and save them in a folder corresponding to the name of the FB page (e.g. userdata/somepage/%Y-%m-%d %H:%M:%S.png)
