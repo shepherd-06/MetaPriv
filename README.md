@@ -30,10 +30,22 @@ An automated tool that allows Facebook users to obfuscate their data and conceal
 	- Choose desired privacy level and click start.
 
 ##### OR:
-Download executable from [releases](https://github.com/ctrgrb/MetaPriv/releases/tag/v0.1) and run.
+Download pyinstaller executable from [releases](https://github.com/ctrgrb/MetaPriv/releases/tag/v0.1) and run.
 
 #### On Windows:
-1. Working on it...
+1. Install the requirements.
+2. Run command: python main.py
+3. On first run with Firefox: 
+	- Create a password. It will be used to encrypt your credentials, database and logs.
+	- Input facebook credentials, a seed keyword and your preferred browser (Firefox/Chrome).
+	- Choose desired privacy level and click start.
+	- To close the program -- close the window.
+4. On next runs with Firefox:
+	- Input the password you created on the first run.
+	- Choose desired privacy level and click start.
+5. With Chrome it will always log in.
+
+No exe for Windows since pyinstaller doesn't seem to work properly...
 
 ## Code description:
 Consists of 4 files:
