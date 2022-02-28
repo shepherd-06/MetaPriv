@@ -364,7 +364,7 @@ class BOT:
 		# Log in to Facebook
 		write_log(get_date()+": "+"Logging in...",key)
 		self.driver.get("https://www.facebook.com")
-		self.driver.find_element(By.XPATH,"//*[text() = 'Allow All Cookies']").click()
+		self.driver.find_element(By.XPATH,"//button[@data-cookiebanner='accept_button']").click()
 		sleep(1)
 		if QUIT_DRIVER.value: return
 		# Decrypt password
