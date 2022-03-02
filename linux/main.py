@@ -432,6 +432,7 @@ class BOT:
 
 
 	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy, key):
+		sleep(2)
 		amount_of_likes = 0
 		#pagename_short = pagename.split("https://www.facebook.com/")[1]
 		try: pagename_short = pagename_short.split("/")[0]
@@ -450,16 +451,29 @@ class BOT:
 			try:
 				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Like"]')
 				main_element.click()
-			except Exception as e:
-				print(get_date()+":","DEBUG:", e)
+			except: pass
+			try:
+				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Like"]')
+				main_element.click()
+			except: pass
+			try:
+				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Follow"]')
+				main_element.click()
+			except: pass
+			try:
+				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Follow"]')
+				main_element.click()
+			except: pass
 
 		# Delete banner elements
 		try:
-			banner_0 = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]')
-			self.delete_element(banner_0)
-		except:
-			banner_1 = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
-			self.delete_element(banner_1)
+			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]')
+			self.delete_element(banner)
+		except: pass
+		try:
+			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
+			self.delete_element(banner)
+		except: pass
 		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
 		self.delete_element(banner_2)
 
