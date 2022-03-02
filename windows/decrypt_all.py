@@ -2,8 +2,7 @@ from crypto import Hash, aes_decrypt
 import os
 import sqlite3
 
-#password = input("Enter your password: ")
-password='aaaaaaaa'
+password = input("Enter your password: ")
 key = Hash(password)
 
 try: os.mkdir('decrypted_files')
