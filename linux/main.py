@@ -119,7 +119,7 @@ class BOT:
 			ch_options.add_experimental_option("prefs",prefs)
 			ch_options.add_argument("--disable-infobars")
 			temp_driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
-		url = 'https://relatedwords.org/relatedto/' + keyword
+		url = 'https://relatedwords.org/relatedto/' + keyword.lower()
 		temp_driver.get(url)
 		word_elements = temp_driver.find_elements(By.XPATH, "//a[@class='item']")[:5]
 		# Get words
@@ -438,7 +438,7 @@ class BOT:
 		except:pass
 		# Check Chatbox element and delete it
 		try:
-			chatbox = self.driver.find_element(By.XPATH, '//div[starts-with(@aria-label, "Chat with")]')
+			chatbox = self.driver.find_element(By.XPATH, '//div[@data-testid="mwchat-tabs"]')
 			self.delete_element(chatbox)
 		except NoSuchElementException: 
 			pass

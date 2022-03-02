@@ -75,8 +75,10 @@ class BOT:
 			word = new_word
 			usage_number = 0
 		text[2] = aes_encrypt(word + '|' + str(usage_number),key)
-		new_hmac = b64encode(Hash(text[4] + text[2])).decode('utf-8')
+		timestamp = get_date()
+		new_hmac = b64encode(Hash(b64encode(key).decode('utf-8') + timestamp + text[2])).decode('utf-8')
 		text[6] = new_hmac
+		text[7] = timestamp
 		text = '\n'.join(text)
 		with open(filepath, "w") as f2:
 			f2.write(text)
@@ -89,12 +91,11 @@ class BOT:
 			dec_keyword = aes_decrypt(keyword_line,key).split('|')
 			keyword = dec_keyword[0]
 			usage_number = int(dec_keyword[1])
-			salt = text[4]
+			timestamp = text[7]
 			HMAC = text[6]
 		# Verify keyword integrity
-		hmac = b64encode(Hash(salt + keyword_line)).decode('utf-8')
+		hmac = b64encode(Hash(b64encode(key).decode('utf-8') + timestamp + keyword_line)).decode('utf-8')
 		if hmac != HMAC:
-			print("[!] Protocol broken!!!")
 			write_log("[!] Protocol broken!!!",key)
 			self.quit_bot()
 			sys.exit()
@@ -115,7 +116,7 @@ class BOT:
 			ch_options.add_experimental_option("prefs",prefs)
 			ch_options.add_argument("--disable-infobars")
 			temp_driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
-		url = 'https://relatedwords.org/relatedto/' + keyword
+		url = 'https://relatedwords.org/relatedto/' + keyword.lower()
 		temp_driver.get(url)
 		word_elements = temp_driver.find_elements(By.XPATH, "//a[@class='item']")[:5]
 		# Get words
@@ -152,7 +153,6 @@ class BOT:
 			profile_exists = os.path.isdir(os.getcwd()+'\\fx_profile')
 			if not profile_exists:
 				tempdirs = os.listdir(gettempdir())
-				#print(os.listdir(gettempdir()))
 			# webdriver options
 			fx_options = Options()
 			profile_path = os.getcwd()+'\\fx_profile'
@@ -168,7 +168,7 @@ class BOT:
 			profile_exists = False
 			'''
 			# Check if browser profile folder exists
-			profile_exists = os.path.isdir(os.getcwd()+'\\ch_profile')
+			profile_exists = os.path.isdir(os.getcwd()+'/ch_profile')
 			if not profile_exists:
 				tempdirs = os.listdir(gettempdir())
 			'''
@@ -179,7 +179,7 @@ class BOT:
 			ch_options.add_argument("--disable-infobars")
 			ch_options.add_argument("--headless")
 			'''
-			profile_path = os.getcwd()+'\\ch_profile'
+			profile_path = os.getcwd()+'/ch_profile'
 			if profile_exists:
 				argumnt = "--user-data-dir="+profile_path
 				ch_options.add_argument(argumnt)
@@ -188,7 +188,7 @@ class BOT:
 			self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
 			self.driver.set_window_size(1400,700)
 
-		eff_privacy = eff_privacy / 100		
+		eff_privacy = eff_privacy / 100
 		sleep(3)
 		if chck_quitdriver(): self.quit_bot(t1)
 
@@ -198,7 +198,7 @@ class BOT:
 
 		# Create userdata folder if it does not exist
 		try: 
-			os.mkdir(os.getcwd()+"/userdata")
+			os.mkdir(os.getcwd()+"\\userdata")
 		except FileExistsError:
 			pass
 
@@ -223,18 +223,7 @@ class BOT:
 							os.mkdir('fx_profile')
 							cmd = 'Xcopy /C/H/R/S {} {}'.format(src,profile_path)
 							os.popen(cmd)
-			'''
-			elif browser == 'Chrome':
-				for i in tempdirs_2:
-					if i not in tempdirs:
-						if 'com.google.Chrome' in i:
-							src = gettempdir()+ '\\' + i
-							if "Default" in os.listdir(src):
-								write_log(get_date()+": "+"Copying profile folder... (~30s)",key)
-								sleep(30)
-								if chck_quitdriver(): self.quit_bot(t1)
-								copytree(src, profile_path)
-			'''
+
 
 		# Get avg amount of likes per day 
 		if os.path.isfile(os.getcwd()+'\\'+'userdata/supplemtary'):
@@ -243,8 +232,8 @@ class BOT:
 		else:
 			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts(key)
 			if chck_quitdriver(): self.quit_bot(t1)
-			else:
-				with open(os.getcwd()+'\\'+'userdata/supplemtary','w') as f:
+			if not chck_quitdriver():
+				with open(os.getcwd()+'\\'+'userdata\\supplemtary','w') as f:
 					f.write(aes_encrypt(str(avg_amount_of_likes_per_day),key))
 		
 		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
@@ -258,7 +247,7 @@ class BOT:
 		if chck_quitdriver(): return
 
 		# get urls from database based on current keyword
-		conn = sqlite3.connect('userdata/pages.db')
+		conn = sqlite3.connect('userdata\\pages.db')
 		c = conn.cursor()
 		c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
 		ID = c.fetchall()
@@ -268,7 +257,7 @@ class BOT:
 		random.shuffle(urls)
 
 		# get urls from liked pages from database
-		conn = sqlite3.connect('userdata/likes.db')
+		conn = sqlite3.connect('userdata\\likes.db')
 		c = conn.cursor()
 		c.execute("SELECT name FROM sqlite_master WHERE type='table';")
 		liked_pages_urls = c.fetchall()
@@ -307,53 +296,55 @@ class BOT:
 		# Get current keyword and how many times it was used
 		keyword, usage_number = self.check_keyword(key)
 		enc_keyword = aes_encrypt(keyword, key)
-		# get tables from database
-		conn = sqlite3.connect('userdata/pages.db')
-		c = conn.cursor()
+
 		# See if db exists. Otherwise, create it 
+		conn = sqlite3.connect('userdata\\pages.db')
+		c = conn.cursor()
 		try:
 			c.execute("SELECT category FROM categories")
 		except sqlite3.OperationalError:
 			create_categ_table()
+		# then, get the keywords from the db
 		keywords_in_db = c.fetchall()
+
 		# Select URLs of respective keyword
-		try:
+		if (enc_keyword,) in keywords_in_db:
 			c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
 			ID = c.fetchall()
 			c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID[0][0]))
 			urls = c.fetchall()
-		except: urls = []
-		conn.close()
-		# Generate new keyword if done with urls from db
-		nr_of_urls = len(urls)
-		if usage_number >= nr_of_urls:
-			keyword = self.gen_keyword(keyword, browser, key)
-			enc_keyword = aes_encrypt(keyword, key)
-		if chck_quitdriver(): return
+			conn.close()
+			# Generate new keyword if done with urls from db
+			nr_of_urls = len(urls)
+			if usage_number >= nr_of_urls:
+				keyword = self.gen_keyword(keyword, browser, key)
+				enc_keyword = aes_encrypt(keyword, key)
+		#if chck_quitdriver(): return
+
 		# Add new keyword to db
-		if (keyword,) not in keywords_in_db:
+		if (enc_keyword,) not in keywords_in_db:
 			categID = new_keyword(enc_keyword)
 			search_url = 'https://www.facebook.com/search/pages?q=' + keyword
 			write_log(get_date()+": "+"GET: "+ search_url,key)
 			self.driver.get(search_url)
 			sleep(3)
+			#if chck_quitdriver(): return
 			# GET FB URLs based on keyword
 			page_urls = self.select_pages(categID, key)
+			#if chck_quitdriver(): return
 			info = "Pages selected for keyword '{}':".format(keyword)
 			write_log(get_date()+": "+info,key)
 			for page_url in page_urls:
 				write_log(get_date()+": "+"   "+ aes_decrypt(page_url[0],key),key)
 			# Save URLs to db
-			conn = sqlite3.connect('userdata/pages.db')
+			conn = sqlite3.connect('userdata\\pages.db')
 			c = conn.cursor()
 			c.executemany('INSERT INTO pages (URL, categID) \
 				  		   VALUES (?, ?)', page_urls);
 			conn.commit()
 			conn.close()
-			if chck_quitdriver(): return
 
 		return enc_keyword
-
 
 	def load_more(self, n, sec):
 		# Scroll down n times to load more elements
@@ -381,7 +372,6 @@ class BOT:
 		self.driver.find_element(By.NAME,"pass").send_keys(password)
 		self.driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
 		sleep(3)
-
 
 	def analize_weekly_liked_posts(self, key):
 		# Analize daily Facebook interaction in the last 7 days, based on Facebook logs
@@ -412,7 +402,6 @@ class BOT:
 		avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
 		return avg_amount_of_likes_per_day
 
-
 	def select_pages(self, categID, key):
 		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
 		urls = self.driver.find_elements(By.TAG_NAME,'a')
@@ -424,14 +413,13 @@ class BOT:
 				return_urls.append((enc_url,categID))
 
 		rand_number = random.randint(8,15)
-		return return_urls[:rand_number]
-
+		#return return_urls[:rand_number]
+		return return_urls[:2]
 
 	def delete_element(self, element):
 		self.driver.execute_script("""var element = arguments[0];
 								element.parentNode.removeChild(element);
 								""", element)
-
 
 	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy, key):
 		amount_of_likes = 0
@@ -440,7 +428,7 @@ class BOT:
 		except:pass
 		# Check Chatbox element and delete it
 		try:
-			chatbox = self.driver.find_element(By.XPATH, '//div[starts-with(@aria-label, "Chat with")]')
+			chatbox = self.driver.find_element(By.XPATH, '//div[@data-testid="mwchat-tabs"]')
 			self.delete_element(chatbox)
 		except NoSuchElementException: 
 			pass
@@ -470,7 +458,7 @@ class BOT:
 		random_break = random.randint(-random_addition,random_addition)
 
 		# Connect to database
-		conn = sqlite3.connect('userdata/likes.db')
+		conn = sqlite3.connect('userdata\\likes.db')
 		c = conn.cursor()
 
 		# Randomly like posts in an infinite while loop until broken
@@ -606,7 +594,7 @@ class Userinterface(tk.Frame):
 		
 	def get_last_log(self, key):
 		# Get last line in bot_logs.log
-		with open(os.getcwd()+'\\'+'bot_logs.log','rb') as f:
+		with open(os.getcwd()+'/'+'bot_logs.log','rb') as f:
 			try:
 				f.seek(-2, os.SEEK_END)
 				while f.read(1) != b'\n':
@@ -620,17 +608,13 @@ class Userinterface(tk.Frame):
 	def update_ui(self, key):
 		if not chck_waitinglong():
 			# Update logs
-			try:
-				last_log = self.get_last_log(key)
-				if last_log != self.previous_last_log:
-					self.textbox.configure(state='normal')
-					self.textbox.insert(tk.END, last_log+"\n")
-					self.textbox.configure(state='disabled')
-				self.previous_last_log = last_log
-				self.textbox.yview(tk.END)
-			except:
-				#print("Image error")
-				pass
+			last_log = self.get_last_log(key)
+			if last_log != self.previous_last_log:
+				self.textbox.configure(state='normal')
+				self.textbox.insert(tk.END, last_log+"\n")
+				self.textbox.configure(state='disabled')
+			self.previous_last_log = last_log
+			self.textbox.yview(tk.END)
 			# Update screenshot
 			try:
 				photo = tk.PhotoImage(file=os.getcwd()+'\\'+".screenshot.png")
@@ -659,7 +643,7 @@ class Userinterface(tk.Frame):
 		self.BOT_started = True
 		# Get the last log
 		try: self.previous_last_log = self.get_last_log(key)
-		except FileNotFoundError: self.previous_last_log = get_date()+": "+"First launch\n"
+		except FileNotFoundError: sleep(3); self.previous_last_log = self.get_last_log(key)
 		# Disable inputs
 		self.start_button["state"] = "disabled"
 		self.slider["state"] = "disabled"
@@ -672,9 +656,9 @@ class Userinterface(tk.Frame):
 		
 	def close(self):
 		self.mainwindow.destroy()
-		open('breaksleep', 'w').close()#BREAK_SLEEP.value = True
+		open('breaksleep', 'w').close()
 		if self.BOT_started:
-			open('quitdriver', 'w').close() #QUIT_DRIVER.value = True
+			open('quitdriver', 'w').close() #chck_quitdriver() = True
 			self.bot_process.join()
 			try:
 				os.remove(".screenshot.png")
@@ -695,7 +679,7 @@ def chck_waitinglong():
 
 def sleep(seconds, long_wait = False):
 	if long_wait:
-		open('waitinglong', 'w').close()#WAITING_LONG.value = True
+		open('waitinglong', 'w').close()
 	time = 0
 	while True:
 		# Computation time. On average the waiting time == seconds parameter
@@ -710,18 +694,17 @@ def sleep(seconds, long_wait = False):
 
 def new_page(pagename):
 	# Add a new page to database
-	conn = sqlite3.connect('userdata/likes.db')
+	conn = sqlite3.connect('userdata\\likes.db')
 	c = conn.cursor()
 	c.execute('''CREATE TABLE "{}"
 	             ([post] text PRIMARY KEY,
 	              [time] date)'''.format(pagename))
-
 	conn.commit()
 	conn.close()
 
 def new_keyword(keyword):
 	# Add a new keyword to database
-	conn = sqlite3.connect('userdata/pages.db')
+	conn = sqlite3.connect('userdata\\pages.db')
 	c = conn.cursor()
 	c.execute('INSERT INTO categories (category) \
 			  		   VALUES (?)', [keyword])
@@ -732,7 +715,7 @@ def new_keyword(keyword):
 
 def create_categ_table():
 	# Create pages database to store page urls based on a keyword
-	conn = sqlite3.connect('userdata/pages.db')
+	conn = sqlite3.connect('userdata\\pages.db')
 	c = conn.cursor()
 	c.execute('''CREATE TABLE categories
 	             ([ID] INTEGER PRIMARY KEY,
@@ -746,6 +729,7 @@ def create_categ_table():
 
 def rand_dist():
 	# Retur random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
+	'''
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
@@ -767,6 +751,8 @@ def rand_dist():
 		return random.randint(8*ONE_HOUR,9*ONE_HOUR)
 	elif rand_number in [23]:
 		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
+	'''
+	return 1
 	
 
 def rand_fb_site():
@@ -819,5 +805,5 @@ def main():
 	for file in ['breaksleep','waitinglong','quitdriver','running']:
 		try: os.remove(file)
 		except FileNotFoundError: pass
-
+	
 main()
