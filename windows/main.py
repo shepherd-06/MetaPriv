@@ -273,7 +273,7 @@ class BOT:
 			if (url,) in liked_pages_urls:
 				self.like_rand(dec_url, False, avg_amount_of_likes_per_day, eff_privacy, key)
 			else:
-				new_page(url,key)
+				new_page(url)
 				self.like_rand(dec_url, True, avg_amount_of_likes_per_day, eff_privacy, key)
 			# Increment keyword usage
 			self.update_keyword(key)
