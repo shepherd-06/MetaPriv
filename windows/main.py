@@ -456,6 +456,10 @@ class BOT:
 
 		# Delete banner elements
 		try:
+			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
+			self.delete_element(banner)
+		except: pass
+		try:
 			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]')
 			self.delete_element(banner)
 		except: pass
