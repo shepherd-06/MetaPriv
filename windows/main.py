@@ -413,8 +413,7 @@ class BOT:
 				return_urls.append((enc_url,categID))
 
 		rand_number = random.randint(8,15)
-		#return return_urls[:rand_number]
-		return return_urls[:2]
+		return return_urls[:rand_number]
 
 	def delete_element(self, element):
 		self.driver.execute_script("""var element = arguments[0];
@@ -742,8 +741,7 @@ def create_categ_table():
 	conn.close()
 
 def rand_dist():
-	# Retur random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
-	'''
+	# Return random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
@@ -765,9 +763,7 @@ def rand_dist():
 		return random.randint(8*ONE_HOUR,9*ONE_HOUR)
 	elif rand_number in [23]:
 		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
-	'''
-	return 1
-	
+		
 
 def rand_fb_site():
 	# Return a random FB site so GET while waiting
