@@ -264,17 +264,17 @@ class BOT:
 		conn.close()
 
 		for (url,) in urls:
-			url = aes_decrypt(url, key)
-			write_log(get_date()+": "+"GET: "+ url,key)
-			self.driver.get(url)
+			dec_url = aes_decrypt(url, key)
+			write_log(get_date()+": "+"GET: "+ dec_url,key)
+			self.driver.get(dec_url)
 			sleep(10)
 			if chck_quitdriver(): break
 			# Start liking
-			if ((url,)) in liked_pages_urls:
-				self.like_rand(url, False, avg_amount_of_likes_per_day, eff_privacy, key)
+			if (url,) in liked_pages_urls:
+				self.like_rand(dec_url, False, avg_amount_of_likes_per_day, eff_privacy, key)
 			else:
-				new_page(aes_encrypt(url,key))
-				self.like_rand(url, True, avg_amount_of_likes_per_day, eff_privacy, key)
+				new_page(url,key)
+				self.like_rand(dec_url, True, avg_amount_of_likes_per_day, eff_privacy, key)
 			# Increment keyword usage
 			self.update_keyword(key)
 			# Go to random FB site
