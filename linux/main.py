@@ -449,7 +449,7 @@ class BOT:
 			write_log(get_date()+": "+"First visit on: "+pagename,key)
 			#os.mkdir(os.getcwd()+'/'+"userdata/"+pagename_short)
 			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Like"]')
+				main_element = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]//div[@aria-label="Like"]')
 				main_element.click()
 			except: pass
 			try:
@@ -457,7 +457,7 @@ class BOT:
 				main_element.click()
 			except: pass
 			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]//div[@aria-label="Follow"]')
+				main_element = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]//div[@aria-label="Follow"]')
 				main_element.click()
 			except: pass
 			try:
@@ -471,7 +471,7 @@ class BOT:
 			self.delete_element(banner)
 		except: pass
 		try:
-			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
+			banner = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]')
 			self.delete_element(banner)
 		except: pass
 		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
