@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import tkinter as tk
 from crypto import Hash
 from base64 import b64encode
@@ -61,6 +61,8 @@ class Create_Password_UI(tk.Tk):
 		self.destroy()
 
 	def close(self):
+		try: os.remove('running')
+		except FileNotFoundError: pass
 		sys.exit()
 
 class Enter_Password_UI(tk.Tk):
@@ -116,4 +118,6 @@ class Enter_Password_UI(tk.Tk):
 		self.destroy()
 
 	def close(self):
+		try: os.remove('running')
+		except FileNotFoundError: pass
 		exit()

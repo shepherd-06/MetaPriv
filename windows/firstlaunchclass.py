@@ -108,6 +108,8 @@ class First_launch_UI:
 		self.mainwindow.mainloop()
 
 	def close(self):
+		try: os.remove('running')
+		except FileNotFoundError: pass
 		sys.exit()
 
 	def choose_password(self):
