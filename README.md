@@ -29,8 +29,6 @@ An automated tool that allows Facebook users to obfuscate their data and conceal
 	- Input the password you created on the first run.
 	- Choose desired privacy level and click start.
 
-##### OR:
-Download pyinstaller executable from [releases](https://github.com/ctrgrb/MetaPriv/releases/tag/v0.1) and run.
 
 #### On Windows:
 1. Install the requirements.
