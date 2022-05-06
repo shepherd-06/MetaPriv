@@ -601,7 +601,7 @@ class Userinterface(tk.Frame):
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
 		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
-			font=('TkFixedFont', 20, '')).grid(row=1, column=1,sticky='n')
+			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
 		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5,length=1000,width=18,
 			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
@@ -615,7 +615,7 @@ class Userinterface(tk.Frame):
 		
 		########### Logs ###########
 		self.grid(column=0, row=2, sticky='ew', columnspan=3)
-		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=154, 
+		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, 
 			background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
