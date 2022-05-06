@@ -41,9 +41,9 @@ WAITING_LONG = mp.Value('b', False)
 W = 'white'
 INFO_TEXT = """[*] INFO [*]
 In this window you should choose your desired privacy level. 
-Choose 100 to have the noise amount as double the amount of 
-your normal traffic. You can be change the privacy value 
-on your next run. 
+Choose 1 to have the same noise amount as your normal traffic.
+Choose 2 to have double the noise amount, 3 for triple and so on.
+You can be change the privacy value on your next run. 
 
 If this is your first run, MetaPriv will analize your daily 
 interaction with Facebook from the last week and, based on 
@@ -186,7 +186,7 @@ class BOT:
 			self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
 			self.driver.set_window_size(1400,700)
 
-		eff_privacy = eff_privacy / 100
+		#eff_privacy = eff_privacy / 100
 		
 		sleep(3)
 		if QUIT_DRIVER.value: self.quit_bot(t1)
@@ -552,7 +552,8 @@ class BOT:
 					print(get_date()+":","DEBUG:", e)
 
 			# avg pages per day == 7. Break loop based on input privacy level.
-			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
+			#if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
+			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * eff_privacy) / 7:
 				write_log(get_date()+": "+"Random loop break",key)
 				break
 			sleep(random.randint(3,10))
@@ -602,10 +603,15 @@ class Userinterface(tk.Frame):
 		self.eff_privacy = tk.DoubleVar()
 		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
 			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
+		'''
 		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5,length=1000,width=18,
 			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.set(55)
+		'''
+		self.slider = tk.Scale(self.mainwindow,from_=1,to=5,orient='horizontal', background=W,
+			variable=self.eff_privacy,tickinterval=1,sliderlength=20,resolution=1,length=1000,width=18,
+			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
 
 		########### Start button ###########
