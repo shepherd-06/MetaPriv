@@ -162,7 +162,7 @@ class BOT:
 			if profile_exists:
 				fx_options.add_argument("--profile")
 				fx_options.add_argument(profile_path)
-			fx_options.add_argument("--headless")
+			#fx_options.add_argument("--headless")
 			# Start
 			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 			self.driver.set_window_size(1400,814)
@@ -236,7 +236,7 @@ class BOT:
 			with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
 				avg_amount_of_likes_per_day = int(aes_decrypt(f.read(),key))
 		else:
-			avg_amount_of_likes_per_day = self.analize_weekly_liked_posts(key)
+			avg_amount_of_likes_per_day = 0#self.analize_weekly_liked_posts(key)
 			if QUIT_DRIVER.value: self.quit_bot(t1)
 			if not QUIT_DRIVER.value:
 				with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
@@ -290,7 +290,9 @@ class BOT:
 			randtime = rand_dist()
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
-				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss)",key)
+				resume_time = str(datetime.now() + timedelta(0,randtime))
+				resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
+				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss). Resume at "+resume_time ,key)
 			sleep(5)
 			if QUIT_DRIVER.value: break
 			sleep(randtime, True)
@@ -464,6 +466,10 @@ class BOT:
 				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Follow"]')
 				main_element.click()
 			except: pass
+			try:
+				main_element = self.driver.find_element(By.XPATH, '//div[@data-pagelet="ProfileActions"]//span[@class="a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"]')
+				main_element.click()
+			except: pass
 
 		# Delete banner elements
 		try:
@@ -482,7 +488,7 @@ class BOT:
 		self.delete_element(banner_2)
 
 		# for adding a random value between -40% and +40% to the avg_amount_of_likes_per_day variable 
-		random_addition = int(avg_amount_of_likes_per_day*0.4)
+		random_addition = int(eff_privacy*0.4)
 		random_break = random.randint(-random_addition,random_addition)
 
 		# Connect to database
@@ -553,7 +559,8 @@ class BOT:
 
 			# avg pages per day == 7. Break loop based on input privacy level.
 			#if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
-			if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * eff_privacy) / 7:
+			#if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * eff_privacy) / 7:
+			if amount_of_likes > (eff_privacy + random_break) / 7:
 				write_log(get_date()+": "+"Random loop break",key)
 				break
 			sleep(random.randint(3,10))
@@ -609,8 +616,8 @@ class Userinterface(tk.Frame):
 			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.set(55)
 		'''
-		self.slider = tk.Scale(self.mainwindow,from_=1,to=5,orient='horizontal', background=W,
-			variable=self.eff_privacy,tickinterval=1,sliderlength=20,resolution=1,length=1000,width=18,
+		self.slider = tk.Scale(self.mainwindow,from_=10,to=50,orient='horizontal', background=W,
+			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
 			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
 
