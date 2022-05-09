@@ -40,10 +40,9 @@ BREAK_SLEEP = mp.Value('b', False)
 WAITING_LONG = mp.Value('b', False)
 W = 'white'
 INFO_TEXT = """[*] INFO [*]
-In this window you should choose your desired privacy level. 
-Choose 1 to have the same noise amount as your normal traffic.
-Choose 2 to have double the noise amount, 3 for triple and so on.
-You can be change the privacy value on your next run. 
+In this window you should choose how many posts
+to like per day on average.You can be change the
+value on your next run.
 
 If this is your first run, MetaPriv will analize your daily 
 interaction with Facebook from the last week and, based on 
@@ -616,9 +615,9 @@ class Userinterface(tk.Frame):
 			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.set(55)
 		'''
-		self.slider = tk.Scale(self.mainwindow,from_=10,to=50,orient='horizontal', background=W,
+		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
-			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
+			label='Posts per day:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
 
 		########### Start button ###########
