@@ -290,7 +290,7 @@ class BOT:
 			randtime = rand_dist()
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
-				resume_time = str(datetime.now() + timedelta(0,randtime))
+				resume_time = datetime.now() + timedelta(0,randtime)
 				resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
 				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss). Resume at "+resume_time ,key)
 			sleep(5)
