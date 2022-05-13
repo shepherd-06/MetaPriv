@@ -345,9 +345,11 @@ class BOT:
 				video_element.location_once_scrolled_into_view
 				links = video_element.find_elements(By.XPATH,".//a[@role='link']")
 				try:
-					video_length = video_element.find_element(By.XPATH,".//span[@class='d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db e9vueds3 j5wam9gi lrazzd5p qrtewk5h']").text
+					video_box = video_element.find_element(By.XPATH,".//span[@class='d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db e9vueds3 j5wam9gi lrazzd5p qrtewk5h']")
 				except:
 					continue
+
+				video_length = video_box.text
 
 				post_url = links[0].get_attribute('href')
 				post_url = post_url.split('&external_log_id')[0]
@@ -361,7 +363,7 @@ class BOT:
 				except sqlite3.IntegrityError:
 					continue
 
-				video_element.click()
+				video_box.click()
 				sleep(3)
 				post_url = self.driver.current_url
 				
@@ -595,14 +597,16 @@ class BOT:
 			if QUIT_DRIVER.value: break
 			# Find article elements
 			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
+
 			if article_elements == prev_article_elements:
 				write_log(get_date()+": "+'No more posts on this page',key)
 				break
+			prev_article_elements = article_elements
+
 			if last_element != '':
 				indx = article_elements.index(last_element)
 				article_elements = article_elements[indx+1:]
-
-			prev_article_elements = article_elements
+			
 			# Go through every element
 			for article_element in article_elements:
 				if QUIT_DRIVER.value: break
