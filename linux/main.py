@@ -37,11 +37,11 @@ NORMAL_LOAD_AMMOUNT = 2
 ONE_HOUR = 3600
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
-WAITING_LONG = mp.Value('b', False)
+STOP_WATCHING = mp.Value('b', False)
 W = 'white'
 INFO_TEXT = """[*] INFO [*]
 In this window you should choose how many posts
-to like per day on average.You can be change the
+to like per day on average. You can be change the
 value on your next run.
 
 If this is your first run, MetaPriv will analize your daily 
@@ -161,7 +161,7 @@ class BOT:
 			if profile_exists:
 				fx_options.add_argument("--profile")
 				fx_options.add_argument(profile_path)
-			#fx_options.add_argument("--headless")
+			fx_options.add_argument("--headless")
 			# Start
 			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 			self.driver.set_window_size(1400,814)
@@ -275,29 +275,112 @@ class BOT:
 			sleep(10)
 			if QUIT_DRIVER.value: break
 			# Start liking
-			if (url,) in liked_pages_urls:
-				self.like_rand(dec_url, False, avg_amount_of_likes_per_day, eff_privacy, key)
-			else:
+			if (url,) not in liked_pages_urls:
 				new_page(url)
-				self.like_rand(dec_url, True, avg_amount_of_likes_per_day, eff_privacy, key)
+			self.like_rand(dec_url, avg_amount_of_likes_per_day, eff_privacy, key)
 			# Increment keyword usage
 			self.update_keyword(key)
 			# Go to random FB site
-			rand_site = rand_fb_site()
-			self.driver.get(rand_site)
+			#rand_site = rand_fb_site()
+			#self.driver.get(rand_site)
 			# wait between 10 s and 10 h
 			randtime = rand_dist()
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
 				resume_time = datetime.now() + timedelta(0,randtime)
 				resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
-				write_log(get_date()+": "+"Wait for "+ time_formatted + " (hh:mm:ss). Resume at "+resume_time ,key)
+				write_log(get_date()+": "+"Watching videos for "+ time_formatted + " (hh:mm:ss). Resume liking at " + resume_time, key)
 			sleep(5)
 			if QUIT_DRIVER.value: break
-			sleep(randtime, True)
+			self.watch_videos(randtime, key)
 			if QUIT_DRIVER.value: break
 
 		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
+
+	def wait(self, randtime):
+		time = 0
+		while True:
+			# Computation time. On average the waiting time == seconds parameter
+			Sleep(1-0.003)
+			time += 1
+			if BREAK_SLEEP.value:
+				break
+			if time == randtime:
+				break
+		STOP_WATCHING.value = True
+
+
+	def watch_videos(self, randtime, key):
+		try:create_video_db()
+		except:pass
+		conn = sqlite3.connect('userdata/watched_videos.db')
+		c = conn.cursor()
+		keyword, _ = self.check_keyword(key)
+		url = 'https://www.facebook.com/watch/search/?q=' + keyword
+		self.driver.get(url)
+
+		sleep(3)
+		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
+		self.delete_element(banner)
+
+		first = self.driver.find_element(By.XPATH,"//div[@class='sjgh65i0']")
+		self.delete_element(first)
+
+		#STOP_WATCHING.value
+		wait_thread = threading.Thread(target=self.wait, args=[randtime])
+		wait_thread.start()
+
+		last_element = ''
+		while True:
+			if QUIT_DRIVER.value: break
+			if STOP_WATCHING.value: break
+			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='sjgh65i0']")
+			if last_element != '':
+				indx = video_elements.index(last_element)
+				video_elements = video_elements[indx+1:]
+
+			for video_element in video_elements:
+				if QUIT_DRIVER.value: break
+				if STOP_WATCHING.value: break
+				last_element = video_element
+				video_element.location_once_scrolled_into_view
+				links = video_element.find_elements(By.XPATH,".//a[@role='link']")
+				try:
+					video_length = video_element.find_element(By.XPATH,".//span[@class='d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db e9vueds3 j5wam9gi lrazzd5p qrtewk5h']").text
+					#print(video_length)
+				except:
+					continue
+
+				post_url = links[0].get_attribute('href')
+				post_url = post_url.split('&external_log_id')[0]
+				page_url = links[1].get_attribute('href')
+
+				try:
+					c.execute('INSERT INTO main_video_feed (post_URL, page_URL, time) \
+								VALUES ("' + post_url + '","' + page_url + '","'+ get_date() + '")');
+					conn.commit()
+					write_log(get_date()+": Watching video for {} (mm:ss)\n      Post: {}\n      Page: {}".format(video_length, post_url, page_url), key)
+				except sqlite3.IntegrityError:
+					continue
+
+				video_element.click()
+				sleep(3)
+				post_url = self.driver.current_url
+				
+				v_min, v_sec = video_length.split(':')
+				delta = timedelta(minutes=int(v_min), seconds=int(v_sec))
+				watch_time = 5 + delta.total_seconds()
+
+				sleep(watch_time)
+				if QUIT_DRIVER.value: break
+				if STOP_WATCHING.value: break
+
+				self.driver.back()
+				sleep(3)
+
+		conn.close()
+		wait_thread.join()
+		STOP_WATCHING.value = False
 
 	def pages_based_on_keyword(self, browser, key):
 		# Get current keyword and how many times it was used
@@ -431,46 +514,7 @@ class BOT:
 								element.parentNode.removeChild(element);
 								""", element)
 
-
-	def like_rand(self, pagename, first_visit, avg_amount_of_likes_per_day, eff_privacy, key):
-		sleep(2)
-		amount_of_likes = 0
-		#pagename_short = pagename.split("https://www.facebook.com/")[1]
-		try: pagename_short = pagename_short.split("/")[0]
-		except:pass
-		# Check Chatbox element and delete it
-		try:
-			chatbox = self.driver.find_element(By.XPATH, '//div[@data-testid="mwchat-tabs"]')
-			self.delete_element(chatbox)
-		except NoSuchElementException: 
-			pass
-
-		if first_visit:
-			# Like page
-			write_log(get_date()+": "+"First visit on: "+pagename,key)
-			#os.mkdir(os.getcwd()+'/'+"userdata/"+pagename_short)
-			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]//div[@aria-label="Like"]')
-				main_element.click()
-			except: pass
-			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Like"]')
-				main_element.click()
-			except: pass
-			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]//div[@aria-label="Follow"]')
-				main_element.click()
-			except: pass
-			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Follow"]')
-				main_element.click()
-			except: pass
-			try:
-				main_element = self.driver.find_element(By.XPATH, '//div[@data-pagelet="ProfileActions"]//span[@class="a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"]')
-				main_element.click()
-			except: pass
-
-		# Delete banner elements
+	def delete_banners(self):
 		try:
 			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px;"]')
 			self.delete_element(banner)
@@ -483,6 +527,57 @@ class BOT:
 			banner = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]')
 			self.delete_element(banner)
 		except: pass
+		try:
+			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: auto;"]')
+			self.delete_element(banner)
+		except: pass
+
+	def like_page(self):
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]//div[@aria-label="Like"]')
+			main_element.click()
+		except: pass
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Like"]')
+			main_element.click()
+		except: pass
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: auto;"]//div[@aria-label="Like"]')
+			main_element.click()
+		except: pass
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:"]//div[@aria-label="Follow"]')
+			main_element.click()
+		except: pass
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: 1;"]//div[@aria-label="Follow"]')
+			main_element.click()
+		except: pass
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: auto;"]//div[@aria-label="Follow"]')
+			main_element.click()
+		except: pass
+		try:
+			main_element = self.driver.find_element(By.XPATH, '//div[@data-pagelet="ProfileActions"]//span[@class="a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"]')
+			main_element.click()
+		except: pass
+
+
+	def like_rand(self, pagename, avg_amount_of_likes_per_day, eff_privacy, key):
+		sleep(2)
+		amount_of_likes = 0
+		# Check Chatbox element and delete it
+		try:
+			chatbox = self.driver.find_element(By.XPATH, '//div[@data-testid="mwchat-tabs"]')
+			self.delete_element(chatbox)
+		except NoSuchElementException: 
+			pass
+
+		# Like page
+		self.like_page()
+
+		# Delete banner elements
+		self.delete_banners()
 		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
 		self.delete_element(banner_2)
 
@@ -496,19 +591,27 @@ class BOT:
 
 		# Randomly like posts in an infinite while loop until broken
 		last_element = ''
+		prev_article_elements = []
+		write_log(get_date()+": "+'Start liking posts',key)
 		while True:
 			if QUIT_DRIVER.value: break
 			# Find article elements
 			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
+			if article_elements == prev_article_elements:
+				write_log(get_date()+": "+'No more posts on this page',key)
+				break
 			if last_element != '':
 				indx = article_elements.index(last_element)
 				article_elements = article_elements[indx+1:]
 
+			prev_article_elements = article_elements
 			# Go through every element
 			for article_element in article_elements:
 				if QUIT_DRIVER.value: break
-				last_element = article_element
 				article_element.location_once_scrolled_into_view
+				if last_element == '':
+					self.delete_banners()
+				last_element = article_element
 				try:
 					check_if_liked = article_element.find_element(By.XPATH, './/div[@aria-label="Remove Like"]')
 					sleep(random.randint(3,7))
@@ -533,11 +636,6 @@ class BOT:
 						if QUIT_DRIVER.value: break
 						post_url = article_element.find_element(By.XPATH, './/a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
 						post_url = post_url.split('__cft__')[0]
-					
-						# Save screenshot
-						#data = article_element.screenshot_as_png
-						#with open(os.getcwd()+'/'+"userdata/"+pagename_short+"/"+get_date()+".png",'wb') as f:
-						#	f.write(data)
 
 						# Like post
 						like_element = article_element.find_element(By.XPATH, './/div[@aria-label="Like"]')
@@ -570,8 +668,8 @@ class BOT:
 	def take_screenshot(self, ):
 		# Take a browser screenshot every second
 		while not QUIT_DRIVER.value:
-			if not WAITING_LONG.value:
-				self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
+			#if not WAITING_LONG.value:
+			self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
 			sleep(1)
 		
 	def quit_bot(self, thread = None):
@@ -627,8 +725,8 @@ class Userinterface(tk.Frame):
 		
 		########### Logs ###########
 		self.grid(column=0, row=2, sticky='ew', columnspan=3)
-		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, 
-			background='black')
+		#self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, background='black')
+		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=118, background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
 		
@@ -646,24 +744,24 @@ class Userinterface(tk.Frame):
 		return last_line
 
 	def update_ui(self, key):
-		if not WAITING_LONG.value:
-			# Update logs
-			last_log = self.get_last_log(key)
-			if last_log != self.previous_last_log:
-				self.textbox.configure(state='normal')
-				self.textbox.insert(tk.END, last_log+"\n")
-				self.textbox.configure(state='disabled')
-			self.previous_last_log = last_log
-			self.textbox.yview(tk.END)
-			# Update screenshot
-			try:
-				photo = tk.PhotoImage(file=os.getcwd()+'/'+".screenshot.png")
-				self.screeshot_label.image = photo
-				self.screeshot_label.config(image=photo)
-				self.mainwindow.update_idletasks()
-			except:
-				#print("Image error")
-				pass
+		#if not WAITING_LONG.value:
+		# Update logs
+		last_log = self.get_last_log(key)
+		if last_log != self.previous_last_log:
+			self.textbox.configure(state='normal')
+			self.textbox.insert(tk.END, last_log+"\n")
+			self.textbox.configure(state='disabled')
+		self.previous_last_log = last_log
+		self.textbox.yview(tk.END)
+		# Update screenshot
+		try:
+			photo = tk.PhotoImage(file=os.getcwd()+'/'+".screenshot.png")
+			self.screeshot_label.image = photo
+			self.screeshot_label.config(image=photo)
+			self.mainwindow.update_idletasks()
+		except:
+			#print("Image error")
+			pass
 		# Recursion
 		self.mainwindow.after(2000,self.update_ui, key)
 
@@ -707,9 +805,7 @@ class Userinterface(tk.Frame):
 		
 #########################################################################################################################
 
-def sleep(seconds, long_wait = False):
-	if long_wait:
-		WAITING_LONG.value = True
+def sleep(seconds, watching_video = False):
 	time = 0
 	while True:
 		# Computation time. On average the waiting time == seconds parameter
@@ -717,10 +813,10 @@ def sleep(seconds, long_wait = False):
 		time += 1
 		if BREAK_SLEEP.value:
 			break
+		if STOP_WATCHING.value:
+			break
 		if time == seconds:
 			break
-	if long_wait:
-		WAITING_LONG.value = False
 
 def new_page(pagename):
 	# Add a new page to database
@@ -757,8 +853,19 @@ def create_categ_table():
 	conn.commit()
 	conn.close()
 
+def create_video_db():
+	conn = sqlite3.connect('userdata/watched_videos.db')
+	c = conn.cursor()
+	c.execute('''CREATE TABLE main_video_feed
+	             ([post_URL] text PRIMARY KEY,
+	              [page_URL] text,
+	              [time] date)''')
+	conn.commit()
+	conn.close()
+
 def rand_dist():
 	# Retur random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
+	return 30
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
@@ -780,6 +887,7 @@ def rand_dist():
 		return random.randint(8*ONE_HOUR,9*ONE_HOUR)
 	elif rand_number in [23]:
 		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
+
 	
 
 def rand_fb_site():
