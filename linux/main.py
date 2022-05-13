@@ -725,8 +725,8 @@ class Userinterface(tk.Frame):
 		
 		########### Logs ###########
 		self.grid(column=0, row=2, sticky='ew', columnspan=3)
-		#self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, background='black')
-		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=118, background='black')
+		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, background='black')
+		#self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=118, background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
 		
@@ -864,8 +864,7 @@ def create_video_db():
 	conn.close()
 
 def rand_dist():
-	# Retur random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
-	return 30
+	# Return random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
