@@ -161,7 +161,7 @@ class BOT:
 			if profile_exists:
 				fx_options.add_argument("--profile")
 				fx_options.add_argument(profile_path)
-			fx_options.add_argument("--headless")
+			#fx_options.add_argument("--headless")
 			# Start
 			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 			self.driver.set_window_size(1400,814)
@@ -300,7 +300,6 @@ class BOT:
 	def wait(self, randtime):
 		time = 0
 		while True:
-			# Computation time. On average the waiting time == seconds parameter
 			Sleep(1-0.003)
 			time += 1
 			if BREAK_SLEEP.value:
@@ -319,14 +318,14 @@ class BOT:
 		url = 'https://www.facebook.com/watch/search/?q=' + keyword
 		self.driver.get(url)
 
-		sleep(3)
+		sleep(5)
+		randtime = randtime - 5
 		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
 		self.delete_element(banner)
 
 		first = self.driver.find_element(By.XPATH,"//div[@class='sjgh65i0']")
 		self.delete_element(first)
 
-		#STOP_WATCHING.value
 		wait_thread = threading.Thread(target=self.wait, args=[randtime])
 		wait_thread.start()
 
@@ -347,7 +346,6 @@ class BOT:
 				links = video_element.find_elements(By.XPATH,".//a[@role='link']")
 				try:
 					video_length = video_element.find_element(By.XPATH,".//span[@class='d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db e9vueds3 j5wam9gi lrazzd5p qrtewk5h']").text
-					#print(video_length)
 				except:
 					continue
 
@@ -357,7 +355,7 @@ class BOT:
 
 				try:
 					c.execute('INSERT INTO main_video_feed (post_URL, page_URL, time) \
-								VALUES ("' + post_url + '","' + page_url + '","'+ get_date() + '")');
+								VALUES ("' + aes_encrypt(post_url, key) + '","' + aes_encrypt(page_url, key) + '","'+ get_date() + '")');
 					conn.commit()
 					write_log(get_date()+": Watching video for {} (mm:ss)\n      Post: {}\n      Page: {}".format(video_length, post_url, page_url), key)
 				except sqlite3.IntegrityError:
