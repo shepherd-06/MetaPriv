@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-
 import numpy as np 
 import sqlite3
 import matplotlib

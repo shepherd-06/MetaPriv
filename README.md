@@ -1,5 +1,5 @@
 # MetaPriv
-An automated tool that allows Facebook users to obfuscate their data and conceal their real interests and habits from Facebook
+An automated tool that allows Facebook users to obfuscate their data and conceal their real interests and habits from Facebook. Designed to be ran constantly on a VM in a dedicated machine.
 
 #### How it works (high level):
 1. Opens a browser instance – Firefox or Chrome/Chromium.
@@ -17,7 +17,7 @@ An automated tool that allows Facebook users to obfuscate their data and conceal
 - tkinter: sudo apt install python3-tk / sudo pacman -S tk
 
 ## How to use:
-#### On Linux (tested on Manjaro):
+#### On Linux:
 1. Install the requirements.
 2. Run command: python main.py
 3. On first run: 
@@ -25,12 +25,13 @@ An automated tool that allows Facebook users to obfuscate their data and conceal
 	- Input facebook credentials, a seed keyword and your preferred browser (Firefox/Chrome).
 	- Choose desired privacy level and click start.
 	- To close the program -- close the window.
-4. On next runs:
+4. On next runs with Firefox:
 	- Input the password you created on the first run.
 	- Choose desired privacy level and click start.
+5. With Chrome it will always log in. Firefox is recommended since Chrome causes weird errors when trying to get post and page urls.
 
 
-#### On Windows:
+#### On Windows (outdated):
 1. Install the requirements.
 2. Run command: python main.py
 3. On first run with Firefox: 
@@ -42,8 +43,6 @@ An automated tool that allows Facebook users to obfuscate their data and conceal
 	- Input the password you created on the first run.
 	- Choose desired privacy level and click start.
 5. With Chrome it will always log in.
-
-No exe for Windows since pyinstaller doesn't seem to work properly...
 
 ## Code description:
 Consists of 4 files:
