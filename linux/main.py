@@ -332,11 +332,18 @@ class BOT:
 		wait_thread.start()
 
 		last_element = ''
+		prev_video_elements = []
 		while True:
 			if QUIT_DRIVER.value: break
 			if STOP_WATCHING.value: break
 			sleep(3)
 			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='sjgh65i0']")
+			
+			if prev_video_elements == video_elements:
+				write_log(get_date()+": "+'No more videos to watch',key)
+				continue
+			prev_video_elements = video_elements
+			
 			if last_element != '':
 				indx = video_elements.index(last_element)
 				video_elements = video_elements[indx+1:]
@@ -563,10 +570,12 @@ class BOT:
 			main_element = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: auto;"]//div[@aria-label="Follow"]')
 			main_element.click()
 		except: pass
+		
 		try:
-			main_element = self.driver.find_element(By.XPATH, '//div[@data-pagelet="ProfileActions"]//span[@class="a8c37x1j ni8dbmo4 stjgntxs l9j0dhe7 ltmttdrg g0qnabr5"]')
+			main_element = self.driver.find_element(By.XPATH, '//div[@aria-label="Follow"]')
 			main_element.click()
 		except: pass
+		
 
 
 	def like_rand(self, pagename, avg_amount_of_likes_per_day, eff_privacy, key):
@@ -884,6 +893,7 @@ def create_video_db(keyword):
 
 def rand_dist():
 	# Return random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
+	#return 30
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)

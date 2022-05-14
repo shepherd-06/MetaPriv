@@ -1,4 +1,4 @@
-clear.sh
+clean.sh
 *.log
 fx_profile/
 ch_profile/
@@ -8,3 +8,5 @@ analysisdata/
 .saved_data
 __pycache__/
 tst.py
+analyze.py
+decrypted_files/
