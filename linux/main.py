@@ -30,6 +30,7 @@ import sys
 # imports from created files 
 from firstlaunchclass import First_launch_UI
 from passwordclass import Enter_Password_UI
+from stats import StatsWindow
 from crypto import Hash, aes_encrypt, aes_decrypt
 
 
@@ -310,13 +311,14 @@ class BOT:
 
 
 	def watch_videos(self, randtime, key):
-		try:create_video_db()
-		except:pass
 		conn = sqlite3.connect('userdata/watched_videos.db')
 		c = conn.cursor()
 		keyword, _ = self.check_keyword(key)
 		url = 'https://www.facebook.com/watch/search/?q=' + keyword
 		self.driver.get(url)
+
+		try: create_video_db(aes_encrypt(keyword,key))
+		except sqlite3.OperationalError: pass
 
 		sleep(5)
 		randtime = randtime - 5
@@ -333,6 +335,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: break
 			if STOP_WATCHING.value: break
+			sleep(3)
 			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='sjgh65i0']")
 			if last_element != '':
 				indx = video_elements.index(last_element)
@@ -356,7 +359,7 @@ class BOT:
 				page_url = links[1].get_attribute('href')
 
 				try:
-					c.execute('INSERT INTO main_video_feed (post_URL, page_URL, time) \
+					c.execute('INSERT INTO "'+aes_encrypt(keyword,key)+'" (post_URL, page_URL, time) \
 								VALUES ("' + aes_encrypt(post_url, key) + '","' + aes_encrypt(page_url, key) + '","'+ get_date() + '")');
 					conn.commit()
 					write_log(get_date()+": Watching video for {} (mm:ss)\n      Post: {}\n      Page: {}".format(video_length, post_url, page_url), key)
@@ -734,6 +737,17 @@ class Userinterface(tk.Frame):
 		#self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=118, background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
+
+		########### Stats button ###########
+		self.stats_button = tk.Button(self.mainwindow, text="Stats", command= lambda: self.stats_window(key),
+			font=10, background=W)
+		self.stats_button.grid(row=2,column=2,sticky='ne')
+
+	def stats_window(self, key):
+		stats = tk.Tk()
+		stats.resizable(False, False)
+		StatsWindow(stats,key)
+		stats.mainloop()
 		
 	def get_last_log(self, key):
 		# Get last line in bot_logs.log
@@ -858,13 +872,13 @@ def create_categ_table():
 	conn.commit()
 	conn.close()
 
-def create_video_db():
+def create_video_db(keyword):
 	conn = sqlite3.connect('userdata/watched_videos.db')
 	c = conn.cursor()
-	c.execute('''CREATE TABLE main_video_feed
+	c.execute('''CREATE TABLE "{}"
 	             ([post_URL] text PRIMARY KEY,
 	              [page_URL] text,
-	              [time] date)''')
+	              [time] date)'''.format(keyword))
 	conn.commit()
 	conn.close()
 

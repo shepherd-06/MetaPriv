@@ -18,11 +18,11 @@ class Create_Password_UI(tk.Tk):
 		# Create password
 		tk.Label(self, text="Choose a password: ").grid(row=1, column=0)
 		self.Password = tk.Entry(self,show='*')
-		self.Password.grid(row=1, column=1, columnspan=2)
+		self.Password.grid(row=1, column=1, columnspan=2,sticky='we')
 
 		tk.Label(self, text="Repeat password: ").grid(row=2, column=0)
 		self.r_Password = tk.Entry(self,show='*')
-		self.r_Password.grid(row=2, column=1, columnspan=2)
+		self.r_Password.grid(row=2, column=1, columnspan=2,sticky='we')
 		self.hidden = True
 
 		# Invalid input comment
@@ -74,7 +74,7 @@ class Enter_Password_UI(tk.Tk):
 		# Input password
 		tk.Label(self, text="Enter password: ").grid(row=1, column=0)
 		self.Password = tk.Entry(self,show='*')
-		self.Password.grid(row=1, column=1, columnspan=2)
+		self.Password.grid(row=1, column=1, columnspan=2,sticky='we')
 		self.hidden = True
 
 		# Invalid input comment
