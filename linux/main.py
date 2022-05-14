@@ -281,9 +281,6 @@ class BOT:
 			self.like_rand(dec_url, avg_amount_of_likes_per_day, eff_privacy, key)
 			# Increment keyword usage
 			self.update_keyword(key)
-			# Go to random FB site
-			#rand_site = rand_fb_site()
-			#self.driver.get(rand_site)
 			# wait between 10 s and 10 h
 			randtime = rand_dist()
 			if not QUIT_DRIVER.value:
@@ -730,7 +727,7 @@ class Userinterface(tk.Frame):
 			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.set(55)
 		'''
-		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
+		self.slider = tk.Scale(self.mainwindow,from_=10,to=60,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
 			label='Posts per day:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
