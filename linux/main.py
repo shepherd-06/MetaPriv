@@ -367,8 +367,11 @@ class BOT:
 				sleep(3)
 				post_url = self.driver.current_url
 				
-				v_min, v_sec = video_length.split(':')
-				delta = timedelta(minutes=int(v_min), seconds=int(v_sec))
+				v_len = video_length.split(':')
+				if len(v_len) == 2:
+					delta = timedelta(minutes=int(v_len[-2]), seconds=int(v_len[-1]))
+				elif len(v_len) == 3:
+					delta = timedelta(hours=int(v_len[-3]) ,minutes=int(v_len[-2]), seconds=int(v_len[-1]))
 				watch_time = 5 + delta.total_seconds()
 
 				sleep(watch_time)
