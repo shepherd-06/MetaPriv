@@ -2,30 +2,73 @@ import tkinter as tk
 from tkinter import ttk
 import numpy as np 
 import sqlite3
+import pandas as pd
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
-
 from pandastable import Table
-import pandas as pd
-
-from crypto import Hash, aes_encrypt, aes_decrypt
+from crypto import Hash, aes_decrypt
 
 
 class Keyword:
 	def __init__(self,key):
 		self.key = key
 		self.video_list = []
+		self.pages = {}
 
 	def add_videos(self,video_list):
 		for vid in video_list:
-			#print(vid)
 			post, page, _ = vid
 			self.video_list.append((aes_decrypt(post,self.key),aes_decrypt(page,self.key)))
 
 	def get_videos(self):
 		return self.video_list
+
+	def add_page(self,page,post_list):
+		self.pages[page] = post_list
+
+	def get_pages_dict(self):
+		return self.pages
+
+
+class PostsWindow:
+	def __init__(self,pages_dict,name):
+
+		def plot(choice):
+			try:self.plot_frame.destroy()
+			except:pass
+			choice = variable.get()
+			self.plot(self.pages_dict[choice])
+
+		self.mainwindow = tk.Tk()
+		title = name + ' posts liked'
+		self.mainwindow.title(title)
+		self.mainwindow.protocol('WM_DELETE_WINDOW', self.close)
+		self.pages_dict = pages_dict
+		pages = list(self.pages_dict.keys())
+
+		variable = tk.StringVar()
+		variable.set(pages[0])
+
+		dropdown = tk.OptionMenu(self.mainwindow,variable,*pages,command=plot)
+		dropdown.pack(fill='x',expand=True)
+		self.plot(self.pages_dict[variable.get()])
+
+	def plot(self,post_list):
+		df = pd.DataFrame({'Post_URL': post_list })
+
+		self.plot_frame = tk.Frame(self.mainwindow)
+		self.plot_frame.pack(fill='x',expand=True)
+
+		pt = Table(self.plot_frame,dataframe=df,width=900,maxcellwidth=900)
+		pt.show()
+
+	def close(self):
+		self.mainwindow.destroy()
+
+	def start(self):
+		self.mainwindow.mainloop()
 
 
 class VideoWindow:
@@ -76,8 +119,7 @@ class StatsWindow(tk.Frame):
 		self.liked_pages_list = []
 		self.watched_videos_list = []
 		self.words = {}
-		pages = []
-		#videos = []
+		#pages = []
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
 		c.execute("SELECT * FROM categories")
@@ -99,17 +141,18 @@ class StatsWindow(tk.Frame):
 			c = conn.cursor()
 			c.execute("SELECT name FROM sqlite_master WHERE type='table';")
 			liked_pages_urls = c.fetchall()
-			page_list = []
 			for url in urls:
 				if url in liked_pages_urls:
-					page_list.append(aes_decrypt(url[0],key))
 					c.execute('SELECT post FROM "'+url[0]+'"')
 					posts = c.fetchall()
+					p = []
+					for post in posts:
+						p.append(aes_decrypt(post[0],key))
+					self.words[aes_decrypt(word,key)].add_page(aes_decrypt(url[0],key),p)
 					table_length = len(posts)
 					liked_posts += table_length
 					liked_pages += 1
 
-			pages.append(page_list)
 			conn.close()
 			n_watched_videos = 0
 			watched_videos = []
@@ -126,7 +169,9 @@ class StatsWindow(tk.Frame):
 			self.liked_pages_list.append(liked_pages)
 			self.watched_videos_list.append(n_watched_videos)
 
+			# Add videos to keyword object
 			self.words[aes_decrypt(word,key)].add_videos(watched_videos)
+
 
 		self.frame1 = ttk.Frame(tabs)
 		self.frame2 = ttk.Frame(tabs)
@@ -147,33 +192,24 @@ class StatsWindow(tk.Frame):
 		self.variable.set(list(self.words.keys())[0])
 
 		# creating widget
-		dropdown = tk.OptionMenu(self.mainwindow,self.variable,*self.words)#,command=self.display_selected)
+		dropdown = tk.OptionMenu(self.mainwindow,self.variable,*self.words)
 		dropdown.grid(row=1,column=0,sticky='ew')
 
 		watched_videos_button = tk.Button(self.mainwindow, text="Videos watched", 
-			font=10, background='white',command=self.display_selected)
+			font=10, background='white',command=self.video_window)
 		watched_videos_button.grid(row=1,column=1,sticky='we')#command= lambda: self.strt(key),
 
-		posts_button = tk.Button(self.mainwindow, text="Posts liked", font=10, background='white')
+		posts_button = tk.Button(self.mainwindow, text="Posts liked", font=10, background='white',
+			command=self.posts_window)
 		posts_button.grid(row=1,column=2,sticky='we')#command= lambda: self.strt(key),
-		#print(pages)
-		#print(videos)
-		#for word in self.words:
-		#	print(word)
-		#	print(self.words[word].get_videos())
 
-		'''
-		variable2 = tk.StringVar()
-		variable2.set(pages[0][0])
 
-		self.dropdown_pages = tk.OptionMenu(
-		    self.mainwindow,
-		    variable2,
-		    *pages[0],
-		)
-		self.dropdown_pages.grid(row=1,column=1,sticky='ew')
-		'''
-	def display_selected(self):
+	def posts_window(self):
+		keyword = self.variable.get()
+		window = PostsWindow(self.words[keyword].get_pages_dict(),keyword)
+		window.start()
+
+	def video_window(self):
 		keyword = self.variable.get()
 		window = VideoWindow(self.words[keyword].get_videos(),keyword)
 		window.start()
@@ -271,12 +307,12 @@ class StatsWindow(tk.Frame):
 		toolbar = NavigationToolbar2Tk(self.canvas,self.toolbarframe)
 		toolbar.update()	
 
-
 	def close(self):
 		self.mainwindow.destroy()
 
 if __name__ == '__main__':
-	key = Hash('qwerty123')
+	password = input("Enter password: ")
+	key = Hash(password)
 	stats = tk.Tk()
 	stats.resizable(False, False)
 	StatsWindow(stats,key)
