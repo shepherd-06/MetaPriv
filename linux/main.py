@@ -330,14 +330,20 @@ class BOT:
 
 		last_element = ''
 		prev_video_elements = []
+		no_log = False
+		
 		while True:
 			if QUIT_DRIVER.value: break
 			if STOP_WATCHING.value: break
 			sleep(3)
+			if no_log:
+				sleep(7)
+				continue
+
 			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='sjgh65i0']")
-			
 			if prev_video_elements == video_elements:
 				write_log(get_date()+": "+'No more videos to watch',key)
+				no_log = True
 				continue
 			prev_video_elements = video_elements
 			
