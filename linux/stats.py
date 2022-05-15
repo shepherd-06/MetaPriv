@@ -6,7 +6,47 @@ import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
+
+from pandastable import Table
+import pandas as pd
+
 from crypto import Hash, aes_encrypt, aes_decrypt
+
+
+class Keyword:
+	def __init__(self,key):
+		self.key = key
+		self.video_list = []
+
+	def add_videos(self,video_list):
+		for vid in video_list:
+			#print(vid)
+			post, page, _ = vid
+			self.video_list.append((aes_decrypt(post,self.key),aes_decrypt(page,self.key)))
+
+	def get_videos(self):
+		return self.video_list
+
+
+class VideoWindow:
+	def __init__(self,video_list,name):
+		df = pd.DataFrame(video_list, columns = ('Post_URL', 'Page_URL'))
+		# Window options
+		self.mainwindow = tk.Tk()
+		title = name + ' videos watched'
+		self.mainwindow.title(title)
+		self.mainwindow.protocol('WM_DELETE_WINDOW', self.close)
+		frame = tk.Frame(self.mainwindow)
+		frame.pack(fill='x',expand=True)
+
+		pt = Table(frame,dataframe=df,width=1400,maxcellwidth=700)
+		pt.show()
+
+	def close(self):
+		self.mainwindow.destroy()
+
+	def start(self):
+		self.mainwindow.mainloop()
 
 
 class StatsWindow(tk.Frame):
@@ -14,9 +54,6 @@ class StatsWindow(tk.Frame):
 	def __init__(self, parent, key, *args, **kwargs):
 		tk.Frame.__init__(self, parent, *args, **kwargs)
 		self.mainwindow = parent
-
-		tabs = ttk.Notebook(self.mainwindow)
-		tabs.pack()
 
 		# Window options
 		self.mainwindow.title("MetaPriv Statistics")
@@ -31,10 +68,16 @@ class StatsWindow(tk.Frame):
 		self.mainwindow.grid_columnconfigure(1, weight=1)
 		self.mainwindow.grid_columnconfigure(2, weight=1)
 
+		tabs = ttk.Notebook(self.mainwindow)
+		tabs.grid(row=0,column=0,columnspan=3)
+
 		self.keyword_list = []
 		self.liked_posts_list = []
 		self.liked_pages_list = []
 		self.watched_videos_list = []
+		self.words = {}
+		pages = []
+		#videos = []
 		conn = sqlite3.connect('userdata/pages.db')
 		c = conn.cursor()
 		c.execute("SELECT * FROM categories")
@@ -45,6 +88,7 @@ class StatsWindow(tk.Frame):
 			liked_posts = 0
 			liked_pages = 0
 			ID, word = keyword
+			self.words[aes_decrypt(word,key)] = Keyword(key)###
 			conn = sqlite3.connect('userdata/pages.db')
 			c = conn.cursor()
 			c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID))
@@ -55,26 +99,34 @@ class StatsWindow(tk.Frame):
 			c = conn.cursor()
 			c.execute("SELECT name FROM sqlite_master WHERE type='table';")
 			liked_pages_urls = c.fetchall()
+			page_list = []
 			for url in urls:
 				if url in liked_pages_urls:
-					c.execute('SELECT time FROM "'+url[0]+'"')
-					table_length = len(c.fetchall())
+					page_list.append(aes_decrypt(url[0],key))
+					c.execute('SELECT post FROM "'+url[0]+'"')
+					posts = c.fetchall()
+					table_length = len(posts)
 					liked_posts += table_length
 					liked_pages += 1
 
+			pages.append(page_list)
 			conn.close()
-			watched_videos = 0
+			n_watched_videos = 0
+			watched_videos = []
 			try:
 				conn = sqlite3.connect('userdata/watched_videos.db')
 				c = conn.cursor()
-				c.execute('SELECT time FROM "'+word+'"')
-				watched_videos = len(c.fetchall())
+				c.execute('SELECT * FROM "'+word+'"')
+				watched_videos = c.fetchall()
+				n_watched_videos = len(watched_videos)
 				conn.close()
 			except: pass
 			self.keyword_list.append(aes_decrypt(word,key))
 			self.liked_posts_list.append(liked_posts)
 			self.liked_pages_list.append(liked_pages)
-			self.watched_videos_list.append(watched_videos)
+			self.watched_videos_list.append(n_watched_videos)
+
+			self.words[aes_decrypt(word,key)].add_videos(watched_videos)
 
 		self.frame1 = ttk.Frame(tabs)
 		self.frame2 = ttk.Frame(tabs)
@@ -89,6 +141,42 @@ class StatsWindow(tk.Frame):
 		self.frame2_plot()
 		self.frame3_plot()
 		self.frame4_plot()
+
+		# setting variable for Integers
+		self.variable = tk.StringVar()
+		self.variable.set(list(self.words.keys())[0])
+
+		# creating widget
+		dropdown = tk.OptionMenu(self.mainwindow,self.variable,*self.words)#,command=self.display_selected)
+		dropdown.grid(row=1,column=0,sticky='ew')
+
+		watched_videos_button = tk.Button(self.mainwindow, text="Videos watched", 
+			font=10, background='white',command=self.display_selected)
+		watched_videos_button.grid(row=1,column=1,sticky='we')#command= lambda: self.strt(key),
+
+		posts_button = tk.Button(self.mainwindow, text="Posts liked", font=10, background='white')
+		posts_button.grid(row=1,column=2,sticky='we')#command= lambda: self.strt(key),
+		#print(pages)
+		#print(videos)
+		#for word in self.words:
+		#	print(word)
+		#	print(self.words[word].get_videos())
+
+		'''
+		variable2 = tk.StringVar()
+		variable2.set(pages[0][0])
+
+		self.dropdown_pages = tk.OptionMenu(
+		    self.mainwindow,
+		    variable2,
+		    *pages[0],
+		)
+		self.dropdown_pages.grid(row=1,column=1,sticky='ew')
+		'''
+	def display_selected(self):
+		keyword = self.variable.get()
+		window = VideoWindow(self.words[keyword].get_videos(),keyword)
+		window.start()
 
 	def frame4_plot(self):
 		fig = Figure(dpi=150)
@@ -186,3 +274,10 @@ class StatsWindow(tk.Frame):
 
 	def close(self):
 		self.mainwindow.destroy()
+
+if __name__ == '__main__':
+	key = Hash('qwerty123')
+	stats = tk.Tk()
+	stats.resizable(False, False)
+	StatsWindow(stats,key)
+	stats.mainloop()
