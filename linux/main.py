@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
+from selenium.webdriver.common.keys import Keys
 ## for firefox
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
@@ -162,7 +163,7 @@ class BOT:
 			if profile_exists:
 				fx_options.add_argument("--profile")
 				fx_options.add_argument(profile_path)
-			fx_options.add_argument("--headless")
+			#fx_options.add_argument("--headless")
 			# Start
 			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 			self.driver.set_window_size(1400,814)
@@ -270,6 +271,7 @@ class BOT:
 		conn.close()
 
 		for (url,) in urls:
+			'''
 			dec_url = aes_decrypt(url, key)
 			write_log(get_date()+": "+"GET: "+ dec_url,key)
 			self.driver.get(dec_url)
@@ -289,6 +291,8 @@ class BOT:
 				resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
 				write_log(get_date()+": "+"Watching videos for "+ time_formatted + " (hh:mm:ss). Resume liking at " + resume_time, key)
 			sleep(5)
+			'''
+			self.click_links(key)
 			if QUIT_DRIVER.value: break
 			self.watch_videos(randtime, key)
 			if QUIT_DRIVER.value: break
@@ -305,6 +309,71 @@ class BOT:
 			if time == randtime:
 				break
 		STOP_WATCHING.value = True
+
+	def click_links(self, key):
+		self.driver.get('https://www.facebook.com/')
+		sleep(10)
+
+		counter = 0
+		last_element = ''
+		while True:
+			article_elements = self.driver.find_elements(By.XPATH,"//div[@class='lzcic4wl']")
+			if last_element != '':
+				indx = article_elements.index(last_element)
+				article_elements = article_elements[indx+1:]
+
+			if article_elements == []:
+				break
+
+			for article_element in article_elements:
+				if counter == 50:
+					conn.close()
+					return
+				last_element = article_element
+				article_element.location_once_scrolled_into_view
+				sleep(10)
+				sponsored = False
+
+				try:
+					sponsored = article_element.find_element(By.XPATH,'.//a[@aria-label="Sponsored"]')
+				except:
+					sponsored = True
+
+				if sponsored:
+					link_element = article_element.find_element(By.XPATH,'.//a[@rel="nofollow noopener"]')
+					link_element.location_once_scrolled_into_view
+					link = link_element.get_attribute('href')
+					print(link)
+					action = ActionChains(self.driver)
+					action\
+						.move_to_element(link_element)\
+						.key_down(Keys.CONTROL)\
+						.click(link_element)\
+						.key_up(Keys.CONTROL)\
+						.perform()
+					del action
+
+				if counter % 5 == 0:
+					try:
+						ad_elements = self.driver.find_elements(By.XPATH,'//a[@aria-label="Advertiser"]')
+						for el in ad_elements:
+							link = el.get_attribute('href')
+							print(link)
+							action = ActionChains(self.driver)
+							action\
+								.move_to_element(el)\
+								.key_down(Keys.CONTROL)\
+								.click(el)\
+								.key_up(Keys.CONTROL)\
+								.perform()
+							del action
+							sleep(5)
+					except:pass
+				counter += 1
+
+			sleep(random.randint(6,15))
+
+
 
 
 	def watch_videos(self, randtime, key):
