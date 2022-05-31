@@ -91,6 +91,26 @@ class VideoWindow:
 	def start(self):
 		self.mainwindow.mainloop()
 
+class AdsWindow:
+	def __init__(self, ad_list):
+		df = pd.DataFrame({'Post_URL': ad_list })
+		# Window options
+		self.mainwindow = tk.Tk()
+		title = ' Ads clicked'
+		self.mainwindow.title(title)
+		self.mainwindow.protocol('WM_DELETE_WINDOW', self.close)
+		frame = tk.Frame(self.mainwindow)
+		frame.pack(fill='x',expand=True)
+
+		pt = Table(frame,dataframe=df,width=1400,maxcellwidth=700)
+		pt.show()
+
+	def close(self):
+		self.mainwindow.destroy()
+
+	def start(self):
+		self.mainwindow.mainloop()
+
 
 class StatsWindow(tk.Frame):
 
@@ -172,6 +192,13 @@ class StatsWindow(tk.Frame):
 			# Add videos to keyword object
 			self.words[aes_decrypt(word,key)].add_videos(watched_videos)
 
+		conn = sqlite3.connect('userdata/clicked_links.db')
+		c = conn.cursor()
+		c.execute("SELECT post_URL FROM clicked_links")
+		ad_posts = c.fetchall()
+		self.ad_list = []
+		for ad in ad_posts:
+			self.ad_list.append(aes_decrypt(ad[0],key))
 
 		self.frame1 = ttk.Frame(tabs)
 		self.frame2 = ttk.Frame(tabs)
@@ -203,6 +230,14 @@ class StatsWindow(tk.Frame):
 			command=self.posts_window)
 		posts_button.grid(row=1,column=2,sticky='we')#command= lambda: self.strt(key),
 
+		ad_clicks_button = tk.Button(self.mainwindow, text="Ads clicked (independent of keywords)", font=10, background='white',
+			command=self.ads_window)
+		ad_clicks_button.grid(row=2,column=0,sticky='we',columnspan=3)
+
+
+	def ads_window(self):
+		window = AdsWindow(self.ad_list)
+		window.start()
 
 	def posts_window(self):
 		keyword = self.variable.get()

@@ -271,7 +271,6 @@ class BOT:
 		conn.close()
 
 		for (url,) in urls:
-			'''
 			dec_url = aes_decrypt(url, key)
 			write_log(get_date()+": "+"GET: "+ dec_url,key)
 			self.driver.get(dec_url)
@@ -289,10 +288,8 @@ class BOT:
 				time_formatted = str(timedelta(seconds = randtime))
 				resume_time = datetime.now() + timedelta(0,randtime)
 				resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
-				write_log(get_date()+": "+"Watching videos for "+ time_formatted + " (hh:mm:ss). Resume liking at " + resume_time, key)
+				write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss). Resume liking at " + resume_time, key)
 			sleep(5)
-			'''
-			self.click_links(key)
 			if QUIT_DRIVER.value: break
 			self.watch_videos(randtime, key)
 			if QUIT_DRIVER.value: break
@@ -311,12 +308,22 @@ class BOT:
 		STOP_WATCHING.value = True
 
 	def click_links(self, key):
+		try:create_clicked_links_db()
+		except sqlite3.OperationalError: pass
 		self.driver.get('https://www.facebook.com/')
 		sleep(10)
+
+		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
+		self.delete_element(banner)
+
+		conn = sqlite3.connect('userdata/clicked_links.db')
+		c = conn.cursor()
 
 		counter = 0
 		last_element = ''
 		while True:
+			if QUIT_DRIVER.value: conn.close();return
+			if STOP_WATCHING.value: conn.close();return
 			article_elements = self.driver.find_elements(By.XPATH,"//div[@class='lzcic4wl']")
 			if last_element != '':
 				indx = article_elements.index(last_element)
@@ -327,6 +334,8 @@ class BOT:
 
 			for article_element in article_elements:
 				if counter == 50:
+					if QUIT_DRIVER.value: conn.close();return
+					if STOP_WATCHING.value: conn.close();return
 					conn.close()
 					return
 				last_element = article_element
@@ -336,47 +345,82 @@ class BOT:
 
 				try:
 					sponsored = article_element.find_element(By.XPATH,'.//a[@aria-label="Sponsored"]')
-				except:
 					sponsored = True
+				except:
+					pass
 
 				if sponsored:
-					link_element = article_element.find_element(By.XPATH,'.//a[@rel="nofollow noopener"]')
-					link_element.location_once_scrolled_into_view
-					link = link_element.get_attribute('href')
-					print(link)
-					action = ActionChains(self.driver)
-					action\
-						.move_to_element(link_element)\
-						.key_down(Keys.CONTROL)\
-						.click(link_element)\
-						.key_up(Keys.CONTROL)\
-						.perform()
-					del action
-
-				if counter % 5 == 0:
 					try:
+						link_element = article_element.find_element(By.XPATH,'.//a[@rel="nofollow noopener"]')
+						link_element.location_once_scrolled_into_view
+						link = link_element.get_attribute('href')
+						c.execute('INSERT INTO clicked_links (post_URL) \
+								VALUES ("' + aes_encrypt(link, key) + '")');
+						conn.commit()
+						write_log(get_date()+": Clicked link "+link[:140]+"..." ,key)
+						action = ActionChains(self.driver)
+						action\
+							.move_to_element(link_element)\
+							.key_down(Keys.CONTROL)\
+							.click(link_element)\
+							.key_up(Keys.CONTROL)\
+							.perform()
+						del action
+						sleep(5)
+						self.driver.switch_to.window(self.driver.window_handles[-1])
+						sleep(1)
+						if len(self.driver.window_handles) == 2:
+							self.driver.close()
+							self.driver.switch_to.window(self.driver.window_handles[-1])
+						if QUIT_DRIVER.value: return
+						sleep(1)
+					except: pass
+
+				if QUIT_DRIVER.value: conn.close();return
+				if STOP_WATCHING.value: conn.close();return
+				if counter % 5 == 0:
+					#try:
 						ad_elements = self.driver.find_elements(By.XPATH,'//a[@aria-label="Advertiser"]')
 						for el in ad_elements:
 							link = el.get_attribute('href')
-							print(link)
-							action = ActionChains(self.driver)
-							action\
-								.move_to_element(el)\
-								.key_down(Keys.CONTROL)\
-								.click(el)\
-								.key_up(Keys.CONTROL)\
-								.perform()
-							del action
-							sleep(5)
-					except:pass
+							try:
+								c.execute('INSERT INTO clicked_links (post_URL) \
+									VALUES ("' + aes_encrypt(link, key) + '")');
+								conn.commit()
+								write_log(get_date()+": Clicked link "+link[:140]+"..." ,key)
+								action = ActionChains(self.driver)
+								action\
+									.move_to_element(el)\
+									.key_down(Keys.CONTROL)\
+									.click(el)\
+									.key_up(Keys.CONTROL)\
+									.perform()
+								del action
+								sleep(5)
+								self.driver.switch_to.window(self.driver.window_handles[-1])
+								sleep(1)
+								if len(self.driver.window_handles) == 2:
+									self.driver.close()
+									self.driver.switch_to.window(self.driver.window_handles[-1])
+								if QUIT_DRIVER.value: conn.close();return
+								sleep(1)
+							except sqlite3.OperationalError: pass
+				if QUIT_DRIVER.value: conn.close();return
+					#except:pass
 				counter += 1
 
 			sleep(random.randint(6,15))
-
-
+		conn.close()
 
 
 	def watch_videos(self, randtime, key):
+		wait_thread = threading.Thread(target=self.wait, args=[randtime])
+		wait_thread.start()
+
+		self.click_links( key)
+		#if QUIT_DRIVER.value: return
+		#if STOP_WATCHING.value: return
+
 		conn = sqlite3.connect('userdata/watched_videos.db')
 		c = conn.cursor()
 		keyword, _ = self.check_keyword(key)
@@ -387,15 +431,12 @@ class BOT:
 		except sqlite3.OperationalError: pass
 
 		sleep(5)
-		randtime = randtime - 5
+		#randtime = randtime - 5
 		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
 		self.delete_element(banner)
 
 		first = self.driver.find_element(By.XPATH,"//div[@class='sjgh65i0']")
 		self.delete_element(first)
-
-		wait_thread = threading.Thread(target=self.wait, args=[randtime])
-		wait_thread.start()
 
 		last_element = ''
 		prev_video_elements = []
@@ -758,7 +799,8 @@ class BOT:
 		# Take a browser screenshot every second
 		while not QUIT_DRIVER.value:
 			#if not WAITING_LONG.value:
-			self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
+			try:self.driver.save_screenshot(os.getcwd()+'/'+".screenshot.png")
+			except:pass
 			sleep(1)
 		
 	def quit_bot(self, thread = None):
@@ -963,9 +1005,18 @@ def create_video_db(keyword):
 	conn.commit()
 	conn.close()
 
+def create_clicked_links_db():
+	conn = sqlite3.connect('userdata/clicked_links.db')
+	c = conn.cursor()
+	c.execute('''CREATE TABLE clicked_links
+	             ([post_URL] text PRIMARY KEY,
+	              [time] date)''')
+	conn.commit()
+	conn.close()
+
 def rand_dist():
 	# Return random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
-	#return 30
+	#return 60
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
