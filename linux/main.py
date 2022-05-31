@@ -163,7 +163,7 @@ class BOT:
 			if profile_exists:
 				fx_options.add_argument("--profile")
 				fx_options.add_argument(profile_path)
-			#fx_options.add_argument("--headless")
+			fx_options.add_argument("--headless")
 			# Start
 			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 			self.driver.set_window_size(1400,814)
