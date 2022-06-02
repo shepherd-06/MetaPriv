@@ -404,7 +404,7 @@ class BOT:
 									self.driver.switch_to.window(self.driver.window_handles[-1])
 								if QUIT_DRIVER.value: conn.close();return
 								sleep(1)
-							except sqlite3.OperationalError: pass
+							except: pass
 				if QUIT_DRIVER.value: conn.close();return
 					#except:pass
 				counter += 1
