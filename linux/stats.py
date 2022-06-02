@@ -192,13 +192,15 @@ class StatsWindow(tk.Frame):
 			# Add videos to keyword object
 			self.words[aes_decrypt(word,key)].add_videos(watched_videos)
 
-		conn = sqlite3.connect('userdata/clicked_links.db')
-		c = conn.cursor()
-		c.execute("SELECT post_URL FROM clicked_links")
-		ad_posts = c.fetchall()
 		self.ad_list = []
-		for ad in ad_posts:
-			self.ad_list.append(aes_decrypt(ad[0],key))
+		try:
+			conn = sqlite3.connect('userdata/clicked_links.db')
+			c = conn.cursor()
+			c.execute("SELECT post_URL FROM clicked_links")
+			ad_posts = c.fetchall()
+			for ad in ad_posts:
+				self.ad_list.append(aes_decrypt(ad[0],key))
+		except: pass
 
 		self.frame1 = ttk.Frame(tabs)
 		self.frame2 = ttk.Frame(tabs)
