@@ -354,6 +354,7 @@ class BOT:
 						link_element = article_element.find_element(By.XPATH,'.//a[@rel="nofollow noopener"]')
 						link_element.location_once_scrolled_into_view
 						link = link_element.get_attribute('href')
+						link = link.split('fbclid')[0]
 						c.execute('INSERT INTO clicked_links (post_URL) \
 								VALUES ("' + aes_encrypt(link, key) + '")');
 						conn.commit()
@@ -383,6 +384,7 @@ class BOT:
 						ad_elements = self.driver.find_elements(By.XPATH,'//a[@aria-label="Advertiser"]')
 						for el in ad_elements:
 							link = el.get_attribute('href')
+							link = link.split('fbclid')[0]
 							try:
 								c.execute('INSERT INTO clicked_links (post_URL) \
 									VALUES ("' + aes_encrypt(link, key) + '")');
