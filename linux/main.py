@@ -419,7 +419,7 @@ class BOT:
 		wait_thread = threading.Thread(target=self.wait, args=[randtime])
 		wait_thread.start()
 
-		self.click_links( key)
+		self.click_links(key)
 		#if QUIT_DRIVER.value: return
 		#if STOP_WATCHING.value: return
 
@@ -447,7 +447,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: break
 			if STOP_WATCHING.value: break
-			sleep(3)
+			sleep(5)
 			if no_log:
 				sleep(7)
 				continue
@@ -460,8 +460,16 @@ class BOT:
 			prev_video_elements = video_elements
 			
 			if last_element != '':
-				indx = video_elements.index(last_element)
-				video_elements = video_elements[indx+1:]
+				try:
+					indx = video_elements.index(last_element)
+					video_elements = video_elements[indx+1:]
+				except ValueError:
+					self.driver.refresh()
+					sleep(5)
+					last_element = ''
+					prev_video_elements = []
+					no_log = False
+					continue
 
 			for video_element in video_elements:
 				if QUIT_DRIVER.value: break
