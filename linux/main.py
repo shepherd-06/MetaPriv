@@ -112,7 +112,12 @@ class BOT:
 		if browser == "Firefox":
 			fx_options = Options()
 			fx_options.add_argument("--headless")
-			temp_driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
+			driverpath = os.environ['HOME'] + "/.wdm/drivers/geckodriver/linux64/"
+			versions = os.listdir(driverpath)
+			versions.sort()
+			version = versions[-1]
+			driverpath = driverpath + version + "/geckodriver"
+			temp_driver = webdriver.Firefox(service=Service(driverpath),options = fx_options)
 		elif browser == "Chrome":
 			ch_options = COptions()
 			ch_options.add_argument("--headless")
