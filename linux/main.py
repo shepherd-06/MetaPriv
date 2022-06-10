@@ -313,8 +313,10 @@ class BOT:
 		self.driver.get('https://www.facebook.com/')
 		sleep(10)
 
-		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
-		self.delete_element(banner)
+		try:
+			banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
+			self.delete_element(banner)
+		except: pass
 
 		conn = sqlite3.connect('userdata/clicked_links.db')
 		c = conn.cursor()
