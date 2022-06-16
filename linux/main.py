@@ -195,12 +195,12 @@ class BOT:
 		#eff_privacy = eff_privacy / 100
 		
 		sleep(3)
-		if QUIT_DRIVER.value: self.quit_bot(t1)
-
+		
 		# Start taking screenshots of the headless browser every second on different thread
 		t1 = threading.Thread(target=self.take_screenshot, args=[])
 		t1.start()
 
+		if QUIT_DRIVER.value: self.quit_bot(t1)
 		# Create userdata folder if it does not exist
 		try: 
 			os.mkdir(os.getcwd()+"/userdata")
@@ -247,11 +247,23 @@ class BOT:
 			if not QUIT_DRIVER.value:
 				with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
 					f.write(aes_encrypt(str(avg_amount_of_likes_per_day),key))
-		
+
+
+		t2 = threading.Thread(target=self.delete_chat, args=[])
+		t2.start()
 		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
-		self.quit_bot(t1)
-		#except:
-		#	self.quit_bot()
+		self.quit_bot(t1, t2)
+
+	def delete_chat(self):
+		while not QUIT_DRIVER.value:
+			# Check Chatbox element and delete it
+			try:
+				chatbox = self.driver.find_element(By.XPATH, '//div[@data-testid="mwchat-tabs"]')
+				self.delete_element(chatbox)
+				print(get_date()+": "+"Deleted chatbox.")
+			except: pass
+			sleep(1)
+
 
 	def generate_noise(self, browser, avg_amount_of_likes_per_day, eff_privacy, key):
 		if QUIT_DRIVER.value: return
@@ -284,6 +296,7 @@ class BOT:
 			# Start liking
 			if (url,) not in liked_pages_urls:
 				new_page(url)
+
 			self.like_rand(dec_url, avg_amount_of_likes_per_day, eff_privacy, key)
 			# Increment keyword usage
 			self.update_keyword(key)
@@ -707,16 +720,9 @@ class BOT:
 		except: pass
 		
 
-
 	def like_rand(self, pagename, avg_amount_of_likes_per_day, eff_privacy, key):
 		sleep(2)
 		amount_of_likes = 0
-		# Check Chatbox element and delete it
-		try:
-			chatbox = self.driver.find_element(By.XPATH, '//div[@data-testid="mwchat-tabs"]')
-			self.delete_element(chatbox)
-		except NoSuchElementException: 
-			pass
 
 		# Like page
 		self.like_page()
@@ -820,11 +826,13 @@ class BOT:
 			except:pass
 			sleep(1)
 		
-	def quit_bot(self, thread = None):
+	def quit_bot(self, thread_1 = None, thread_2 = None):
 		# Exit webdriver
 		self.driver.quit()
-		if thread != None:
-			thread.join()
+		if thread_1 != None:
+			thread_1.join()
+		if thread_2 != None:
+			thread_2.join()
 
 #########################################################################################################################
 
@@ -1056,7 +1064,6 @@ def rand_dist():
 	elif rand_number in [23]:
 		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
 
-	
 
 def rand_fb_site():
 	# Return a random FB site so GET while waiting
