@@ -106,7 +106,7 @@ def analize_feed():
 			data = article_element.screenshot_as_png
 			with open("analysisdata/f_"+get_date()+".png",'wb') as f:
 				f.write(data)
-			'''
+
 			try:
 				page_name = article_element.find_element(By.XPATH,".//a[@role='link']").get_attribute('href')
 				page_name = page_name.split('__cft__')[0]
@@ -139,10 +139,7 @@ def analize_feed():
 				#<span class="d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua e9vueds3 j5wam9gi knj5qynh oo9gr5id hzawbc8m">Wednesday, June 23, 2021 at 5:30 PM</span>
 			except:
 				continue
-			try:
-				action.move_by_offset(100, 0).perform()
-				sleep(2)
-			except:pass
+
 			try:
 				post_url = article_element.find_element(By.XPATH,'.//a[@class="oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h esuyzwwr f1sip0of lzcic4wl gmql0nx0 gpro0wi8 b1v8xokw"]').get_attribute('href')
 				post_url = post_url.split('__cft__')[0]
@@ -156,7 +153,6 @@ def analize_feed():
 				sleep(random.randint(3,10))
 			except:pass
 			del action
-			'''
 		sleep(random.randint(6,15))
 
 	conn.close()
@@ -166,15 +162,7 @@ def analize_video_feed():
 	conn = sqlite3.connect('analysisdata/suggestions.db')
 	c = conn.cursor()
 	driver.get('https://www.facebook.com/watch/latest')
-	driver.get_screenshot_as_file("analysisdata/first_v_"+get_date()+".png")
-
-	sleep(3)
-	driver.get('https://www.facebook.com/watch/latest')
-	driver.get_screenshot_as_file("analysisdata/first_v_"+get_date()+".png")
-
-	sleep(3)
-	driver.get('https://www.facebook.com/watch/latest')
-	driver.get_screenshot_as_file("analysisdata/first_v_"+get_date()+".png")
+	#sleep(10000000)
 
 	sleep(5)
 	banner = driver.find_element(By.XPATH,'//div[@role="banner"]')
@@ -197,7 +185,7 @@ def analize_video_feed():
 				break
 
 			for video_element in video_elements:
-				if counter == 300:
+				if counter == 600:
 					conn.close()
 					return
 				last_element = video_element
@@ -361,21 +349,26 @@ def main():
 
 	#exec_path = input("Enter geckodriver executable path:")
 	#exec_path = '/home/'+ os.getlogin() + '/Downloads/geckodriver/geckodriver'
-	try:
-		os.system("rm -r 	analysisdata")
-	except: pass
+	#try:
+		#os.system("rm -r 	analysisdata")
+	#except: pass
 
 
 	try: os.mkdir("analysisdata")
 	except: pass
+
+	profile_path = os.getcwd()+'/fx_profile'
+
 	fx_options = Options()
+	fx_options.add_argument("--profile")
+	fx_options.add_argument(profile_path)
 	#fx_options.add_argument("--headless")
 	driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 
 
-	key = getpass.getpass(prompt='Password: ', stream=None)
-	key = Hash(key)
-	login(key)
+	#key = getpass.getpass(prompt='Password: ', stream=None)
+	#key = Hash(key)
+	#login(key)
 
 
 	try:
@@ -386,8 +379,9 @@ def main():
 	try:
 		analize_feed()
 	except: pass
+
 	analize_video_feed()
-	aanalize_main_video_feed()
+	analize_main_video_feed()
 
 
 main()

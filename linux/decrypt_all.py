@@ -100,3 +100,63 @@ conn_2.commit()
 conn_2.close()
 conn.commit()
 conn.close()
+###  watched_videos.db ###
+conn = sqlite3.connect('userdata/watched_videos.db')
+c = conn.cursor()
+c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+words = c.fetchall()
+
+conn_2 = sqlite3.connect('decrypted_files/watched_videos.db')
+c2 = conn_2.cursor()
+
+for ((word,)) in words:
+	dec_word = aes_decrypt(word,key)
+	c2.execute('''CREATE TABLE "{}"
+	             ([post_URL] text PRIMARY KEY,
+	              [page_URL] text,
+	              [time] date)'''.format(dec_word))
+	conn_2.commit()
+
+	c.execute("SELECT * FROM '" + word + "'")
+	posts_page_time = c.fetchall()
+	#print(posts_page_time)
+
+	posts = []
+	for i in posts_page_time:
+		posts.append( (aes_decrypt(i[0],key), aes_decrypt(i[1],key), i[2]) )
+	print(posts)
+	c2.executemany('INSERT INTO "' + dec_word + '" (post_URL, page_URL, time) \
+				  		   VALUES (?, ?, ?)', posts);
+	conn_2.commit()
+
+conn_2.close()
+conn.commit()
+conn.close()
+
+
+
+###  clicked_links.db ###
+conn = sqlite3.connect('userdata/clicked_links.db')
+c = conn.cursor()
+c.execute("SELECT * FROM clicked_links")
+posts_page_time = c.fetchall()
+print(posts_page_time)
+conn_2 = sqlite3.connect('decrypted_files/clicked_links.db')
+c2 = conn_2.cursor()
+c2.execute('''CREATE TABLE clicked_links
+	             ([post_URL] text PRIMARY KEY,
+	              [time] date)''')
+conn_2.commit()
+
+posts = []
+for i in posts_page_time:
+	posts.append( (aes_decrypt(i[0],key), i[1]) )
+print(posts)
+
+c2.executemany('INSERT INTO clicked_links (post_URL, time) \
+						VALUES (?, ?)', posts);
+conn_2.commit()
+
+conn_2.close()
+conn.commit()
+conn.close()
