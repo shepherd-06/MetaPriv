@@ -503,6 +503,8 @@ class BOT:
 					continue
 
 				video_length = video_box.text
+				if video_length == 'LIVE':
+					continue
 
 				post_url = links[0].get_attribute('href')
 				post_url = post_url.split('&external_log_id')[0]
