@@ -40,23 +40,18 @@ ONE_HOUR = 3600
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
 STOP_WATCHING = mp.Value('b', False)
+NEW_SEED = mp.Value('b', False)
 W = 'white'
 INFO_TEXT = """[*] INFO [*]
 In this window you should choose how many posts
 to like per day on average. You can be change the
 value on your next run.
 
-If this is your first run, MetaPriv will analize your daily 
-interaction with Facebook from the last week and, based on 
-that and your input, decide how much noise to add to your 
-Facebook account. 
+To start adding noise to your account, press the Start Bot
+Process button. To exit MetaPriv, close the window by 
+pressing X on your window border. Sometimes it may take 
+few seconds to close. 
 
-To start adding noise to your account, press the button Start.
-To exit MetaPriv, close the window by pressing X on your window 
-border. Sometimes it may take few seconds to close. 
-
-If you want to reset MetaPriv, delete the hidden saved_data
-file. Note that your local password will not work anymore.
 For more information please refer to the documentation in the
 github repository.
 """
@@ -288,6 +283,9 @@ class BOT:
 		conn.close()
 
 		for (url,) in urls:
+			if NEW_SEED.value:
+				NEW_SEED.value = False
+				break
 			dec_url = aes_decrypt(url, key)
 			write_log(get_date()+": "+"GET: "+ dec_url,key)
 			self.driver.get(dec_url)
@@ -837,6 +835,45 @@ class BOT:
 			thread_2.join()
 
 #########################################################################################################################
+class Enter_New_Keyword(tk.Tk):
+
+	def __init__(self, parent, key):
+		tk.Tk.__init__(self,parent)
+		self.parent = parent
+		# Window options
+		self.protocol('WM_DELETE_WINDOW', self.close)
+		self.grid()
+		Keyword_Info = "Enter a new seed keyword and press the\nContinue button. The program will exit\nand you will have to relaunch it."
+		tk.Label(self, text=Keyword_Info).grid(row=0, columnspan=3)
+
+		# Input new keyword
+		tk.Label(self, text="New seed keyword: ").grid(row=1, column=0)
+		self.Keyword = tk.Entry(self)
+		self.Keyword.grid(row=1, column=1, columnspan=2,sticky='we')
+
+		# Continue button
+		self.OK_button = tk.Button(self, text="Continue", command=lambda: self.reset_keyword(key)).grid(row=2, column=0,columnspan=3)
+
+	def reset_keyword(self,key):
+		word = self.Keyword.get()
+		if word != '':
+			filepath = os.getcwd()+'/'+'.saved_data'
+			with open(filepath, "r") as f1:
+			   text = f1.read()
+			text = text.split('\n')
+			text[2] = aes_encrypt(word + '|' + str(0),key)
+			timestamp = get_date()
+			new_hmac = b64encode(Hash(b64encode(key).decode('utf-8') + timestamp + text[2])).decode('utf-8')
+			text[6] = new_hmac
+			text[7] = timestamp
+			text = '\n'.join(text)
+			with open(filepath, "w") as f2:
+				f2.write(text)
+			NEW_SEED.value = True
+			self.close()
+
+	def close(self):
+		self.destroy()
 
 class Userinterface(tk.Frame):
 
@@ -865,33 +902,37 @@ class Userinterface(tk.Frame):
 		self.eff_privacy = tk.DoubleVar()
 		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
 			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
-		'''
-		self.slider = tk.Scale(self.mainwindow,from_=10,to=100,orient='horizontal', background=W,
-			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=5,length=1000,width=18,
-			label='Privacy level:',font=15,troughcolor='grey',highlightbackground=W)#
-		self.slider.set(55)
-		'''
 		self.slider = tk.Scale(self.mainwindow,from_=10,to=60,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
 			label='Posts per day:',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
 
 		########### Start button ###########
-		self.start_button = tk.Button(self.mainwindow, text="Start", command= lambda: self.strt(key),
+		self.start_button = tk.Button(self.mainwindow, text="Start Bot Process", command= lambda: self.strt(key),
 			font=10, background=W)
-		self.start_button.grid(row=1,column=2,sticky='ne')
+		self.start_button.grid(row=3,column=2,sticky='ew')
 		
 		########### Logs ###########
 		self.grid(column=0, row=2, sticky='ew', columnspan=3)
 		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, background='black')
-		#self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=118, background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
 		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
 
 		########### Stats button ###########
-		self.stats_button = tk.Button(self.mainwindow, text="Stats", command= lambda: self.stats_window(key),
+		self.stats_button = tk.Button(self.mainwindow, text="Keyword Statistics", command= lambda: self.stats_window(key),
 			font=10, background=W)
-		self.stats_button.grid(row=2,column=2,sticky='ne')
+		self.stats_button.grid(row=3,column=1,sticky='ew')
+
+		########### Keyword button ###########
+		self.kwrd_button = tk.Button(self.mainwindow, text="Reset Seed Keyword", command= lambda: self.reset_seed_keyword(key),
+			font=10, background=W)
+		self.kwrd_button.grid(row=3,column=0,sticky='ew')
+
+	def reset_seed_keyword(self,key):
+		new_seed = Enter_New_Keyword(None,key)
+		new_seed.title("New seed keyword")
+		new_seed.resizable(False, False)
+		new_seed.mainloop()
 
 	def stats_window(self, key):
 		stats = tk.Tk()
@@ -913,7 +954,6 @@ class Userinterface(tk.Frame):
 		return last_line
 
 	def update_ui(self, key):
-		#if not WAITING_LONG.value:
 		# Update logs
 		last_log = self.get_last_log(key)
 		if last_log != self.previous_last_log:
@@ -1043,7 +1083,7 @@ def create_clicked_links_db():
 
 def rand_dist():
 	# Return random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
-	#return 60
+	#return 10
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
