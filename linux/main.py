@@ -342,7 +342,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: conn.close();return
 			if STOP_WATCHING.value: conn.close();return
-			article_elements = self.driver.find_elements(By.XPATH,"//div[@class='lzcic4wl']")
+			article_elements = self.driver.find_elements(By.XPATH,"//div[@class='icdlwmnq']")
 			if last_element != '':
 				indx = article_elements.index(last_element)
 				article_elements = article_elements[indx+1:]
@@ -455,7 +455,7 @@ class BOT:
 		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
 		self.delete_element(banner)
 
-		first = self.driver.find_element(By.XPATH,"//div[@class='sjgh65i0']")
+		first = self.driver.find_element(By.XPATH,"//div[@class='p8bdhjjv']")
 		self.delete_element(first)
 
 		last_element = ''
@@ -470,7 +470,7 @@ class BOT:
 				sleep(7)
 				continue
 
-			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='sjgh65i0']")
+			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='p8bdhjjv']")
 			if prev_video_elements == video_elements:
 				write_log(get_date()+": "+'No more videos to watch',key)
 				no_log = True
@@ -496,7 +496,7 @@ class BOT:
 				video_element.location_once_scrolled_into_view
 				links = video_element.find_elements(By.XPATH,".//a[@role='link']")
 				try:
-					video_box = video_element.find_element(By.XPATH,".//span[@class='d2edcug0 hpfvmrgz qv66sw1b c1et5uql b0tq1wua a8c37x1j fe6kdd0r mau55g9w c8b282yb keod5gw0 nxhoafnm aigsh9s9 tia6h79c iv3no6db e9vueds3 j5wam9gi lrazzd5p qrtewk5h']")
+					video_box = video_element.find_element(By.XPATH,".//span[@class='gvxzyvdx aeinzg81 t7p7dqev gh25dzvf ocv3nf92 b6ax4al1 gem102v4 ncib64c9 mrvwc6qr sx8pxkcf f597kf1v cpcgwwas pk1vzqw1 hxfwr5lz nfkogyam kkmhubc1 innypi6y mqmf5637']")
 				except:
 					continue
 
@@ -747,7 +747,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: break
 			# Find article elements
-			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='lzcic4wl']")
+			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='icdlwmnq']")
 
 			if article_elements == prev_article_elements:
 				write_log(get_date()+": "+'No more posts on this page',key)
@@ -778,12 +778,12 @@ class BOT:
 					decide_like = bool(random.randint(0,1))
 					if decide_like:
 						# Find and focus a post element that uncovers the post url.
-						link_element = article_element.find_element(By.XPATH, './/span[@class="tojvnm2t a6sixzi8 abs2jz4q a8s20v7p t1p8iaqh k5wvi7nf q3lfd5jv pk4s997a bipmatt0 cebpdrjk qowsmv63 owwhemhu dp1hu0rb dhp61c6y iyyx5f41"]')
+						link_element = article_element.find_element(By.XPATH, './/span[@class="f7rl1if4 adechonz f6oz4yja dahkl6ri axrg9lpx rufpak1n qtovjlwq qbmienfq rfyhaz4c rdmi1yqr ohrdq8us nswx41af fawcizw8 l1aqi3e3 sdu1flz4"]')
 						action = ActionChains(self.driver)
 						action.move_to_element(link_element).perform()
 						if QUIT_DRIVER.value: break
 						sleep(3)
-						dots_elemn = article_element.find_element(By.XPATH, './/div[@class="nqmvxvec j83agx80 jnigpg78 cxgpxx05 dflh9lhu sj5x9vvc scb9dxdr odw8uiq3"]')
+						dots_elemn = article_element.find_element(By.XPATH, './/div[@class="lzubc330 alzwoclg dmdr2h6l q46jt4gp b0eko5f3 r5g9zsuq fwlpnqze kgzac55p"]')
 						action.move_to_element(dots_elemn).perform()
 						sleep(2)
 						if QUIT_DRIVER.value: break
