@@ -1014,10 +1014,19 @@ class Userinterface(tk.Frame):
 		
 #########################################################################################################################
 
-def sleep(seconds, watching_video = False):
+def sleep(seconds):#, watching_video = False):
 	time = 0
+	net_up = 1
 	while True:
 		# Computation time. On average the waiting time == seconds parameter
+		response = os.system("ping -c 1 -w2 " + "www.google.com" + " > /dev/null 2>&1")
+		if response != 0:
+			if net_up:
+		  		print (get_date()+": "+"No internet.")
+			Sleep(0.5)
+			net_up = 0
+			continue
+		net_up = 1
 		Sleep(1-0.003)
 		time += 1
 		if BREAK_SLEEP.value:
