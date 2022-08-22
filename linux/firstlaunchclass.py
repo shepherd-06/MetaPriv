@@ -10,8 +10,7 @@ from datetime import datetime
 
 INFO_TEXT = """Welcome to MetaPriv!
 This is your first run, so please input your
-facebook credentials, a seed keyword and the 
-browser you mostly use (Firefox or Chrome). 
+facebook credentials and a seed keyword. 
 This is a one time input, as new keywords 
 will be generated automatically and the 
 login will happen from a browser profile 
@@ -54,11 +53,6 @@ class First_launch_UI:
 		self.Keyword = tk.Entry(self.mainwindow)
 		self.Keyword.grid(row=5, column=1)
 
-		# Browser choice
-		self.browser = tk.StringVar()
-		R1 = tk.Radiobutton(self.mainwindow, text="Chrome", variable=self.browser, value='Chrome').grid(row=6, column=0)
-		R2 = tk.Radiobutton(self.mainwindow, text="Firefox", variable=self.browser, value='Firefox').grid(row=6, column=1)
-
 		# Invalid input comment
 		self.comment = tk.Label(self.mainwindow, text="")
 		self.comment.grid(row=7, column=0)
@@ -86,16 +80,13 @@ class First_launch_UI:
 		if self.Keyword.get() == '':
 			self.comment.configure(text="Input Keyword.")
 			return
-		if self.browser.get() == '':
-			self.comment.configure(text="Choose Browser.")
-			return
 		# Create encrypted file used by the BOT
 		with open(os.getcwd()+'/'+'.saved_data','w') as f:
 			f.write(aes_encrypt(self.Email.get(),self.h_password)+'\n')
 			f.write(aes_encrypt(self.Password.get(),self.h_password)+'\n')
 			enc_keyword = aes_encrypt(self.Keyword.get().split(' ')[0]+'|0',self.h_password)
 			f.write(enc_keyword + '\n')
-			f.write(aes_encrypt(self.browser.get(),self.h_password)+'\n')
+			f.write(b64encode(os.urandom(16)).decode('utf-8')+'\n')
 			f.write(self.salt+'\n')
 			f.write(b64encode(self.h_salted_password).decode('utf-8')+'\n')
 			timestmap = get_date()

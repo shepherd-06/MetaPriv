@@ -8,10 +8,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
-## for chrome
-from selenium.webdriver.chrome.options import Options as COptions
-from selenium.webdriver.chrome.service import Service as CService
-from webdriver_manager.chrome import ChromeDriverManager
 # partial imports
 from time import sleep as Sleep
 from datetime import timedelta, datetime
@@ -100,26 +96,18 @@ class BOT:
 			sys.exit()
 		return keyword, usage_number
 
-	def gen_keyword(self, keyword, browser, key):
+	def gen_keyword(self, keyword, key):
 		# Generate new keywords from https://relatedwords.org
 		write_log(get_date()+": "+"Generating new keyword...",key)
 		# Open temporary driver
-		if browser == "Firefox":
-			fx_options = Options()
-			fx_options.add_argument("--headless")
-			driverpath = os.environ['HOME'] + "/.wdm/drivers/geckodriver/linux64/"
-			versions = os.listdir(driverpath)
-			versions.sort()
-			version = versions[-1]
-			driverpath = driverpath + version + "/geckodriver"
-			temp_driver = webdriver.Firefox(service=Service(driverpath),options = fx_options)
-		elif browser == "Chrome":
-			ch_options = COptions()
-			ch_options.add_argument("--headless")
-			prefs = {"profile.default_content_setting_values.notifications" : 2}
-			ch_options.add_experimental_option("prefs",prefs)
-			ch_options.add_argument("--disable-infobars")
-			temp_driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
+		fx_options = Options()
+		fx_options.add_argument("--headless")
+		driverpath = os.environ['HOME'] + "/.wdm/drivers/geckodriver/linux64/"
+		versions = os.listdir(driverpath)
+		versions.sort()
+		version = versions[-1]
+		driverpath = driverpath + version + "/geckodriver"
+		temp_driver = webdriver.Firefox(service=Service(driverpath),options = fx_options)
 		url = 'https://relatedwords.org/relatedto/' + keyword.lower()
 		temp_driver.get(url)
 		word_elements = temp_driver.find_elements(By.XPATH, "//a[@class='item']")[:5]
@@ -137,12 +125,6 @@ class BOT:
 		return pseudo_random_word
 
 	def start_bot(self, eff_privacy, key):
-		# Browser input
-		with open(os.getcwd()+'/'+'.saved_data','r') as f:
-			text = f.read()
-			text = text.split('\n')
-			browser = aes_decrypt(text[3],key)
-
 		# Create log file
 		if not os.path.isfile(os.getcwd()+'/bot_logs.log'):
 			text = get_date()+": "+"First launch\n"
@@ -152,40 +134,20 @@ class BOT:
 
 		tempdirs = []
 		# Start webdriver
-		if browser == 'Firefox':
-			# Check if browser profile folder exists
-			profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
-			if not profile_exists:
-				tempdirs = os.listdir(gettempdir())
-			# webdriver options
-			fx_options = Options()
-			profile_path = os.getcwd()+'/fx_profile'
-			if profile_exists:
-				fx_options.add_argument("--profile")
-				fx_options.add_argument(profile_path)
-			fx_options.add_argument("--headless")
-			# Start
-			self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
-			self.driver.set_window_size(1400,814)
-
-		elif browser == 'Chrome':
-			# Check if browser profile folder exists
-			profile_exists = os.path.isdir(os.getcwd()+'/ch_profile')
-			if not profile_exists:
-				tempdirs = os.listdir(gettempdir())
-			# webdriver options
-			ch_options = COptions()
-			prefs = {"profile.default_content_setting_values.notifications" : 2}
-			ch_options.add_experimental_option("prefs",prefs)
-			ch_options.add_argument("--disable-infobars")
-			ch_options.add_argument("--headless")
-			profile_path = os.getcwd()+'/ch_profile'
-			if profile_exists:
-				argumnt = "--user-data-dir="+profile_path
-				ch_options.add_argument(argumnt)
-			# Start
-			self.driver = webdriver.Chrome(service=CService(ChromeDriverManager().install()),options = ch_options)
-			self.driver.set_window_size(1400,700)
+		# Check if browser profile folder exists
+		profile_exists = os.path.isdir(os.getcwd()+'/fx_profile')
+		if not profile_exists:
+			tempdirs = os.listdir(gettempdir())
+		# webdriver options
+		fx_options = Options()
+		profile_path = os.getcwd()+'/fx_profile'
+		if profile_exists:
+			fx_options.add_argument("--profile")
+			fx_options.add_argument(profile_path)
+		fx_options.add_argument("--headless")
+		# Start
+		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
+		self.driver.set_window_size(1400,814)
 
 		#eff_privacy = eff_privacy / 100
 		
@@ -213,24 +175,13 @@ class BOT:
 		if not profile_exists:
 			self.login(key)
 			tempdirs_2 = os.listdir(gettempdir())
-			if browser == 'Firefox':
-				for i in tempdirs_2:
-					if i not in tempdirs:
-						if 'mozprofile' in i:
-							write_log(get_date()+": "+"Copying profile folder...",key)
-							src = gettempdir() + '/' + i
-							os.remove(src+'/lock')
-							copytree(src, profile_path)
-			elif browser == 'Chrome':
-				for i in tempdirs_2:
-					if i not in tempdirs:
-						if 'com.google.Chrome' in i:
-							src = gettempdir()+ '/' + i
-							if "Default" in os.listdir(src):
-								write_log(get_date()+": "+"Copying profile folder... (~30s)",key)
-								sleep(30)
-								if QUIT_DRIVER.value: self.quit_bot(t1)
-								copytree(src, profile_path)
+			for i in tempdirs_2:
+				if i not in tempdirs:
+					if 'mozprofile' in i:
+						write_log(get_date()+": "+"Copying profile folder...",key)
+						src = gettempdir() + '/' + i
+						os.remove(src+'/lock')
+						copytree(src, profile_path)
 
 		# Get avg amount of likes per day 
 		if os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
@@ -246,7 +197,7 @@ class BOT:
 
 		t2 = threading.Thread(target=self.delete_chat, args=[])
 		t2.start()
-		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
+		self.generate_noise(avg_amount_of_likes_per_day, eff_privacy, key)
 		self.quit_bot(t1, t2)
 
 	def delete_chat(self):
@@ -260,9 +211,9 @@ class BOT:
 			sleep(1)
 
 
-	def generate_noise(self, browser, avg_amount_of_likes_per_day, eff_privacy, key):
+	def generate_noise(self, avg_amount_of_likes_per_day, eff_privacy, key):
 		if QUIT_DRIVER.value: return
-		enc_keyword = self.pages_based_on_keyword(browser, key)
+		enc_keyword = self.pages_based_on_keyword(key)
 		if QUIT_DRIVER.value: return
 
 		# get urls from database based on current keyword
@@ -310,7 +261,7 @@ class BOT:
 			self.watch_videos(randtime, key)
 			if QUIT_DRIVER.value: break
 
-		self.generate_noise(browser, avg_amount_of_likes_per_day, eff_privacy, key)
+		self.generate_noise(avg_amount_of_likes_per_day, eff_privacy, key)
 
 	def wait(self, randtime):
 		time = 0
@@ -538,7 +489,7 @@ class BOT:
 		wait_thread.join()
 		STOP_WATCHING.value = False
 
-	def pages_based_on_keyword(self, browser, key):
+	def pages_based_on_keyword(self, key):
 		# Get current keyword and how many times it was used
 		keyword, usage_number = self.check_keyword(key)
 		enc_keyword = aes_encrypt(keyword, key)
@@ -563,7 +514,7 @@ class BOT:
 			# Generate new keyword if done with urls from db
 			nr_of_urls = len(urls)
 			if usage_number >= nr_of_urls:
-				keyword = self.gen_keyword(keyword, browser, key)
+				keyword = self.gen_keyword(keyword, key)
 				enc_keyword = aes_encrypt(keyword, key)
 		#if QUIT_DRIVER.value: return
 
