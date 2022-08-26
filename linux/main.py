@@ -32,7 +32,7 @@ from crypto import Hash, aes_encrypt, aes_decrypt
 
 
 NORMAL_LOAD_AMMOUNT = 2
-ONE_HOUR = 3600
+ONE_HOUR = 3600/2
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
 STOP_WATCHING = mp.Value('b', False)
@@ -147,7 +147,7 @@ class BOT:
 		fx_options.add_argument("--headless")
 		# Start
 		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
-		self.driver.set_window_size(1400,814)
+		self.driver.set_window_size(1400,800)
 
 		#eff_privacy = eff_privacy / 100
 		
@@ -183,21 +183,10 @@ class BOT:
 						os.remove(src+'/lock')
 						copytree(src, profile_path)
 
-		# Get avg amount of likes per day 
-		if os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
-			with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
-				avg_amount_of_likes_per_day = int(aes_decrypt(f.read(),key))
-		else:
-			avg_amount_of_likes_per_day = 0#self.analize_weekly_liked_posts(key)
-			if QUIT_DRIVER.value: self.quit_bot(t1)
-			if not QUIT_DRIVER.value:
-				with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
-					f.write(aes_encrypt(str(avg_amount_of_likes_per_day),key))
-
 
 		t2 = threading.Thread(target=self.delete_chat, args=[])
 		t2.start()
-		self.generate_noise(avg_amount_of_likes_per_day, eff_privacy, key)
+		self.generate_noise(eff_privacy, key)
 		self.quit_bot(t1, t2)
 
 	def delete_chat(self):
@@ -211,7 +200,7 @@ class BOT:
 			sleep(1)
 
 
-	def generate_noise(self, avg_amount_of_likes_per_day, eff_privacy, key):
+	def generate_noise(self, eff_privacy, key):
 		if QUIT_DRIVER.value: return
 		enc_keyword = self.pages_based_on_keyword(key)
 		if QUIT_DRIVER.value: return
@@ -246,11 +235,39 @@ class BOT:
 			if (url,) not in liked_pages_urls:
 				new_page(url)
 
-			self.like_rand(dec_url, avg_amount_of_likes_per_day, eff_privacy, key)
+			print_done = False
+			while True:
+				if QUIT_DRIVER.value: break
+				date_now = get_date().split(' ')[0]
+				if not os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
+					with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+						f.write(date_now + " 0")
+				with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
+					saved_date, usage_this_day = f.read().split(' ')
+				if int(usage_this_day) == eff_privacy / 10:
+					if date_now == saved_date:
+						if not print_done:
+							write_log(get_date()+": "+"Done for today.",key)
+							print_done = True
+						sleep(60)
+						continue
+					else: 
+						with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+							f.write(date_now + " 0")
+						break
+				else: break
+
+			if QUIT_DRIVER.value: break
+			self.like_rand(dec_url, eff_privacy, key)
 			# Increment keyword usage
 			self.update_keyword(key)
-			# wait between 10 s and 10 h
-			randtime = rand_dist()
+			with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
+				saved_date, usage_this_day = f.read().split(' ')
+			usage_this_day = int(usage_this_day)
+			with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+				f.write(get_date().split(' ')[0] + " " + str(usage_this_day+1))
+
+			randtime = rand_dist(eff_privacy)
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
 				resume_time = datetime.now() + timedelta(0,randtime)
@@ -261,7 +278,7 @@ class BOT:
 			self.watch_videos(randtime, key)
 			if QUIT_DRIVER.value: break
 
-		self.generate_noise(avg_amount_of_likes_per_day, eff_privacy, key)
+		self.generate_noise(eff_privacy, key)
 
 	def wait(self, randtime):
 		time = 0
@@ -302,7 +319,7 @@ class BOT:
 				break
 
 			for article_element in article_elements:
-				if counter == 50:
+				if counter == 20:
 					if QUIT_DRIVER.value: conn.close();return
 					if STOP_WATCHING.value: conn.close();return
 					conn.close()
@@ -412,8 +429,12 @@ class BOT:
 		last_element = ''
 		prev_video_elements = []
 		no_log = False
+		n_vid = 0
+		max_n_vid = random.randint(6,14)
 		
 		while True:
+			if n_vid == max_n_vid:
+				break
 			if QUIT_DRIVER.value: break
 			if STOP_WATCHING.value: break
 			sleep(5)
@@ -441,6 +462,8 @@ class BOT:
 					continue
 
 			for video_element in video_elements:
+				if n_vid == max_n_vid:
+					break
 				if QUIT_DRIVER.value: break
 				if STOP_WATCHING.value: break
 				last_element = video_element
@@ -483,6 +506,7 @@ class BOT:
 				if STOP_WATCHING.value: break
 
 				self.driver.back()
+				n_vid += 1
 				sleep(3)
 
 		conn.close()
@@ -571,37 +595,6 @@ class BOT:
 		self.driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
 		sleep(3)
 
-
-	def analize_weekly_liked_posts(self, key):
-		# Analize daily Facebook interaction in the last 7 days, based on Facebook logs
-		write_log(get_date()+": "+"Analyzing daily Facebook interaction...",key)
-		self.driver.get("https://www.facebook.com/100065228954924/allactivity?category_key=ALL")
-		while True:
-			self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-			days = self.driver.find_elements(By.XPATH, "//div[@class='kvgmc6g5 sj5x9vvc sjgh65i0 l82x9zwi uo3d90p7 pw54ja7n ue3kfks5 hybvsw6c']")
-			if len(days) > 8:
-				break
-			sleep(5)
-			if QUIT_DRIVER.value: return
-
-		days = days[:7]
-		weekly_amount_of_likes = []
-		# How many posts per day
-		for day in days:
-			likes_per_day = day.find_elements(By.XPATH, ".//div[@class='l9j0dhe7 btwxx1t3 j83agx80']")
-			likes = 0
-			for like in likes_per_day:
-				txt = like.find_element(By.XPATH, ".//div[@class='qzhwtbm6 knvmm38d']").text
-				if 'likes' or 'reacted' in txt:
-					likes += 1
-			weekly_amount_of_likes.append(likes)
-			likes = 0
-
-		# Take average
-		avg_amount_of_likes_per_day = int(sum(weekly_amount_of_likes)/len(weekly_amount_of_likes))
-		return avg_amount_of_likes_per_day
-
-
 	def select_pages(self, categID, key):
 		self.load_more(NORMAL_LOAD_AMMOUNT, 3)
 		urls = self.driver.find_elements(By.TAG_NAME,'a')
@@ -671,7 +664,7 @@ class BOT:
 		except: pass
 		
 
-	def like_rand(self, pagename, avg_amount_of_likes_per_day, eff_privacy, key):
+	def like_rand(self, pagename, eff_privacy, key):
 		sleep(2)
 		amount_of_likes = 0
 
@@ -683,9 +676,7 @@ class BOT:
 		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
 		self.delete_element(banner_2)
 
-		# for adding a random value between -40% and +40% to the avg_amount_of_likes_per_day variable 
-		random_addition = int(eff_privacy*0.4)
-		random_break = random.randint(-random_addition,random_addition)
+		random_break = random.randint(6,14)
 
 		# Connect to database
 		conn = sqlite3.connect('userdata/likes.db')
@@ -758,10 +749,7 @@ class BOT:
 				except Exception as e:
 					print(get_date()+":","DEBUG:", e)
 
-			# avg pages per day == 7. Break loop based on input privacy level.
-			#if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * (eff_privacy/0.5)) / 7:
-			#if amount_of_likes > ((avg_amount_of_likes_per_day + random_break) * eff_privacy) / 7:
-			if amount_of_likes > (eff_privacy + random_break) / 7:
+			if amount_of_likes > random_break:
 				write_log(get_date()+": "+"Random loop break",key)
 				break
 			sleep(random.randint(3,10))
@@ -846,7 +834,7 @@ class Userinterface(tk.Frame):
 		self.mainwindow.grid_columnconfigure(2, weight=1)
 		
 		########### Canvas ###########
-		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=700, background=W)
+		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=650, background=W)
 		self.canvas.grid(row=1, column=0,columnspan=3)
 
 		########### Slider ###########
@@ -855,7 +843,7 @@ class Userinterface(tk.Frame):
 			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
 		self.slider = tk.Scale(self.mainwindow,from_=10,to=60,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
-			label='Posts per day:',font=15,troughcolor='grey',highlightbackground=W)#
+			label='Posts per day (max):',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
 
 		########### Start button ###########
@@ -1041,9 +1029,12 @@ def create_clicked_links_db():
 	conn.commit()
 	conn.close()
 
-def rand_dist():
-	# Return random ammount of seconds between 10s and 10h. High probability of 10s to 5h. Low probability of 5h to 10h.
-	#return 10
+def rand_dist(eff_privacy):
+	# 
+	max_time = 50/eff_privacy * 60 * 60
+	time = random.randint(10,max_time)
+	return time
+	'''
 	rand_number = random.randint(1,23)
 	if rand_number in [1,2,3]:
 		return random.randint(10,ONE_HOUR)
@@ -1065,6 +1056,7 @@ def rand_dist():
 		return random.randint(8*ONE_HOUR,9*ONE_HOUR)
 	elif rand_number in [23]:
 		return random.randint(9*ONE_HOUR,10*ONE_HOUR)
+	'''
 
 
 def rand_fb_site():
