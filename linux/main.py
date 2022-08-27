@@ -32,11 +32,12 @@ from crypto import Hash, aes_encrypt, aes_decrypt
 
 
 NORMAL_LOAD_AMMOUNT = 2
-ONE_HOUR = 3600/2
+ONE_HOUR = 3600
 QUIT_DRIVER = mp.Value('b', False)
 BREAK_SLEEP = mp.Value('b', False)
 STOP_WATCHING = mp.Value('b', False)
 NEW_SEED = mp.Value('b', False)
+CHECK_NET = mp.Value('b', True)
 W = 'white'
 INFO_TEXT = """[*] INFO [*]
 In this window you should choose how many posts
@@ -226,14 +227,15 @@ class BOT:
 			if NEW_SEED.value:
 				NEW_SEED.value = False
 				break
+			if (url,) in liked_pages_urls:
+				continue
 			dec_url = aes_decrypt(url, key)
 			write_log(get_date()+": "+"GET: "+ dec_url,key)
 			self.driver.get(dec_url)
 			sleep(10)
 			if QUIT_DRIVER.value: break
 			# Start liking
-			if (url,) not in liked_pages_urls:
-				new_page(url)
+			new_page(url)
 
 			print_done = False
 			while True:
@@ -250,12 +252,14 @@ class BOT:
 						if not print_done:
 							write_log(get_date()+": "+"Done for today.",key)
 							print_done = True
+							CHECK_NET.value = False
 						sleep(60)
 						continue
 					else: break
 				else:
 					with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
 							f.write(date_now + " 0")
+					CHECK_NET.value = True
 					break
 
 			if QUIT_DRIVER.value: break
@@ -271,9 +275,9 @@ class BOT:
 			randtime = rand_dist(eff_privacy)
 			if not QUIT_DRIVER.value:
 				time_formatted = str(timedelta(seconds = randtime))
-				resume_time = datetime.now() + timedelta(0,randtime)
-				resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
-				write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss). Resume liking at " + resume_time, key)
+				#resume_time = datetime.now() + timedelta(0,randtime)
+				#resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
+				write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss).")#" Resume liking at " + resume_time, key)
 			sleep(5)
 			if QUIT_DRIVER.value: break
 			self.watch_videos(randtime, key)
@@ -429,25 +433,21 @@ class BOT:
 
 		last_element = ''
 		prev_video_elements = []
-		no_log = False
 		n_vid = 0
 		max_n_vid = random.randint(6,14)
 		
 		while True:
 			if n_vid == max_n_vid:
+				write_log(get_date()+": "+'Taking a break from watching videos.',key)
 				break
 			if QUIT_DRIVER.value: break
 			if STOP_WATCHING.value: break
 			sleep(5)
-			if no_log:
-				sleep(7)
-				continue
 
 			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='p8bdhjjv']")
 			if prev_video_elements == video_elements:
 				write_log(get_date()+": "+'No more videos to watch',key)
-				no_log = True
-				continue
+				break
 			prev_video_elements = video_elements
 			
 			if last_element != '':
@@ -959,13 +959,14 @@ def sleep(seconds):#, watching_video = False):
 	net_up = 1
 	while True:
 		# Computation time. On average the waiting time == seconds parameter
-		response = os.system("ping -c 1 -w2 " + "www.google.com" + " > /dev/null 2>&1")
-		if response != 0:
-			if net_up:
-		  		print (get_date()+": "+"No internet.")
-			Sleep(0.5)
-			net_up = 0
-			continue
+		if CHECK_NET.value:
+			response = os.system("ping -c 1 -w2 " + "www.google.com" + " > /dev/null 2>&1")
+			if response != 0:
+				if net_up:
+			  		print (get_date()+": "+"No internet.")
+				Sleep(1)
+				net_up = 0
+				continue
 		net_up = 1
 		Sleep(1-0.003)
 		time += 1
