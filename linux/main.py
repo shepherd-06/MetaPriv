@@ -277,7 +277,7 @@ class BOT:
 				time_formatted = str(timedelta(seconds = randtime))
 				#resume_time = datetime.now() + timedelta(0,randtime)
 				#resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
-				write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss).")#" Resume liking at " + resume_time, key)
+				write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss).",key)#" Resume liking at " + resume_time, key)
 			sleep(5)
 			if QUIT_DRIVER.value: break
 			self.watch_videos(randtime, key)
