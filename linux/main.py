@@ -244,18 +244,19 @@ class BOT:
 						f.write(date_now + " 0")
 				with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
 					saved_date, usage_this_day = f.read().split(' ')
-				if int(usage_this_day) == eff_privacy / 10:
-					if date_now == saved_date:
+				
+				if date_now == saved_date:
+					if int(usage_this_day) >= eff_privacy / 10:
 						if not print_done:
 							write_log(get_date()+": "+"Done for today.",key)
 							print_done = True
 						sleep(60)
 						continue
-					else: 
-						with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+					else: break
+				else:
+					with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
 							f.write(date_now + " 0")
-						break
-				else: break
+					break
 
 			if QUIT_DRIVER.value: break
 			self.like_rand(dec_url, eff_privacy, key)
