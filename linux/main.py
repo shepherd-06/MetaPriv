@@ -202,7 +202,6 @@ class BOT:
 
 
 	def generate_noise(self, eff_privacy, key):
-		#sleep(100000000000000000000)
 		if QUIT_DRIVER.value: return
 		enc_keyword = self.pages_based_on_keyword(key)
 		if QUIT_DRIVER.value: return
@@ -503,7 +502,18 @@ class BOT:
 					delta = timedelta(hours=int(v_len[-3]) ,minutes=int(v_len[-2]), seconds=int(v_len[-1]))
 				watch_time = 5 + delta.total_seconds()
 
-				sleep(watch_time)
+				sleep(int(watch_time/2))
+				decide_like = bool(random.randint(0,1))
+				if decide_like:
+					try:
+						like_element = self.driver.find_element(By.XPATH, './/div[@aria-label="Like"]')
+						like_element.click()
+						write_log(get_date()+": "+'Liked video.',key)
+					except NoSuchElementException:
+						print(get_date()+": "+"Video already liked.")
+
+				sleep(int(watch_time/2))
+
 				if QUIT_DRIVER.value: break
 				if STOP_WATCHING.value: break
 
