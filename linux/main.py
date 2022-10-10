@@ -145,7 +145,7 @@ class BOT:
 		if profile_exists:
 			fx_options.add_argument("--profile")
 			fx_options.add_argument(profile_path)
-		fx_options.add_argument("--headless")
+		#fx_options.add_argument("--headless")
 		# Start
 		self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()),options = fx_options)
 		self.driver.set_window_size(1400,800)
@@ -202,6 +202,7 @@ class BOT:
 
 
 	def generate_noise(self, eff_privacy, key):
+		#sleep(100000000000000000000)
 		if QUIT_DRIVER.value: return
 		enc_keyword = self.pages_based_on_keyword(key)
 		if QUIT_DRIVER.value: return
@@ -315,7 +316,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: conn.close();return
 			if STOP_WATCHING.value: conn.close();return
-			article_elements = self.driver.find_elements(By.XPATH,"//div[@class='icdlwmnq']")
+			article_elements = self.driver.find_elements(By.XPATH,"//div[@class='x1lliihq']")
 			if last_element != '':
 				indx = article_elements.index(last_element)
 				article_elements = article_elements[indx+1:]
@@ -428,7 +429,7 @@ class BOT:
 		banner = self.driver.find_element(By.XPATH,'//div[@role="banner"]')
 		self.delete_element(banner)
 
-		first = self.driver.find_element(By.XPATH,"//div[@class='p8bdhjjv']")
+		first = self.driver.find_element(By.XPATH,"//div[@class='x1yztbdb']")
 		self.delete_element(first)
 
 		last_element = ''
@@ -444,7 +445,7 @@ class BOT:
 			if STOP_WATCHING.value: break
 			sleep(5)
 
-			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='p8bdhjjv']")
+			video_elements = self.driver.find_elements(By.XPATH,"//div[@class='x1yztbdb']")
 			if prev_video_elements == video_elements:
 				write_log(get_date()+": "+'No more videos to watch',key)
 				break
@@ -471,7 +472,7 @@ class BOT:
 				video_element.location_once_scrolled_into_view
 				links = video_element.find_elements(By.XPATH,".//a[@role='link']")
 				try:
-					video_box = video_element.find_element(By.XPATH,".//span[@class='gvxzyvdx aeinzg81 t7p7dqev gh25dzvf ocv3nf92 b6ax4al1 gem102v4 ncib64c9 mrvwc6qr sx8pxkcf f597kf1v cpcgwwas pk1vzqw1 hxfwr5lz nfkogyam kkmhubc1 innypi6y mqmf5637']")
+					video_box = video_element.find_element(By.XPATH,".//span[@class='x193iq5w xeuugli x13faqbe x1vvkbs x10flsy6 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1tu3fi x3x7a5m x1nxh6w3 x1sibtaa x1s688f x17z8epw']")
 				except:
 					continue
 
@@ -690,7 +691,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: break
 			# Find article elements
-			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='icdlwmnq']")
+			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb']")
 
 			if article_elements == prev_article_elements:
 				write_log(get_date()+": "+'No more posts on this page',key)
@@ -721,12 +722,12 @@ class BOT:
 					decide_like = bool(random.randint(0,1))
 					if decide_like:
 						# Find and focus a post element that uncovers the post url.
-						link_element = article_element.find_element(By.XPATH, './/span[@class="f7rl1if4 adechonz f6oz4yja dahkl6ri axrg9lpx rufpak1n qtovjlwq qbmienfq rfyhaz4c rdmi1yqr ohrdq8us nswx41af fawcizw8 l1aqi3e3 sdu1flz4"]')
+						link_element = article_element.find_element(By.XPATH, './/span[@class="x4k7w5x x1h91t0o x1h9r5lt x1jfb8zj xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j"]')
 						action = ActionChains(self.driver)
 						action.move_to_element(link_element).perform()
 						if QUIT_DRIVER.value: break
 						sleep(3)
-						dots_elemn = article_element.find_element(By.XPATH, './/div[@class="lzubc330 alzwoclg dmdr2h6l q46jt4gp b0eko5f3 r5g9zsuq fwlpnqze kgzac55p"]')
+						dots_elemn = article_element.find_element(By.XPATH, './/div[@class="xqcrz7y x78zum5 x1qx5ct2 x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xw4jnvo"]')
 						action.move_to_element(dots_elemn).perform()
 						sleep(2)
 						if QUIT_DRIVER.value: break
