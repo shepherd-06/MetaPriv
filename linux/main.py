@@ -202,88 +202,88 @@ class BOT:
 
 
 	def generate_noise(self, eff_privacy, key):
-		if QUIT_DRIVER.value: return
-		enc_keyword = self.pages_based_on_keyword(key)
-		if QUIT_DRIVER.value: return
+		while True:
+			if QUIT_DRIVER.value: return
+			enc_keyword = self.pages_based_on_keyword(key)
+			if QUIT_DRIVER.value: return
 
-		# get urls from database based on current keyword
-		conn = sqlite3.connect('userdata/pages.db')
-		c = conn.cursor()
-		c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
-		ID = c.fetchall()
-		c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID[0][0]))
-		urls = c.fetchall()
-		conn.close()
-		random.shuffle(urls)
+			# get urls from database based on current keyword
+			conn = sqlite3.connect('userdata/pages.db')
+			c = conn.cursor()
+			c.execute('SELECT ID FROM categories WHERE category IS "'+enc_keyword+'"')
+			ID = c.fetchall()
+			c.execute('SELECT URL FROM pages WHERE categID IS '+str(ID[0][0]))
+			urls = c.fetchall()
+			conn.close()
+			random.shuffle(urls)
 
-		# get urls from liked pages from database
-		conn = sqlite3.connect('userdata/likes.db')
-		c = conn.cursor()
-		c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-		liked_pages_urls = c.fetchall()
-		conn.close()
+			# get urls from liked pages from database
+			conn = sqlite3.connect('userdata/likes.db')
+			c = conn.cursor()
+			c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+			liked_pages_urls = c.fetchall()
+			conn.close()
 
-		for (url,) in urls:
-			if NEW_SEED.value:
-				NEW_SEED.value = False
-				break
-			if (url,) in liked_pages_urls:
-				continue
-			dec_url = aes_decrypt(url, key)
-			write_log(get_date()+": "+"GET: "+ dec_url,key)
-			self.driver.get(dec_url)
-			sleep(10)
-			if QUIT_DRIVER.value: break
-			# Start liking
-			new_page(url)
-
-			print_done = False
-			while True:
+			for (url,) in urls:
+				if NEW_SEED.value:
+					NEW_SEED.value = False
+					break
+				if (url,) in liked_pages_urls:
+					continue
+				dec_url = aes_decrypt(url, key)
+				write_log(get_date()+": "+"GET: "+ dec_url,key)
+				self.driver.get(dec_url)
+				sleep(10)
 				if QUIT_DRIVER.value: break
-				date_now = get_date().split(' ')[0]
-				if not os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
-					with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
-						f.write(date_now + " 0")
+				# Start liking
+				new_page(url)
+
+				print_done = False
+				while True:
+					if QUIT_DRIVER.value: break
+					date_now = get_date().split(' ')[0]
+					if not os.path.isfile(os.getcwd()+'/'+'userdata/supplemtary'):
+						with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+							f.write(date_now + " 0")
+					with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
+						saved_date, usage_this_day = f.read().split(' ')
+					
+					if date_now == saved_date:
+						if int(usage_this_day) >= eff_privacy / 10:
+							if not print_done:
+								write_log(get_date()+": "+"Done for today.",key)
+								print_done = True
+								CHECK_NET.value = False
+							sleep(60)
+							continue
+						else: break
+					else:
+						with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+								f.write(date_now + " 0")
+						CHECK_NET.value = True
+						break
+
+				if QUIT_DRIVER.value: break
+				self.like_rand(dec_url, eff_privacy, key)
+				# Increment keyword usage
+				self.update_keyword(key)
 				with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
 					saved_date, usage_this_day = f.read().split(' ')
-				
-				if date_now == saved_date:
-					if int(usage_this_day) >= eff_privacy / 10:
-						if not print_done:
-							write_log(get_date()+": "+"Done for today.",key)
-							print_done = True
-							CHECK_NET.value = False
-						sleep(60)
-						continue
-					else: break
-				else:
-					with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
-							f.write(date_now + " 0")
-					CHECK_NET.value = True
-					break
+				usage_this_day = int(usage_this_day)
+				with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
+					f.write(get_date().split(' ')[0] + " " + str(usage_this_day+1))
 
-			if QUIT_DRIVER.value: break
-			self.like_rand(dec_url, eff_privacy, key)
-			# Increment keyword usage
-			self.update_keyword(key)
-			with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
-				saved_date, usage_this_day = f.read().split(' ')
-			usage_this_day = int(usage_this_day)
-			with open(os.getcwd()+'/'+'userdata/supplemtary','w') as f:
-				f.write(get_date().split(' ')[0] + " " + str(usage_this_day+1))
+				randtime = rand_dist(eff_privacy)
+				if not QUIT_DRIVER.value:
+					time_formatted = str(timedelta(seconds = randtime))
+					#resume_time = datetime.now() + timedelta(0,randtime)
+					#resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
+					write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss).",key)#" Resume liking at " + resume_time, key)
+				sleep(5)
+				if QUIT_DRIVER.value: break
+				self.watch_videos(randtime, key)
+				if QUIT_DRIVER.value: break
 
-			randtime = rand_dist(eff_privacy)
-			if not QUIT_DRIVER.value:
-				time_formatted = str(timedelta(seconds = randtime))
-				#resume_time = datetime.now() + timedelta(0,randtime)
-				#resume_time = resume_time.strftime('%Y-%m-%d %H:%M:%S')
-				write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss).",key)#" Resume liking at " + resume_time, key)
-			sleep(5)
-			if QUIT_DRIVER.value: break
-			self.watch_videos(randtime, key)
-			if QUIT_DRIVER.value: break
-
-		self.generate_noise(eff_privacy, key)
 
 	def wait(self, randtime):
 		time = 0
