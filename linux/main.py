@@ -468,7 +468,7 @@ class BOT:
 				if QUIT_DRIVER.value: break
 				if STOP_WATCHING.value: break
 				last_element = video_element
-				
+
 				try:
 					video_element.location_once_scrolled_into_view
 					links = video_element.find_elements(By.XPATH,".//a[@role='link']")
@@ -738,8 +738,10 @@ class BOT:
 						action.move_to_element(link_element).perform()
 						if QUIT_DRIVER.value: break
 						sleep(3)
-						dots_elemn = article_element.find_element(By.XPATH, './/div[@class="xqcrz7y x78zum5 x1qx5ct2 x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xw4jnvo"]')
-						action.move_to_element(dots_elemn).perform()
+						try:
+							dots_elemn = article_element.find_element(By.XPATH, './/div[@class="xqcrz7y x78zum5 x1qx5ct2 x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xw4jnvo"]')
+							action.move_to_element(dots_elemn).perform()
+						except: pass
 						sleep(2)
 						if QUIT_DRIVER.value: break
 						post_url = link_element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
