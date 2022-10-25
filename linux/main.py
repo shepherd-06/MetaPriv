@@ -203,6 +203,7 @@ class BOT:
 
 	def generate_noise(self, eff_privacy, key):
 		while True:
+
 			if QUIT_DRIVER.value: return
 			enc_keyword = self.pages_based_on_keyword(key)
 			if QUIT_DRIVER.value: return
@@ -550,7 +551,7 @@ class BOT:
 			conn.close()
 			# Generate new keyword if done with urls from db
 			nr_of_urls = len(urls)
-			if usage_number >= nr_of_urls:
+			if usage_number >= nr_of_urls - 1:
 				keyword = self.gen_keyword(keyword, key)
 				enc_keyword = aes_encrypt(keyword, key)
 		#if QUIT_DRIVER.value: return
