@@ -28,12 +28,12 @@ with open(os.getcwd()+'/'+'.saved_data','r') as f:
 	text = text.split('\n')
 	s_data.append(aes_decrypt(text[0],key))
 	s_data.append(aes_decrypt(text[2],key))
-	s_data.append(aes_decrypt(text[3],key))
+	#s_data.append(aes_decrypt(text[3],key))
 
 with open(os.getcwd()+'/'+'decrypted_files/decrypted_saved_data','w') as f:
 	f.write("Email: "+s_data[0]+'\n')
 	f.write("Keyword|Usage Number: "+s_data[1]+'\n')
-	f.write("Browser: "+s_data[2])
+
 
 ### likes.db ###
 conn = sqlite3.connect('userdata/likes.db')
