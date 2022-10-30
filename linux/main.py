@@ -934,7 +934,7 @@ class Userinterface(tk.Frame):
 		self.textbox.configure(state='normal')
 		self.textbox.insert(tk.END, get_date()+": "+"Starting bot...\n")
 		self.textbox.configure(state='disabled')
-		priv = int(self.eff_privacy.get())
+		priv = int(self.eff_privacy.get() - 10)
 		# Start BOT on different core
 		self.BOT = BOT()
 		self.bot_process = mp.Process(target=self.BOT.start_bot,args=[priv, key])
@@ -1048,7 +1048,7 @@ def create_clicked_links_db():
 
 def rand_dist(eff_privacy):
 	# 
-	max_time = 50/eff_privacy * 60 * 60
+	max_time = 70/eff_privacy * 60 * 60
 	time = random.randint(10,max_time)
 	return time
 	'''
