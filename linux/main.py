@@ -485,9 +485,10 @@ class BOT:
 				post_url = post_url.split('&external_log_id')[0]
 				page_url = links[1].get_attribute('href')
 
+				decide_like = random.randint(0,1)
 				try:
-					c.execute('INSERT INTO "'+aes_encrypt(keyword,key)+'" (post_URL, page_URL, time) \
-								VALUES ("' + aes_encrypt(post_url, key) + '","' + aes_encrypt(page_url, key) + '","'+ get_date() + '")');
+					c.execute('INSERT INTO "'+aes_encrypt(keyword,key)+'" (post_URL, page_URL, time, liked) \
+								VALUES ("' + aes_encrypt(post_url, key) + '","' + aes_encrypt(page_url, key) + '","'+ get_date() + '","' + str(decide_like) + '")');
 					conn.commit()
 					write_log(get_date()+": Watching video for {} (mm:ss)\n      Post: {}\n      Page: {}".format(video_length, post_url, page_url), key)
 				except sqlite3.IntegrityError:
@@ -505,14 +506,14 @@ class BOT:
 				watch_time = 5 + delta.total_seconds()
 
 				sleep(int(watch_time/2))
-				decide_like = bool(random.randint(0,1))
-				if decide_like:
+				
+				if bool(decide_like):
 					try:
 						like_element = self.driver.find_element(By.XPATH, './/div[@aria-label="Like"]')
 						like_element.click()
 						write_log(get_date()+": "+'Liked video.',key)
 					except NoSuchElementException:
-						print(get_date()+": "+"Video already liked.")
+						pass
 
 				sleep(int(watch_time/2))
 
@@ -643,6 +644,10 @@ class BOT:
 		except: pass
 		try:
 			banner = self.driver.find_element(By.XPATH, '//div[@style="top: 56px; z-index: auto;"]')
+			self.delete_element(banner)
+		except: pass
+		try:
+			banner = self.driver.find_element(By.XPATH, '//div[@style="top:56px;z-index:auto"]')
 			self.delete_element(banner)
 		except: pass
 
@@ -857,7 +862,7 @@ class Userinterface(tk.Frame):
 		self.eff_privacy = tk.DoubleVar()
 		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
 			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
-		self.slider = tk.Scale(self.mainwindow,from_=10,to=60,orient='horizontal', background=W,
+		self.slider = tk.Scale(self.mainwindow,from_=20,to=60,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
 			label='Posts per day (max):',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
@@ -1033,6 +1038,7 @@ def create_video_db(keyword):
 	c.execute('''CREATE TABLE "{}"
 	             ([post_URL] text PRIMARY KEY,
 	              [page_URL] text,
+	              [liked] INTEGER,
 	              [time] date)'''.format(keyword))
 	conn.commit()
 	conn.close()

@@ -19,8 +19,8 @@ class Keyword:
 
 	def add_videos(self,video_list):
 		for vid in video_list:
-			post, page, _ = vid
-			self.video_list.append((aes_decrypt(post,self.key),aes_decrypt(page,self.key)))
+			post, page, liked, _ = vid
+			self.video_list.append([aes_decrypt(post,self.key),aes_decrypt(page,self.key),liked])
 
 	def get_videos(self):
 		return self.video_list
@@ -73,7 +73,7 @@ class PostsWindow:
 
 class VideoWindow:
 	def __init__(self,video_list,name):
-		df = pd.DataFrame(video_list, columns = ('Post_URL', 'Page_URL'))
+		df = pd.DataFrame(video_list, columns = ('Post_URL', 'Page_URL','Liked'))
 		# Window options
 		self.mainwindow = tk.Tk()
 		title = name + ' videos watched'
