@@ -179,17 +179,17 @@ class StatsWindow(tk.Frame):
 			watched_videos = []
 			n_liked_videos = 0
 			liked_videos = []
-			#try:
-			conn = sqlite3.connect('userdata/watched_videos.db')
-			c = conn.cursor()
-			c.execute('SELECT * FROM "'+word+'"')
-			watched_videos = c.fetchall()
-			n_watched_videos = len(watched_videos)
-			c.execute('SELECT * FROM "'+word+'" WHERE liked IS 1')
-			liked_videos = c.fetchall()
-			n_liked_videos = len(liked_videos)
-			conn.close()
-			#except: pass
+			try:
+				conn = sqlite3.connect('userdata/watched_videos.db')
+				c = conn.cursor()
+				c.execute('SELECT * FROM "'+word+'"')
+				watched_videos = c.fetchall()
+				n_watched_videos = len(watched_videos)
+				c.execute('SELECT * FROM "'+word+'" WHERE liked IS 1')
+				liked_videos = c.fetchall()
+				n_liked_videos = len(liked_videos)
+				conn.close()
+			except: pass
 			self.keyword_list.append(aes_decrypt(word,key))
 			self.liked_posts_list.append(liked_posts)
 			self.liked_pages_list.append(liked_pages)
