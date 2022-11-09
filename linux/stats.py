@@ -333,8 +333,8 @@ class StatsWindow(tk.Frame):
 		fig = Figure(dpi=150)
 		a = fig.add_subplot(111)
 		text_allign_val = 0.03
-		allign_val = 0.3
-		bar_len = 0.3
+		allign_val = 0.1
+		bar_len = 0.1
 
 		a.bar(X_axis-1.5*allign_val,self.liked_videos_list,bar_len,color='orange',label="Liked videos")
 		a.bar(X_axis-0.5*allign_val,self.watched_videos_list,bar_len,color='blue',label="Watched videos")
