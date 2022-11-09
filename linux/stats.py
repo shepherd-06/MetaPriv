@@ -138,6 +138,7 @@ class StatsWindow(tk.Frame):
 		self.liked_posts_list = []
 		self.liked_pages_list = []
 		self.watched_videos_list = []
+		self.liked_videos_list = []
 		self.words = {}
 		#pages = []
 		conn = sqlite3.connect('userdata/pages.db')
@@ -176,18 +177,24 @@ class StatsWindow(tk.Frame):
 			conn.close()
 			n_watched_videos = 0
 			watched_videos = []
-			try:
-				conn = sqlite3.connect('userdata/watched_videos.db')
-				c = conn.cursor()
-				c.execute('SELECT * FROM "'+word+'"')
-				watched_videos = c.fetchall()
-				n_watched_videos = len(watched_videos)
-				conn.close()
-			except: pass
+			n_liked_videos = 0
+			liked_videos = []
+			#try:
+			conn = sqlite3.connect('userdata/watched_videos.db')
+			c = conn.cursor()
+			c.execute('SELECT * FROM "'+word+'"')
+			watched_videos = c.fetchall()
+			n_watched_videos = len(watched_videos)
+			c.execute('SELECT * FROM "'+word+'" WHERE liked IS 1')
+			liked_videos = c.fetchall()
+			n_liked_videos = len(liked_videos)
+			conn.close()
+			#except: pass
 			self.keyword_list.append(aes_decrypt(word,key))
 			self.liked_posts_list.append(liked_posts)
 			self.liked_pages_list.append(liked_pages)
 			self.watched_videos_list.append(n_watched_videos)
+			self.liked_videos_list.append(n_liked_videos)
 
 			# Add videos to keyword object
 			self.words[aes_decrypt(word,key)].add_videos(watched_videos)
@@ -321,6 +328,7 @@ class StatsWindow(tk.Frame):
 		allign_val = 0.2
 		bar_len = 0.3
 
+		a.bar(X_axis-2*allign_val,self.liked_videos_list,bar_len,color='orange',label="Videos liked")
 		a.bar(X_axis-allign_val,self.watched_videos_list,bar_len,color='blue',label="Videos watched")
 		a.bar(X_axis,self.liked_posts_list,bar_len,color='red',label="Liked posts")
 		a.bar(X_axis+allign_val,self.liked_pages_list,bar_len,color='green',label="Liked pages")
@@ -348,7 +356,8 @@ class StatsWindow(tk.Frame):
 		self.mainwindow.destroy()
 
 if __name__ == '__main__':
-	password = input("Enter password: ")
+	#password = input("Enter password: ")
+	password='aaaaaaaa'
 	key = Hash(password)
 	stats = tk.Tk()
 	stats.resizable(False, False)
