@@ -82,7 +82,7 @@ class VideoWindow:
 		frame = tk.Frame(self.mainwindow)
 		frame.pack(fill='x',expand=True)
 
-		pt = Table(frame,dataframe=df,width=1400,maxcellwidth=700)
+		pt = Table(frame,dataframe=df,width=1400,maxcellwidth=600)
 		pt.show()
 
 	def close(self):
@@ -216,7 +216,7 @@ class StatsWindow(tk.Frame):
 		tabs.add(self.frame1, text="Everything")
 		tabs.add(self.frame2, text="Liked posts")
 		tabs.add(self.frame3, text="Liked pages")
-		tabs.add(self.frame4, text="Videos watched")
+		tabs.add(self.frame4, text="Videos")
 
 		self.frame1_plot()
 		self.frame2_plot()
@@ -231,11 +231,11 @@ class StatsWindow(tk.Frame):
 		dropdown = tk.OptionMenu(self.mainwindow,self.variable,*self.words)
 		dropdown.grid(row=1,column=0,sticky='ew')
 
-		watched_videos_button = tk.Button(self.mainwindow, text="Videos watched", 
+		watched_videos_button = tk.Button(self.mainwindow, text="Videos", 
 			font=10, background='white',command=self.video_window)
 		watched_videos_button.grid(row=1,column=1,sticky='we')#command= lambda: self.strt(key),
 
-		posts_button = tk.Button(self.mainwindow, text="Posts liked", font=10, background='white',
+		posts_button = tk.Button(self.mainwindow, text="Liked posts", font=10, background='white',
 			command=self.posts_window)
 		posts_button.grid(row=1,column=2,sticky='we')#command= lambda: self.strt(key),
 
@@ -259,11 +259,19 @@ class StatsWindow(tk.Frame):
 		window.start()
 
 	def frame4_plot(self):
+		X_axis = np.arange(len(self.keyword_list))
+
 		fig = Figure(dpi=150)
 		a = fig.add_subplot(111)
-		a.bar(self.keyword_list,self.watched_videos_list,0.3,color='blue',label="Videos watched")
+		allign_val = 0.3
 
-		a.set_title ("Videos watched", fontsize=16)
+		a.bar(X_axis+0.5*allign_val,self.watched_videos_list,0.3,color='blue',label="Watched videos")
+		a.bar(X_axis-0.5*allign_val,self.liked_videos_list,0.3,color='orange',label="Liked videos")
+
+		a.legend(fontsize = 10)
+		a.set_xticks(X_axis,self.keyword_list)
+
+		a.set_title ("Videos", fontsize=16)
 		a.set_ylabel("Number of (#)", fontsize=14)
 		a.set_xlabel("Keywords", fontsize=14)
 		a.set_ylim(bottom=0)
@@ -325,13 +333,13 @@ class StatsWindow(tk.Frame):
 		fig = Figure(dpi=150)
 		a = fig.add_subplot(111)
 		text_allign_val = 0.03
-		allign_val = 0.2
+		allign_val = 0.3
 		bar_len = 0.3
 
-		a.bar(X_axis-2*allign_val,self.liked_videos_list,bar_len,color='orange',label="Videos liked")
-		a.bar(X_axis-allign_val,self.watched_videos_list,bar_len,color='blue',label="Videos watched")
-		a.bar(X_axis,self.liked_posts_list,bar_len,color='red',label="Liked posts")
-		a.bar(X_axis+allign_val,self.liked_pages_list,bar_len,color='green',label="Liked pages")
+		a.bar(X_axis-1.5*allign_val,self.liked_videos_list,bar_len,color='orange',label="Liked videos")
+		a.bar(X_axis-0.5*allign_val,self.watched_videos_list,bar_len,color='blue',label="Watched videos")
+		a.bar(X_axis+0.5*allign_val,self.liked_posts_list,bar_len,color='red',label="Liked posts")
+		a.bar(X_axis+1.5*allign_val,self.liked_pages_list,bar_len,color='green',label="Liked pages")
 
 		a.legend(fontsize = 10)
 		a.set_xticks(X_axis,self.keyword_list)
@@ -356,8 +364,7 @@ class StatsWindow(tk.Frame):
 		self.mainwindow.destroy()
 
 if __name__ == '__main__':
-	#password = input("Enter password: ")
-	password='aaaaaaaa'
+	password = input("Enter password: ")
 	key = Hash(password)
 	stats = tk.Tk()
 	stats.resizable(False, False)
