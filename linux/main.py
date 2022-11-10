@@ -684,7 +684,7 @@ class BOT:
 		
 
 	def like_rand(self, pagename, eff_privacy, key):
-		sleep(2)
+		sleep(5)
 		amount_of_likes = 0
 
 		# Like page
