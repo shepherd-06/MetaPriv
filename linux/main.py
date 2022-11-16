@@ -847,19 +847,24 @@ class Filter_Window(tk.Tk):
 		tk.Label(self, text=denoiser_text,
 			font=('TkFixedFont', 15, '')).grid(row=0, column=0,sticky='n')
 
-		conn = sqlite3.connect('userdata/pages.db')
-		c = conn.cursor()
-		c.execute('SELECT URL FROM pages')
-		urls_encr = c.fetchall()
-		conn.close()
-		urls = []
-		for (encrurl,) in urls_encr:
-			urls.append(aes_decrypt(encrurl,key))
 		self.filter_pages = ScrolledText.ScrolledText(self,state='normal', height=15, width=50, background='white')
 		self.filter_pages.configure(font=('TkFixedFont', 13, 'bold'),foreground='black')
-		for url in urls:
-			self.filter_pages.insert(tk.END, url+'\n')
 		self.filter_pages.grid(column=0, row=1, sticky='ew')
+
+		try:
+			conn = sqlite3.connect('userdata/pages.db')
+			c = conn.cursor()
+			c.execute('SELECT URL FROM pages')
+			urls_encr = c.fetchall()
+			conn.close()
+			urls = []
+			for (encrurl,) in urls_encr:
+				urls.append(aes_decrypt(encrurl,key))
+			for url in urls:
+				self.filter_pages.insert(tk.END, url+'\n')
+		except sqlite3.OperationalError:
+			self.filter_pages.insert(tk.END, 'Nothing yet. Add some noise first.')
+		
 		self.m = tk.Menu(self, tearoff = 0)
 		self.m.add_command(label ="Copy",command=self.copy_text_to_clipboard)
 		self.m.add_command(label ="Select All",command=self.sellect_all)
