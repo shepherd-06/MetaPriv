@@ -835,6 +835,51 @@ class Enter_New_Keyword(tk.Tk):
 	def close(self):
 		self.destroy()
 
+class Filter_Window(tk.Tk):
+
+	def __init__(self, parent, key):
+		tk.Tk.__init__(self,parent)
+		self.parent = parent
+		# Window options
+		self.protocol('WM_DELETE_WINDOW', self.close)
+		self.grid()
+		denoiser_text= "Copy paste this into the denoiser."
+		tk.Label(self, text=denoiser_text,
+			font=('TkFixedFont', 15, '')).grid(row=0, column=0,sticky='n')
+
+		conn = sqlite3.connect('userdata/pages.db')
+		c = conn.cursor()
+		c.execute('SELECT URL FROM pages')
+		urls_encr = c.fetchall()
+		conn.close()
+		urls = []
+		for (encrurl,) in urls_encr:
+			urls.append(aes_decrypt(encrurl,key))
+		self.filter_pages = ScrolledText.ScrolledText(self,state='normal', height=15, width=50, background='white')
+		self.filter_pages.configure(font=('TkFixedFont', 13, 'bold'),foreground='black')
+		for url in urls:
+			self.filter_pages.insert(tk.END, url+'\n')
+		self.filter_pages.grid(column=0, row=1, sticky='ew')
+		self.m = tk.Menu(self, tearoff = 0)
+		self.m.add_command(label ="Copy",command=self.copy_text_to_clipboard)
+		self.m.add_command(label ="Select All",command=self.sellect_all)
+		self.filter_pages.bind("<Button-3>", self.do_popup)
+
+	def copy_text_to_clipboard(self):
+		self.filter_pages.event_generate("<<Copy>>")
+
+	def sellect_all(self):
+		self.filter_pages.event_generate("<<SelectAll>>")
+
+	def do_popup(self, event):
+	    try:
+	        self.m.tk_popup(event.x_root, event.y_root)
+	    finally:
+	        self.m.grab_release()
+
+	def close(self):
+		self.destroy()
+
 class Userinterface(tk.Frame):
 
 	def __init__(self, parent, key, *args, **kwargs):
@@ -853,44 +898,58 @@ class Userinterface(tk.Frame):
 		self.mainwindow.grid_columnconfigure(0, weight=1)
 		self.mainwindow.grid_columnconfigure(1, weight=1)
 		self.mainwindow.grid_columnconfigure(2, weight=1)
+		self.mainwindow.grid_columnconfigure(3, weight=1)
 		
 		########### Canvas ###########
 		self.canvas = tk.Canvas(self.mainwindow, width=1400, height=650, background=W)
-		self.canvas.grid(row=1, column=0,columnspan=3)
+		self.canvas.grid(row=1, column=0,columnspan=4)
+
+		########### Info ###########
+		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
+			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n',columnspan=2)
 
 		########### Slider ###########
 		self.eff_privacy = tk.DoubleVar()
-		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
-			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
 		self.slider = tk.Scale(self.mainwindow,from_=20,to=50,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
 			label='Posts per day (max):',font=15,troughcolor='grey',highlightbackground=W)#
-		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
-
-		########### Start button ###########
-		self.start_button = tk.Button(self.mainwindow, text="Start Bot Process", command= lambda: self.strt(key),
-			font=10, background=W)
-		self.start_button.grid(row=3,column=2,sticky='ew')
+		self.slider.grid(column=0,row=1,sticky='sew', columnspan=4)
 		
 		########### Logs ###########
-		self.grid(column=0, row=2, sticky='ew', columnspan=3)
+		self.grid(column=0, row=2, sticky='ew', columnspan=4)
 		self.textbox = ScrolledText.ScrolledText(self,state='disabled', height=8, width=173, background='black')
 		self.textbox.configure(font=('TkFixedFont', 10, 'bold'),foreground='green')
-		self.textbox.grid(column=0, row=2, sticky='w', columnspan=3)
-
-		########### Stats button ###########
-		self.stats_button = tk.Button(self.mainwindow, text="Keyword Statistics", command= lambda: self.stats_window(key),
-			font=10, background=W)
-		self.stats_button.grid(row=3,column=1,sticky='ew')
+		self.textbox.grid(column=0, row=2, sticky='w', columnspan=4)
 
 		########### Keyword button ###########
 		self.kwrd_button = tk.Button(self.mainwindow, text="Reset Seed Keyword", command= lambda: self.reset_seed_keyword(key),
 			font=10, background=W)
 		self.kwrd_button.grid(row=3,column=0,sticky='ew')
 
+		########### Stats button ###########
+		self.stats_button = tk.Button(self.mainwindow, text="Keyword Statistics", command= lambda: self.stats_window(key),
+			font=10, background=W)
+		self.stats_button.grid(row=3,column=1,sticky='ew')
+
+		########### Filter button ###########
+		self.fltr_button = tk.Button(self.mainwindow, text="Denoiser Input", command= lambda: self.filter_list(key),
+			font=10, background=W)
+		self.fltr_button.grid(row=3,column=2,sticky='ew')
+
+		########### Start button ###########
+		self.start_button = tk.Button(self.mainwindow, text="Start Bot Process", command= lambda: self.strt(key),
+			font=10, background=W)
+		self.start_button.grid(row=3,column=3,sticky='ew')
+
 	def reset_seed_keyword(self,key):
 		new_seed = Enter_New_Keyword(None,key)
 		new_seed.title("New seed keyword")
+		new_seed.resizable(False, False)
+		new_seed.mainloop()
+
+	def filter_list(self,key):
+		new_seed = Filter_Window(None,key)
+		new_seed.title("Pages")
 		new_seed.resizable(False, False)
 		new_seed.mainloop()
 
