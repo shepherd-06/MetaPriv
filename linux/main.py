@@ -862,7 +862,7 @@ class Userinterface(tk.Frame):
 		self.eff_privacy = tk.DoubleVar()
 		tk.Label(self.mainwindow, text=INFO_TEXT, background=W,
 			font=('TkFixedFont', 15, '')).grid(row=1, column=1,sticky='n')
-		self.slider = tk.Scale(self.mainwindow,from_=20,to=60,orient='horizontal', background=W,
+		self.slider = tk.Scale(self.mainwindow,from_=20,to=50,orient='horizontal', background=W,
 			variable=self.eff_privacy,tickinterval=10,sliderlength=20,resolution=10,length=1000,width=18,
 			label='Posts per day (max):',font=15,troughcolor='grey',highlightbackground=W)#
 		self.slider.grid(column=0,row=1,sticky='sew', columnspan=3)
