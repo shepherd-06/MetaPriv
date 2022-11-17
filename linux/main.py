@@ -1021,7 +1021,7 @@ class Userinterface(tk.Frame):
 		sleep(5)
 		########### Screenshot ###########
 		self.screeshot_label = tk.Label(self.mainwindow)
-		self.screeshot_label.grid(row=1, column=0,columnspan=3)
+		self.screeshot_label.grid(row=1, column=0,columnspan=4)
 		# Start recursive update
 		self.mainwindow.after(0,self.update_ui, key)
 		

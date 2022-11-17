@@ -141,11 +141,14 @@ class StatsWindow(tk.Frame):
 		self.liked_videos_list = []
 		self.words = {}
 		#pages = []
-		conn = sqlite3.connect('userdata/pages.db')
-		c = conn.cursor()
-		c.execute("SELECT * FROM categories")
-		keywords_in_db = c.fetchall()
-		conn.close()
+		try:
+			conn = sqlite3.connect('userdata/pages.db')
+			c = conn.cursor()
+			c.execute("SELECT * FROM categories")
+			keywords_in_db = c.fetchall()
+			conn.close()
+		except: 
+			self.close()
 
 		for keyword in keywords_in_db:
 			liked_posts = 0
