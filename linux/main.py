@@ -230,7 +230,10 @@ class BOT:
 					NEW_SEED.value = False
 					break
 				if (url,) in liked_pages_urls:
+					print("inf loop")
+					self.update_keyword(key)	
 					continue
+				print("asd")
 				dec_url = aes_decrypt(url, key)
 				write_log(get_date()+": "+"GET: "+ dec_url,key)
 				self.driver.get(dec_url)
@@ -267,7 +270,6 @@ class BOT:
 				if QUIT_DRIVER.value: break
 				self.like_rand(dec_url, eff_privacy, key)
 				# Increment keyword usage
-				self.update_keyword(key)
 				with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
 					saved_date, usage_this_day = f.read().split(' ')
 				usage_this_day = int(usage_this_day)
@@ -708,7 +710,7 @@ class BOT:
 		while True:
 			if QUIT_DRIVER.value: break
 			# Find article elements
-			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='x1ja2u2z xh8yej3 x1n2onr6 x1yztbdb']")
+			article_elements = self.driver.find_elements(By.XPATH, "//div[@class='x1n2onr6 x1ja2u2z']")
 
 			if article_elements == prev_article_elements:
 				write_log(get_date()+": "+'No more posts on this page',key)
@@ -739,7 +741,7 @@ class BOT:
 					decide_like = bool(random.randint(0,1))
 					if decide_like:
 						# Find and focus a post element that uncovers the post url.
-						link_element = article_element.find_element(By.XPATH, './/span[@class="x4k7w5x x1h91t0o x1h9r5lt x1jfb8zj xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j"]')
+						link_element = article_element.find_element(By.XPATH, './/span[@class="x4k7w5x x1h91t0o x1h9r5lt xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j x1jfb8zj"]')
 						action = ActionChains(self.driver)
 						action.move_to_element(link_element).perform()
 						if QUIT_DRIVER.value: break
