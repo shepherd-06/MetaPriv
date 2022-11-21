@@ -230,10 +230,8 @@ class BOT:
 					NEW_SEED.value = False
 					break
 				if (url,) in liked_pages_urls:
-					print("inf loop")
 					self.update_keyword(key)	
 					continue
-				print("asd")
 				dec_url = aes_decrypt(url, key)
 				write_log(get_date()+": "+"GET: "+ dec_url,key)
 				self.driver.get(dec_url)
