@@ -858,11 +858,7 @@ class Filter_Window(tk.Tk):
 
 		self.filter_pages = ScrolledText.ScrolledText(self,state='normal', height=15, width=50, background='white')
 		self.filter_pages.configure(font=('TkFixedFont', 13, 'bold'),foreground='black')
-		self.filter_pages.grid(column=0, row=1, sticky='ew')
-
-		self.filter_words = ScrolledText.ScrolledText(self,state='normal', height=3, width=50, background='white')
-		self.filter_words.configure(font=('TkFixedFont', 13, 'bold'),foreground='black')
-		self.filter_words.grid(column=0, row=2, sticky='ew')
+		self.filter_pages.grid(column=0, row=2, sticky='ew')
 
 		try:
 			conn = sqlite3.connect('userdata/pages.db')
@@ -880,15 +876,14 @@ class Filter_Window(tk.Tk):
 			for (encrkwrd,) in keywords_encr:
 				keywords = keywords + aes_decrypt(encrkwrd,key) + ";"
 			keywords = keywords[:-1]
-			self.filter_words.insert(tk.END, keywords)
+			self.filter_pages.insert(tk.END, '||\n')
+			self.filter_pages.insert(tk.END, keywords)
 
 			conn.close()
 
 		except sqlite3.OperationalError:
 			self.filter_pages.insert(tk.END, 'Nothing yet. Add some noise first.')
-			self.filter_words.insert(tk.END, 'Nothing yet. Add some noise first.')
 
-		
 		
 		self.m = tk.Menu(self, tearoff = 0)
 		self.m.add_command(label ="Copy",command=self.copy_text_to_clipboard)
@@ -979,7 +974,7 @@ class Userinterface(tk.Frame):
 
 	def filter_list(self,key):
 		new_seed = Filter_Window(None,key)
-		new_seed.title("Pages")
+		new_seed.title("Denoiser input")
 		new_seed.resizable(False, False)
 		new_seed.mainloop()
 
