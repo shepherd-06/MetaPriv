@@ -233,6 +233,7 @@ class BOT:
 					self.update_keyword(key)	
 					continue
 				dec_url = aes_decrypt(url, key)
+				#dec_url = 'https://www.facebook.com/anniesARTstudio15'
 				write_log(get_date()+": "+"GET: "+ dec_url,key)
 				self.driver.get(dec_url)
 				sleep(10)
@@ -742,20 +743,24 @@ class BOT:
 				try:
 					decide_like = bool(random.randint(0,1))
 					if decide_like:
-						# Find and focus a post element that uncovers the post url.
-						link_element = article_element.find_element(By.XPATH, './/span[@class="x4k7w5x x1h91t0o x1h9r5lt xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j x1jfb8zj"]')
-						action = ActionChains(self.driver)
-						action.move_to_element(link_element).perform()
-						if QUIT_DRIVER.value: break
-						sleep(3)
-						try:
-							dots_elemn = article_element.find_element(By.XPATH, './/div[@class="xqcrz7y x78zum5 x1qx5ct2 x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xw4jnvo"]')
-							action.move_to_element(dots_elemn).perform()
-						except: pass
-						sleep(2)
-						if QUIT_DRIVER.value: break
-						post_url = link_element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
-						post_url = post_url.split('__cft__')[0]
+						try: # if reel
+							post_url = article_element.find_element(By.XPATH, './/a[@aria-label="Open reel in Reels Viewer"]').get_attribute('href')
+							post_url = "https://www.facebook.com"+post_url.split('__cft__')[0]
+						except NoSuchElementException:
+							# Find and focus a post element that uncovers the post url.
+							link_element = article_element.find_element(By.XPATH, './/span[@class="x4k7w5x x1h91t0o x1h9r5lt xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j x1jfb8zj"]')
+							action = ActionChains(self.driver)
+							action.move_to_element(link_element).perform()
+							if QUIT_DRIVER.value: break
+							sleep(3)
+							try:
+								dots_elemn = article_element.find_element(By.XPATH, './/div[@class="xqcrz7y x78zum5 x1qx5ct2 x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xw4jnvo"]')
+								action.move_to_element(dots_elemn).perform()
+							except: pass
+							sleep(2)
+							if QUIT_DRIVER.value: break
+							post_url = link_element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
+							post_url = post_url.split('__cft__')[0]
 
 						# Like post
 						like_element = article_element.find_element(By.XPATH, './/div[@aria-label="Like"]')
