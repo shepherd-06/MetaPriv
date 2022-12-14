@@ -233,7 +233,6 @@ class BOT:
 					self.update_keyword(key)	
 					continue
 				dec_url = aes_decrypt(url, key)
-				#dec_url = 'https://www.facebook.com/anniesARTstudio15'
 				write_log(get_date()+": "+"GET: "+ dec_url,key)
 				self.driver.get(dec_url)
 				sleep(10)
@@ -775,7 +774,8 @@ class BOT:
 						write_log(get_date()+": "+"Liked {} post on page {}".format(post_url, pagename),key)
 						sleep(random.randint(1,5))
 						if QUIT_DRIVER.value: break
-						del action
+						try:del action
+						except: pass
 				except Exception as e:
 					print(get_date()+":","DEBUG:", e)
 
