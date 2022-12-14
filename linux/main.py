@@ -699,7 +699,7 @@ class BOT:
 		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
 		self.delete_element(banner_2)
 
-		random_break = random.randint(6,14)
+		random_break = random.randint(8,12)
 
 		# Connect to database
 		conn = sqlite3.connect('userdata/likes.db')
