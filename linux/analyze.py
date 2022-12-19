@@ -53,8 +53,7 @@ def analize_feed():
 		for article_element in article_elements:
 			if counter == 300:
 				return
-			counter += 1
-
+			
 			last_element = article_element
 			article_element.location_once_scrolled_into_view
 			sleep(2)
@@ -62,7 +61,11 @@ def analize_feed():
 			data = article_element.screenshot_as_png
 			with open("analysisdata/f_"+get_date()+".png",'wb') as f:
 				f.write(data)
-		sleep(10)
+			counter += 1
+			print(counter)
+			sleep(5)
+
+		sleep(5)
 
 
 
@@ -100,6 +103,8 @@ def analize_video_feed():
 
 			counter += 1
 			sleep(5)
+			print(counter)
+
 
 		sleep(5)
 
