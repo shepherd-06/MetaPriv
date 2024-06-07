@@ -34,3 +34,7 @@ You can have the app constantly running in the background on your machine. It wi
 4. On next runs:
 	- Input the password you created on the first run.
 	- Choose desired privacy level and click start.
+
+# Paper
+https://arxiv.org/abs/2209.03679
+https://link.springer.com/chapter/10.1007/978-3-031-25538-0_36
