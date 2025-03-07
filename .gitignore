@@ -9,3 +9,12 @@ analysisdata/
 __pycache__/
 tst.py
 decrypted_files/
+node_modules/
+
+# Optional: Log files, editor directories, and other non-relevant files
+npm-debug.log
+logs/
+.vscode/
+.idea/
+*.swp
+.DS_Store

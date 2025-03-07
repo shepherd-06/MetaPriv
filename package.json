@@ -1,0 +1,27 @@
+{
+  "name": "MetaPriv",
+  "version": "0.0.1",
+  "description": "An automated tool that allows Facebook users to obfuscate their data and conceal their real interests and habits from Facebook.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shepherd-06/MetaPriv.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shepherd-06/MetaPriv/issues"
+  },
+  "homepage": "https://github.com/shepherd-06/MetaPriv#readme",
+  "devDependencies": {
+    "electron": "^35.0.0"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3"
+  }
+}
