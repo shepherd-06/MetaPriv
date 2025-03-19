@@ -1,7 +1,8 @@
 const { app, BrowserWindow } = require('electron');
+const { exec } = require('child_process');
+const waitOn = require('wait-on');
 
-function createWindow() {
-    // Create the browser window.
+app.whenReady().then(async () => {
     const mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
@@ -10,21 +11,20 @@ function createWindow() {
         }
     });
 
-    // and load the index.html of the app.
-    mainWindow.loadFile('web/index.html');
+    console.log("🚀 Starting Flask server...");
+    const flaskProcess = exec("python3 app.py");
 
-    // Open the DevTools.
-    // mainWindow.webContents.openDevTools();
-}
+    await waitOn({ resources: ['http://127.0.0.1:5555'], timeout: 20000 })
+        .then(() => {
+            console.log("✅ Flask server is running. Opening Electron App...");
+            mainWindow.loadURL('http://127.0.0.1:5555');
+        })
+        .catch(err => {
+            console.error("❌ Flask did not start in time:", err);
+            mainWindow.loadURL("data:text/html,Flask server failed to start. Try restarting.");
+        });
+});
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(createWindow);
-
-// Quit when all windows are closed, except on macOS.
-// There, it's common for applications and their menu bar
-// to stay active until the user quits explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
@@ -32,9 +32,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
+        app.whenReady().then(async () => createWindow());
     }
 });
