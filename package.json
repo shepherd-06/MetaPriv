@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "debug": "electron --trace-warnings .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,7 +23,11 @@
     "electron": "^35.0.0"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "bootstrap": "^5.3.3",
+    "keytar": "^7.9.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0",
     "wait-on": "^8.0.3"
   }
 }

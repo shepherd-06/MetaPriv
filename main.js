@@ -1,29 +1,52 @@
-const { app, BrowserWindow } = require('electron');
-const { exec } = require('child_process');
-const waitOn = require('wait-on');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const api = require('./api');
 
-app.whenReady().then(async () => {
-    const mainWindow = new BrowserWindow({
+let mainWindow;
+
+function createWindow() {
+    mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js')
         }
     });
 
-    console.log("🚀 Starting Flask server...");
-    const flaskProcess = exec("python3 app.py");
+    mainWindow.loadFile('web/index.html');
+    mainWindow.on('closed', () => mainWindow = null);
+}
 
-    await waitOn({ resources: ['http://127.0.0.1:5555'], timeout: 20000 })
-        .then(() => {
-            console.log("✅ Flask server is running. Opening Electron App...");
-            mainWindow.loadURL('http://127.0.0.1:5555');
-        })
-        .catch(err => {
-            console.error("❌ Flask did not start in time:", err);
-            mainWindow.loadURL("data:text/html,Flask server failed to start. Try restarting.");
+app.whenReady().then(createWindow);
+
+// Handle create account request
+ipcMain.handle('create-account', async (event, { username, password }) => {
+    return new Promise((resolve, reject) => {
+        api.createAccount(username, password, (err, user) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(user);
+            }
         });
+    });
 });
+
+// Handle login request
+ipcMain.handle('login', async (event, { username, password }) => {
+    return new Promise((resolve, reject) => {
+        api.login(username, password, (err, user) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(user);
+            }
+        });
+    });
+});
+
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -33,6 +56,22 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-        app.whenReady().then(async () => createWindow());
+        createWindow();
     }
 });
+
+// Listen for an IPC message to start the Flask server
+// ipcMain.on('start-flask-server', (event, arg) => {
+//     console.log("🚀 Starting Flask server...");
+//     flaskProcess = exec("python3 app.py");
+
+//     waitOn({ resources: ['http://127.0.0.1:5555'], timeout: 20000 })
+//         .then(() => {
+//             console.log("✅ Flask server is running. Opening Flask App...");
+//             mainWindow.loadURL('http://127.0.0.1:5555');
+//         })
+//         .catch(err => {
+//             console.error("❌ Flask did not start in time:", err);
+//             mainWindow.loadURL("data:text/html,Flask server failed to start. Try restarting.");
+//         });
+// });
