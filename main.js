@@ -1,8 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { exec } = require('child_process');
 const waitOn = require('wait-on');
-const path = require('path');
 
+let flaskProcess = null;
+
+app.disableHardwareAcceleration();
 
 app.whenReady().then(async () => {
     // Main Chat Window
@@ -17,7 +19,7 @@ app.whenReady().then(async () => {
 
     // Start Flask in the background
     console.log("🚀 Starting Flask server...")
-    const flaskProcess = exec("python3 app.py")
+    flaskProcess = exec("python3 app.py")
 
     // Wait for Flask to be ready before opening Electron
     await waitOn({ resources: ['http://127.0.0.1:5555'], timeout: 20000 })
@@ -32,6 +34,10 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
+    if (flaskProcess !== null) {
+        flaskProcess.kill();
+    }
+
     if (process.platform !== 'darwin') {
         app.quit();
     }
