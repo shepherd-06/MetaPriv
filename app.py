@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify, session, url_for, redirect
-from api.users import create_user, login_user, set_or_verify_master_password
+from flask import Flask, render_template, request, jsonify, session
+from api.users import create_user, login_user, set_or_verify_master_password, set_fb_username
 from datetime import datetime
 
 app = Flask(__name__)
@@ -82,7 +82,27 @@ def master_password():
 
 @app.route('/fb-auth', methods=['GET', 'POST'])
 def fb_auth():
+    if request.method == 'POST':
+        data = request.get_json()
+        fb_username = data.get('fb_username')
+        fb_password = data.get('fb_password')
+        
+        if not fb_username:
+            return jsonify({'error': 'username is required'}), 400
+        
+        result = set_fb_username(session.get('user_id'), fb_username)
+        # TODO: set/fetch the fb_username and password in auth. 
+        if result:
+            return jsonify({'message': 'FB auth successfully'}), 200
+        else:
+            return jsonify({'error': 'FB auth failed'}), 400
+        
     return render_template('fb-auth.html')
+
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5555)

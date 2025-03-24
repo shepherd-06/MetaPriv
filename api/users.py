@@ -114,3 +114,26 @@ def set_or_verify_master_password(user_id, master_password):
             return False
     finally:
         conn.close()
+        
+
+def set_fb_username(user_id, fb_username):
+    conn = create_connection()
+    if conn is None:
+        print("Cannot connect to the database.")
+        return None
+    
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT fb_username FROM users WHERE id=?", (user_id,))
+        row = cur.fetchone()
+        if row:
+            stored_fb_username = row[0]
+            if stored_fb_username:
+                # new fb_username
+                pass
+            cur.execute("UPDATE users SET fb_username=? WHERE id=?", (fb_username, user_id))
+            conn.commit()
+            print("FB username SET successfully.")
+            return True
+    finally:
+        conn.close()
