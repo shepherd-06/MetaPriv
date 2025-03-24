@@ -68,6 +68,7 @@
                     success: function(response) {
                         $('#loginResponse').text('Login successful!').addClass('alert alert-success');
                         $('#loginForm').trigger('reset'); // Clears the form only on successful response
+                        window.location.href = '/master';
                     },
                     error: function(response) {
                         $('#loginResponse').text('Login failed: ' + response.responseText).addClass('alert alert-danger');
@@ -89,6 +90,7 @@
                     success: function(response) {
                         $('#createResponse').text('Account created successfully!').addClass('alert alert-success');
                         $('#createAccountForm').trigger('reset'); // Clears the form only on successful response
+                        window.location.href = '/master';
                     },
                     error: function(response) {
                         $('#createResponse').text('Account creation failed: ' + response.responseText).addClass('alert alert-danger');

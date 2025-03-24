@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, url_for, redirect
 from api.users import create_user, login_user, set_or_verify_master_password
 from datetime import datetime
 
@@ -80,6 +80,9 @@ def master_password():
     # If it's a GET request, just show the form
     return render_template('master-password.html', master_enabled=master_enabled)
 
+@app.route('/fb-auth', methods=['GET', 'POST'])
+def fb_auth():
+    return render_template('fb-auth.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5555)
