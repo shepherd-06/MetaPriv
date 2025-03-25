@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const waitOn = require('wait-on');
 const path = require('path');
 
+
 let mainWindow;
 let flaskProcess = null;
 

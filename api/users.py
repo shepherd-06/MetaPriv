@@ -129,7 +129,7 @@ def set_fb_username(user_id, fb_username):
         if row:
             stored_fb_username = row[0]
             if stored_fb_username:
-                # new fb_username
+                # TODO: new fb_username
                 pass
             cur.execute("UPDATE users SET fb_username=? WHERE id=?", (fb_username, user_id))
             conn.commit()

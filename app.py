@@ -1,6 +1,9 @@
+import sys
+
 from flask import Flask, render_template, request, jsonify, session
 from api.users import create_user, login_user, set_or_verify_master_password, set_fb_username
 from datetime import datetime
+from test import pika
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -87,11 +90,16 @@ def fb_auth():
         fb_username = data.get('fb_username')
         fb_password = data.get('fb_password')
         
+        # TODO: MUST CHANGE.
+        session['fb_username'] = fb_username
+        session['fb_password'] = fb_password
+        
         if not fb_username:
             return jsonify({'error': 'username is required'}), 400
         
         result = set_fb_username(session.get('user_id'), fb_username)
         # TODO: set/fetch the fb_username and password in auth. 
+        print(result)
         if result:
             return jsonify({'message': 'FB auth successfully'}), 200
         else:
@@ -104,5 +112,11 @@ def fb_auth():
 def dashboard():
     return render_template('dashboard.html')
 
+@app.route('/bot_ops')
+def bot_ops():
+    pika()
+    return "", 200
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5555)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5555
+    app.run(debug=True, host='127.0.0.1', port=5555)
