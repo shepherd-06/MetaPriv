@@ -112,10 +112,14 @@ def fb_auth():
 def dashboard():
     return render_template('dashboard.html')
 
-@app.route('/bot_ops')
+@app.route('/bot_ops', methods=['POST'])
 def bot_ops():
-    pika()
-    return "", 200
+    try:
+        # test function.
+        pika() 
+        return jsonify({'message': 'Bot started successfully!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 5555
