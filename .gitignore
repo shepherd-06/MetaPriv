@@ -21,3 +21,4 @@ logs/
 .venv/
 .wdm/
 *.db
+user_data/

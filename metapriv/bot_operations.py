@@ -1,7 +1,7 @@
 import sys
 import os
 import sqlite3
-from crypto import aes_encrypt, aes_decrypt, Hash
+from metapriv.crypto import aes_encrypt, aes_decrypt, Hash
 from metapriv.utilities import *
 from tempfile import gettempdir
 from time import sleep
@@ -15,12 +15,16 @@ from base64 import b64encode
 from metapriv.database_management import *
 
 
+
 ## Selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 
 
 
@@ -65,10 +69,10 @@ class BOT:
 		if profile_exists:
 			fx_options.add_argument("--profile")
 			fx_options.add_argument(profile_path)
-		fx_options.add_argument("--headless")
+		# fx_options.add_argument("--headless")
 		fx_options.add_argument("--no-sandbox")
-		fx_options.add_argument('--headless=new')
-		fx_options.headless = True
+		# fx_options.add_argument('--headless=new')
+		# fx_options.headless = True
 		self.driver = webdriver.Firefox(options=fx_options)
 
 		# Start
@@ -91,15 +95,15 @@ class BOT:
 			pass
 
 		# Open random Facebook site
-		rand_ste = rand_fb_site()
-		self.driver.get(rand_ste)
+		# rand_ste = rand_fb_site()
+		# self.driver.get(rand_ste)
 
-		sleep(5)
-		if QUIT_DRIVER.value: self.quit_bot(t1)
+		# sleep(5)
+		# if QUIT_DRIVER.value: self.quit_bot(t1)
 
 		# Create browser profile folder
 		if not profile_exists:
-			self.login(key)
+			self.login(key) # we login from here.
 			tempdirs_2 = os.listdir(gettempdir())
 			for i in tempdirs_2:
 				if i not in tempdirs:
@@ -212,8 +216,31 @@ class BOT:
 			sleep(1)
 
 	def generate_noise(self, eff_privacy, key):
-		while True:
+		"""
+		Continuously simulates user activity on randomly selected web pages from a database to generate noise in user data. 
+		This method aims to reduce the accuracy of profile-building algorithms by introducing random browsing behavior.
 
+		Parameters:
+			eff_privacy (float): A multiplier that influences how many pages the bot interacts with before taking a break.
+			key (str): The encryption key used for decrypting URLs from the database.
+
+		Process:
+			1. Continuously loop until the QUIT_DRIVER flag is set.
+			2. Retrieve and decrypt the current keyword to fetch associated URLs from the database.
+			3. Randomly shuffle these URLs to ensure varied access patterns.
+			4. Visit each URL, simulate interaction, and log activities to create diverse data points.
+			5. Regularly check and update usage statistics to adhere to defined efficiency and privacy settings.
+			6. Introduce pauses based on efficiency settings to simulate realistic usage patterns.
+			7. Optionally take screenshots and perform cleanup activities based on thread management.
+
+		Details:
+			- The method uses a SQLite database to store and retrieve URLs categorized under keywords.
+			- URLs are decrypted using AES encryption before being accessed.
+			- The method manages multiple threads for taking screenshots and handling other asynchronous tasks.
+			- Activity is logged in a dedicated log file, and data integrity and activity tracking are maintained via HMAC and timestamps.
+			- Interaction with the web pages includes visiting specific URLs and possibly liking pages or watching videos.
+  		"""
+		while True:
 			if QUIT_DRIVER.value: return
 			enc_keyword = self.pages_based_on_keyword(key)
 			if QUIT_DRIVER.value: return
@@ -247,8 +274,10 @@ class BOT:
 				self.driver.get(dec_url)
 				sleep(10)
 				if QUIT_DRIVER.value: break
+				
 				# Start liking
-				new_page(url)
+				# add a new page to the database
+				new_page(url) # new function call
 
 				print_done = False
 				while True:
@@ -276,7 +305,7 @@ class BOT:
 						break
 
 				if QUIT_DRIVER.value: break
-				self.like_rand(dec_url, eff_privacy, key)
+				self.like_rand(dec_url, eff_privacy, key) # new function
 				# Increment keyword usage
 				with open(os.getcwd()+'/'+'userdata/supplemtary','r') as f:
 					saved_date, usage_this_day = f.read().split(' ')
@@ -292,7 +321,7 @@ class BOT:
 					write_log(get_date()+": "+"Watching videos and clicking ads for "+ time_formatted + " (hh:mm:ss).",key)#" Resume liking at " + resume_time, key)
 				sleep(5)
 				if QUIT_DRIVER.value: break
-				self.watch_videos(randtime, key)
+				self.watch_videos(randtime, key) # new function
 				if QUIT_DRIVER.value: break
 
 
@@ -601,20 +630,34 @@ class BOT:
 			if QUIT_DRIVER.value: break
 
 	def login(self, key):
+		"""_summary_
+
+		Args:
+			key (_type_): _description_
+		"""
 		# Log in to Facebook
 		write_log(get_date()+": "+"Logging in...",key)
-		self.driver.get("https://www.facebook.com")
-		self.driver.find_element(By.XPATH,"//button[@data-cookiebanner='accept_button']").click()
-		sleep(1)
+		self.driver.get("https://www.facebook.com/")
+		# self.driver.find_element(By.XPATH,"//button[@data-cookiebanner='accept_button']").click()
+		# self.driver.find_element(By.XPATH, "//span[text()='Allow All Cookies']").click()
+		sleep(3)
+		# cookie_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div[aria-label='Allow all cookies']")))
+		cookie_element = self.driver.find_element(By.CSS_SELECTOR, "div[aria-label='Allow all cookies']")
+		self.driver.execute_script("arguments[0].scrollIntoView(true);", cookie_element)
+		cookie_element.click()
+		sleep(3)
+		# self.driver.find_element(By.CSS_SELECTOR, "div[aria-label='Allow all cookies']").click()
 		if QUIT_DRIVER.value: return
-		# Decrypt password
-		with open(os.getcwd()+'/'+'.saved_data','r') as f:
-			text = f.read()
-			text = text.split('\n')
-			email = aes_decrypt(text[0],key)
-			encp = text[1]
-		password = aes_decrypt(encp, key)
+		# Decrypt password # TODO: I need to handle email and password here.
+		# with open(os.getcwd()+'/'+'.saved_data','r') as f:
+		# 	text = f.read()
+		# 	text = text.split('\n')
+		# 	email = aes_decrypt(text[0],key)
+		# 	encp = text[1]
+		# password = aes_decrypt(encp, key)
 		# Input email and password, then click Log In button.
+		email = "helloworld"
+		password = "12345"
 		self.driver.find_element(By.NAME,"email").send_keys(email)
 		self.driver.find_element(By.NAME,"pass").send_keys(password)
 		self.driver.find_element(By.XPATH,"//*[text() = 'Log In']").click()
@@ -698,16 +741,37 @@ class BOT:
 		
 
 	def like_rand(self, pagename, eff_privacy, key):
+		"""
+		Automatically likes random posts on a given page to simulate user activity. This method is designed
+		to interact with web pages in a manner that emulates human behavior, randomly liking posts to generate data or test features.
+
+		Parameters:
+			pagename (str): The name of the page where the posts are to be liked. Used for logging and database entries.
+			eff_privacy (float): A factor that influences how many posts are likely to be liked before pausing.
+			key (str): The encryption key used for encrypting page names and other potentially sensitive data that gets logged or stored.
+
+		Steps:
+			1. Waits briefly to mimic human delay.
+			2. Engages the like mechanism on the page if the page has not been previously liked.
+			3. Deletes any visible banners that might obstruct page elements.
+			4. Connects to the database to retrieve previously liked posts to avoid re-liking.
+			5. Enters a loop where it finds and interacts with posts:
+				- Scrolls posts into view.
+				- Randomly decides whether to like each post based on a probability determined by `eff_privacy`.
+				- Saves each like action to a database for record-keeping.
+			6. Exits the loop if a predetermined random break condition is met to simulate natural user behavior or if commanded to quit.
+			7. Closes the database connection upon completion or early exit.
+		"""
 		sleep(5)
 		amount_of_likes = 0
 
 		# Like page
-		self.like_page()
+		self.like_page() # Like a facebook Page
 
 		# Delete banner elements
-		self.delete_banners()
+		self.delete_banners() # function
 		banner_2 = self.driver.find_element(By.XPATH, '//div[@role="banner"]')
-		self.delete_element(banner_2)
+		self.delete_element(banner_2) # function element
 
 		random_break = random.randint(8,12)
 
@@ -794,7 +858,6 @@ class BOT:
 				break
 			sleep(random.randint(3,10))
 			if QUIT_DRIVER.value: break
-
 		conn.close()
 
 	def take_screenshot(self, ):
@@ -812,3 +875,4 @@ class BOT:
 			thread_1.join()
 		if thread_2 != None:
 			thread_2.join()
+   

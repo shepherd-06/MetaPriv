@@ -1,6 +1,6 @@
 import sys
 import tkinter as tk
-from crypto import Hash
+from metapriv.crypto import Hash
 from base64 import b64encode
 
 

@@ -1,4 +1,4 @@
-from crypto import Hash, aes_decrypt
+from metapriv.crypto import Hash, aes_decrypt
 import os
 import sqlite3
 

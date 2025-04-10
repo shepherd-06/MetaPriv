@@ -1,9 +1,12 @@
 import sys
+import traceback
 
 from flask import Flask, render_template, request, jsonify, session
 from api.users import create_user, login_user, set_or_verify_master_password, set_fb_username
 from datetime import datetime
 from test import pika
+from metapriv.bot_operations import BOT
+from metapriv.bot_ops import BotOps
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -56,6 +59,7 @@ def master_password():
     master_enabled = session.get('is_master_enable', False)
     if request.method == 'POST':
         # Handling form data submitted via POST request
+        # masterPassword has to be >16 character long. 16/24/32/
         data = request.get_json()
         master_password = data.get('masterPassword')
         
@@ -116,8 +120,21 @@ def dashboard():
 def bot_ops():
     try:
         # test function.
-        pika() 
-        return jsonify({'message': 'Bot started successfully!'}), 200
+        # pika()
+        # TODO: this should start on a new thread/ sommething
+        # master = session['master_password']
+        master = "1234567890123456".encode()
+        eff_privacy = 100
+        try:
+            # BOT().start_bot(eff_privacy=eff_privacy, key = master)
+            BotOps().start_bot(eff_privacy=eff_privacy, key = master)             
+            return jsonify({'message': 'Bot started successfully!'}), 200
+        except Exception as exc:
+            tb = traceback.format_exc()
+            # Optionally, print the traceback to the console
+            print("An error occurred: ", tb)
+            # Send the traceback to the frontend for debugging
+            return jsonify({'error': 'An unexpected error occurred', 'traceback': tb}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

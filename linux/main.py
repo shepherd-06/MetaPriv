@@ -28,7 +28,7 @@ import sys
 from firstlaunchclass import First_launch_UI
 from passwordclass import Enter_Password_UI
 from stats import StatsWindow
-from crypto import Hash, aes_encrypt, aes_decrypt
+from metapriv.crypto import Hash, aes_encrypt, aes_decrypt
 
 
 NORMAL_LOAD_AMMOUNT = 2

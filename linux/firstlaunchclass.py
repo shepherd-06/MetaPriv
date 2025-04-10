@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from base64 import b64encode
 # imports from created files 
-from crypto import Hash, aes_encrypt
+from metapriv.crypto import Hash, aes_encrypt
 from passwordclass import Create_Password_UI
 from datetime import datetime
 

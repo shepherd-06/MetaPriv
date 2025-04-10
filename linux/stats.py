@@ -8,7 +8,7 @@ matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 from pandastable import Table
-from crypto import Hash, aes_decrypt
+from metapriv.crypto import Hash, aes_decrypt
 
 
 class Keyword:

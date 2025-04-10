@@ -13,7 +13,7 @@ import os
 import sqlite3
 import random
 import logging
-from crypto import Hash, aes_encrypt, aes_decrypt
+from metapriv.crypto import Hash, aes_encrypt, aes_decrypt
 import getpass
 
 DATE_FORMAT = '%Y-%m-%d_%H.%M.%S'

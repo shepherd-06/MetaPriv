@@ -1,5 +1,5 @@
 import os
-from crypto import aes_encrypt
+from metapriv.crypto import aes_encrypt
 from datetime import datetime
 import random
 from time import sleep as Sleep
