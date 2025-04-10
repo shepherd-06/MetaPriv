@@ -69,8 +69,36 @@ async function goBackToHome(page) {
     }
 }
 
+async function searchPages(page, keywords) {
+    console.log(`Searching pages for keyword: ${keywords}`);
+    let pageURLs = [];
+    try {
+        // Navigate to Facebook's search page for pages with the specified keywords
+        await page.goto(`https://www.facebook.com/search/pages/?q=${keywords}`);
+        await waitMust(15); // Ensure the page has fully loaded
+
+        // Select all anchor elements that contain the specific URL ending
+        const links = await page.$$(`a[href*="?__tn__=%3C"]`);
+
+        // Extract URLs from these links
+        for (let link of links) {
+            const url = await (await link.getProperty('href')).jsonValue();
+            if (url.includes('facebook.com')) {
+                pageURLs.push(url);
+            }
+        }
+        await waitRandom(20);
+        console.log('Found URLs:', pageURLs);
+    } catch (error) {
+        console.error('An error occurred while searching for pages:', error);
+    }
+    return pageURLs;
+}
+
+
 module.exports = {
     loginFacebook,
     interactWithProfile,
-    goBackToHome
+    goBackToHome,
+    searchPages,
 };

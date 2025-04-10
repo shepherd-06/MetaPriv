@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron');
-const { loginFacebook, interactWithProfile, goBackToHome } = require('./bot/facebookActions');
+const { loginFacebook, interactWithProfile,
+    goBackToHome, searchPages } = require('./bot/facebookActions');
 const { waitRandom, waitMust } = require('./bot/utility');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -38,7 +39,22 @@ function createWindow() {
             await loginFacebook(page);  // Only perform login on first run
         }
         await waitRandom(5); // wait between 1 to 5 seconds on random.
-        await interactWithProfile(page); // go to profile and scroll a little bit.
+        // await interactWithProfile(page); // go to profile and scroll a little bit.
+        await searchPages(page, "Pikachu");
+        await waitRandom(10);
+        await goBackToHome(page);
+
+        /**
+         * close the browser after 10 seconds
+         * 
+         */
+        if (browser) {
+            await waitRandom(20);
+            browser.close().then(() => {
+                browser = null;
+                app.quit();
+            });
+        }
     }).catch(console.error);
 }
 

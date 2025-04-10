@@ -8,6 +8,7 @@ async function waitRandom(randomLimit) {
 
 async function waitMust(timeS) {
     // must wait the time seconds
+    console.log("wait - time ", timeS, " seconds");
     await new Promise(resolve => setTimeout(resolve, timeS * 1000));
 }
 
