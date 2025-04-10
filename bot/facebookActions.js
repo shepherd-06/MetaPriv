@@ -72,27 +72,76 @@ async function goBackToHome(page) {
 async function searchPages(page, keywords) {
     console.log(`Searching pages for keyword: ${keywords}`);
     let pageURLs = [];
+
     try {
         // Navigate to Facebook's search page for pages with the specified keywords
         await page.goto(`https://www.facebook.com/search/pages/?q=${keywords}`);
-        await waitMust(15); // Ensure the page has fully loaded
+        await waitMust(15); // Wait for initial content load
+
+        // Scroll to the bottom of the page four times to load more content
+        for (let i = 0; i < 4; i++) {
+            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await waitMust(10); // wait for the next batch of data to load
+        }
+
+        // Scroll back to the top of the page
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await waitMust(5); // ensure the page has settled
 
         // Select all anchor elements that contain the specific URL ending
         const links = await page.$$(`a[href*="?__tn__=%3C"]`);
 
-        // Extract URLs from these links
+        // Convert link elements to their href attributes
         for (let link of links) {
             const url = await (await link.getProperty('href')).jsonValue();
             if (url.includes('facebook.com')) {
                 pageURLs.push(url);
             }
         }
-        await waitRandom(20);
         console.log('Found URLs:', pageURLs);
+        /**
+         * TODO: save pageURLs in database.
+         */
+        await waitRandom(20);
     } catch (error) {
         console.error('An error occurred while searching for pages:', error);
     }
     return pageURLs;
+}
+
+
+async function likePage(page, pageUrl) {
+    /**
+     * Like/Follow the page from the URL.
+     * Store the pageName in the database
+     */
+    try {
+        await page.goto(pageUrl);
+        await waitMust(10); // Adjust wait time as necessary for the page to load
+
+        // Get the page name
+        const pageName = await page.$eval('h1.html-h1', el => el.innerText.trim());
+
+        // Check if the Like button is present
+        const likeButton = await page.$('div[aria-label="Like"]');
+        if (likeButton) {
+            await likeButton.click();
+            console.log(`Liked page: ${pageName}`);
+        } else {
+            // If Like button isn't found, look for the Follow button
+            const followButton = await page.$('div[aria-label="Follow"]');
+            if (followButton) {
+                await followButton.click();
+                console.log(`Followed page: ${pageName}`);
+            }
+        }
+        await waitRandom(20);
+        // Log the action and the page name
+        console.log(`Action completed on: ${pageName}`);
+
+    } catch (error) {
+        console.error(`An error occurred while processing ${pageUrl}:`, error);
+    }
 }
 
 
@@ -101,4 +150,5 @@ module.exports = {
     interactWithProfile,
     goBackToHome,
     searchPages,
+    likePage,
 };

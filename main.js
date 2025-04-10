@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 const { loginFacebook, interactWithProfile,
-    goBackToHome, searchPages } = require('./bot/facebookActions');
+    goBackToHome, searchPages, likePage } = require('./bot/facebookActions');
 const { waitRandom, waitMust } = require('./bot/utility');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -20,6 +20,20 @@ let urls = [
     "https://www.facebook.com/"
 ]
 
+const dummyPageUrl = [
+    'https://www.facebook.com/detectivepikachumovie?__tn__=%3C',
+    'https://www.facebook.com/PikachuPratt?__tn__=%3C',
+    'https://www.facebook.com/PikachuPikaPi?__tn__=%3C',
+    'https://www.facebook.com/IconFighter?__tn__=%3C',
+    'https://www.facebook.com/originalhipsterpikachu?__tn__=%3C',
+    'https://www.facebook.com/PikachuRidy?__tn__=%3C',
+    'https://www.facebook.com/theodorepikachutwicetheyorkielove?__tn__=%3C',
+    'https://www.facebook.com/PikachuYT0?__tn__=%3C',
+    'https://www.facebook.com/PikachuBunny?__tn__=%3C',
+    'https://www.facebook.com/Albinnnn?__tn__=%3C',
+    'https://www.facebook.com/Kimotom75?__tn__=%3C'
+]
+
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -37,10 +51,14 @@ function createWindow() {
 
         if (isFirstRun) {
             await loginFacebook(page);  // Only perform login on first run
+            await waitRandom(5); // wait between 1 to 5 seconds on random.
         }
-        await waitRandom(5); // wait between 1 to 5 seconds on random.
         // await interactWithProfile(page); // go to profile and scroll a little bit.
-        await searchPages(page, "Pikachu");
+        // await searchPages(page, "Pikachu");
+
+        let randomPikachuPage = dummyPageUrl[Math.floor(Math.random() * dummyPageUrl.length)];
+        await likePage(page, randomPikachuPage);
+
         await waitRandom(10);
         await goBackToHome(page);
 
