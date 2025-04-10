@@ -25,6 +25,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "bootstrap": "^5.3.3",
+    "dotenv": "^16.4.7",
     "find-free-port": "^2.0.0",
     "keytar": "^7.9.0",
     "moment": "^2.30.1",
