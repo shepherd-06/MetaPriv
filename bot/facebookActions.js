@@ -145,10 +145,40 @@ async function likePage(page, pageUrl) {
 
 async function generateRandomInteraction(page) {
     /**
-     * basically it will scroll the homePage randomly,
-     * click
+     * this function is supposed to create some random interaction on home screen 
+     * at some point.
      */
+    try {
+        await page.goto("https://facebook.com");
+        await waitMust(10);
+
+        let pos = 1;
+        while (true) {
+            const selector = `div.x1a2a7pz[aria-posinset="${pos}"]`;
+            const element = await page.$(selector);
+
+            if (!element) {
+                console.log(`No more posts found at aria-posinset="${pos}". Stopping.`);
+                break;
+            }
+
+            const html = await element.evaluate(el => el.innerHTML);
+            console.log(`Post #${pos}: \n`, html);
+            pos++;
+
+            await page.evaluate(() => window.scrollBy(0, 200));
+            await waitMust(3); // simulate human pause
+            await waitRandom(10);
+            if (pos == 5) {
+                break
+            }
+        }
+
+    } catch (error) {
+        console.log("Oh no! I failed! ", error);
+    }
 }
+
 
 async function likeRandomPost(page, pageUrl, eff_privacy = 0.5) {
     await page.goto(pageUrl);
@@ -338,4 +368,5 @@ module.exports = {
     likePage,
     likeRandomPost,
     watchVideos,
+    generateRandomInteraction,
 };

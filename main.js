@@ -1,11 +1,13 @@
 const { app, BrowserWindow } = require('electron');
 const { loginFacebook, interactWithProfile,
     goBackToHome, searchPages, likePage,
-    likeRandomPost, watchVideos } = require('./bot/facebookActions');
+    likeRandomPost, watchVideos, generateRandomInteraction } = require('./bot/facebookActions');
 const { waitRandom, waitMust } = require('./bot/utility');
 const puppeteer = require('puppeteer');
+const { ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { error } = require('console');
 
 
 let browser = null;  // Global browser instance
@@ -41,43 +43,54 @@ function createWindow() {
         width: 800,
         height: 600,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false
         }
     });
 
-    win.loadFile('web/index.html');
-    initBrowser().then(async (isFirstRun) => {
-        const page = await browser.newPage(); // Create a new page here and use it in both functions
+    // win.loadFile(path.join(__dirname, 'frontend/build/index.html'));
+    win.loadURL('http://localhost:3000'); // React dev server in dev mode.
+}
+
+ipcMain.handle('run-bot', async () => {
+    try {
+        const isFirstRun = await initBrowser();
+        const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
 
         if (isFirstRun) {
-            await loginFacebook(page);  // Only perform login on first run
-            await waitRandom(5); // wait between 1 to 5 seconds on random.
+            await loginFacebook(page);
+            await waitRandom(5);
         }
-        // await interactWithProfile(page); // go to profile and scroll a little bit.
-        // await searchPages(page, "Pikachu");
 
-        // let randomPikachuPage = dummyPageUrl[Math.floor(Math.random() * dummyPageUrl.length)];
-        // await likePage(page, randomPikachuPage);
-        // await likeRandomPost(page, randomPikachuPage);
-        await watchVideos(page, "batman");
-
+        await generateRandomInteraction(page);
         await waitRandom(10);
         await goBackToHome(page);
 
-        /**
-         * close the browser after 10 seconds
-         * 
-         */
-        if (browser) {
-            await waitRandom(20);
-            browser.close().then(() => {
-                browser = null;
-                app.quit();
-            });
-        }
-    }).catch(console.error);
-}
+        await waitRandom(20);
+        await browser.close();
+
+        browser = null;
+        app.relaunch();
+        app.exit(0);
+        return 'Bot finished';
+    } catch (err) {
+        console.error('Run-bot error:', err);
+        return 'Failed to run bot';
+    }
+});
+
+ipcMain.on('quit-app', () => {
+    if (browser) {
+        browser.close().then(() => {
+            browser = null;
+            app.quit();
+        });
+    } else {
+        app.quit();
+    }
+});
 
 async function initBrowser() {
     const userDataPath = path.join(__dirname, 'user_data');
