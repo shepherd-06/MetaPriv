@@ -3,7 +3,14 @@ const { loginFacebook, interactWithProfile,
     goBackToHome, searchPages, likePage,
     likeRandomPost, watchVideos, generateRandomInteraction } = require('./bot/facebookActions');
 const { waitRandom, waitMust } = require('./bot/utility');
-const { createUser, loginUser, initUserTable, validateSession, initSessionTable } = require('./database/users');
+
+/**
+ * user management
+ */
+const { createUser, loginUser, } = require('./database/users');
+const { initUserTable, initSessionTable } = require('./database/db');
+const { validateSession } = require('./database/session');
+
 
 const puppeteer = require('puppeteer');
 const { ipcMain } = require('electron');
