@@ -3,11 +3,12 @@ const { loginFacebook, interactWithProfile,
     goBackToHome, searchPages, likePage,
     likeRandomPost, watchVideos, generateRandomInteraction } = require('./bot/facebookActions');
 const { waitRandom, waitMust } = require('./bot/utility');
+const { createUser, loginUser, initUserTable, validateSession, initSessionTable } = require('./database/users');
+
 const puppeteer = require('puppeteer');
 const { ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { error } = require('console');
 
 
 let browser = null;  // Global browser instance
@@ -51,46 +52,13 @@ function createWindow() {
 
     // win.loadFile(path.join(__dirname, 'frontend/build/index.html'));
     win.loadURL('http://localhost:3000'); // React dev server in dev mode.
+
+    /**
+     * database setup
+     */
+    initUserTable(); // Ensure the table exists on app start
+    initSessionTable();
 }
-
-ipcMain.handle('run-bot', async () => {
-    try {
-        const isFirstRun = await initBrowser();
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 });
-
-        if (isFirstRun) {
-            await loginFacebook(page);
-            await waitRandom(5);
-        }
-
-        await generateRandomInteraction(page);
-        await waitRandom(10);
-        await goBackToHome(page);
-
-        await waitRandom(20);
-        await browser.close();
-
-        browser = null;
-        app.relaunch();
-        app.exit(0);
-        return 'Bot finished';
-    } catch (err) {
-        console.error('Run-bot error:', err);
-        return 'Failed to run bot';
-    }
-});
-
-ipcMain.on('quit-app', () => {
-    if (browser) {
-        browser.close().then(() => {
-            browser = null;
-            app.quit();
-        });
-    } else {
-        app.quit();
-    }
-});
 
 async function initBrowser() {
     const userDataPath = path.join(__dirname, 'user_data');
@@ -134,4 +102,60 @@ app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
     }
+});
+
+/**
+ * Inter Process Communication
+ */
+
+ipcMain.handle('run-bot', async () => {
+    try {
+        const isFirstRun = await initBrowser();
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 720 });
+
+        if (isFirstRun) {
+            await loginFacebook(page);
+            await waitRandom(5);
+        }
+
+        await generateRandomInteraction(page);
+        await waitRandom(10);
+        await goBackToHome(page);
+
+        await waitRandom(20);
+        await browser.close();
+
+        browser = null;
+        app.relaunch();
+        app.exit(0);
+        return 'Bot finished';
+    } catch (err) {
+        console.error('Run-bot error:', err);
+        return 'Failed to run bot';
+    }
+});
+
+ipcMain.on('quit-app', () => {
+    if (browser) {
+        browser.close().then(() => {
+            browser = null;
+            app.quit();
+        });
+    } else {
+        app.quit();
+    }
+});
+
+ipcMain.handle('create-account', async (_event, data) => {
+    return await createUser(data);
+});
+
+ipcMain.handle('login-account', async (_event, data) => {
+    return await loginUser(data);
+});
+
+ipcMain.handle('validate-session', async (_event, sessionId) => {
+    const userId = await validateSession(sessionId);
+    return userId ? { valid: true, userId } : { valid: false };
 });

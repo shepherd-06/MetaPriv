@@ -23,6 +23,7 @@
     "electron": "^35.0.0"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "bootstrap": "^5.3.3",
     "create-react-app": "^5.1.0",
