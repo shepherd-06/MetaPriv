@@ -109,7 +109,6 @@ async function searchPages(page, keywords) {
     return pageURLs;
 }
 
-
 async function likePage(page, pageUrl) {
     /**
      * Like/Follow the page from the URL.
@@ -144,6 +143,192 @@ async function likePage(page, pageUrl) {
     }
 }
 
+async function generateRandomInteraction(page) {
+    /**
+     * basically it will scroll the homePage randomly,
+     * click
+     */
+}
+
+async function likeRandomPost(page, pageUrl, eff_privacy = 0.5) {
+    await page.goto(pageUrl);
+    await waitMust(10); // Adjust wait time as necessary for the page to load
+
+    let likeCount = 0;
+    const randomBreak = Math.floor(Math.random() * 1) + 4; // Between 
+    const seenElements = new Set();
+
+    while (true) {
+        // Step 2: Get all post elements
+        const postElements = await page.$$('div.x1n2onr6.x1ja2u2z'); // this is the article wrapper
+        let newPostFound = false;
+
+        for (let postElement of postElements) {
+            const uniqueId = await postElement.evaluate(el => el.innerText.slice(0, 50)); // crude fingerprint
+            if (seenElements.has(uniqueId)) continue;
+            seenElements.add(uniqueId);
+            newPostFound = true;
+            console.log(uniqueId);
+
+            // Scroll into view
+            await postElement.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+            await waitRandom(3);
+            await waitMust(10);
+
+            // Step 3: Check if already liked (presence of 'Remove Like' button)
+            const alreadyLiked = await postElement.$('div[aria-label="Remove Like"]');
+            if (alreadyLiked) {
+                continue;
+            }
+
+            // Step 4: Randomly decide whether to like
+            if (Math.random() < eff_privacy) {
+                const likeBtn = await postElement.$('div[aria-label="Like"]');
+                if (likeBtn) {
+                    try {
+                        await likeBtn.click();
+                        likeCount++;
+
+                        console.log(`✅ Liked post #${likeCount}`);
+
+                        // Optional: Get post URL for logging
+                        const postLink = await postElement.$('a[role="link"]');
+                        if (postLink) {
+                            const postUrl = await (await postLink.getProperty('href')).jsonValue();
+                            console.log(`Liked post: ${postUrl}`);
+                        }
+
+                        // Short wait after liking
+                        await waitMust(10);
+                    } catch (e) {
+                        console.error(`Failed to like post:`, e);
+                    }
+                }
+            }
+
+            if (likeCount >= randomBreak) {
+                console.log(`🔁 Random break reached after ${likeCount} likes.`);
+                return;
+            }
+        }
+
+        if (!newPostFound) {
+            console.log(`No more new posts found. Ending.`);
+            break;
+        }
+
+        // Scroll down to load more posts
+        await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+        await waitMust(15);
+    }
+}
+
+async function watchVideos(page, keyword) {
+    /**
+     * We watch videos here from the keyword.
+     */
+    try {
+        const url = `https://www.facebook.com/watch/search/?q=${keyword}`;
+        await page.goto(url);
+        await waitMust(10);
+        await waitRandom(2);
+
+        // Scroll and track videos
+        const seen = new Set();
+        const maxVideos = Math.floor(Math.random() * 8) + 6; // 6 to 13
+        let watched = 0;
+
+        while (watched < maxVideos) {
+            await waitMust(10);
+            await waitRandom(2);
+
+            const videoElements = await page.$$('div.x1yztbdb');
+            let newVideos = [];
+
+            for (let i = 0; i < videoElements.length; i++) {
+                const html = await videoElements[i].evaluate(el => el.innerText.slice(0, 50));
+                if (!seen.has(html)) {
+                    newVideos.push(videoElements[i]);
+                    seen.add(html);
+                }
+            }
+
+            if (newVideos.length === 0) {
+                console.log('No more new videos to watch.');
+                break;
+            }
+
+            for (let videoElement of newVideos) {
+                if (watched >= maxVideos) break;
+
+                try {
+                    await videoElement.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+                    await waitMust(5);
+                    await waitRandom(3);
+
+                    const videoLengthHandle = await videoElement.$('span.x193iq5w.xeuugli.x13faqbe');
+                    if (!videoLengthHandle) continue;
+
+                    const videoLength = await videoLengthHandle.evaluate(el => el.textContent);
+                    if (videoLength === 'LIVE') continue;
+
+                    const links = await videoElement.$$('a[role="link"]');
+                    if (links.length < 2) continue;
+
+                    const postUrl = await links[0].evaluate(el => el.href.split('&external_log_id')[0]);
+                    const pageUrl = await links[1].evaluate(el => el.href);
+
+                    console.log(`▶️ Watching video: ${videoLength}`);
+                    console.log(`🔗 Post: ${postUrl}`);
+                    console.log(`📄 Page: ${pageUrl}`);
+
+                    await videoLengthHandle.click();
+                    await waitMust(5);
+                    await waitRandom(5);
+
+                    let delta = 30;
+                    const parts = videoLength.split(':').map(n => parseInt(n));
+                    if (parts.length === 2) delta = parts[0] * 60 + parts[1];
+                    else if (parts.length === 3) delta = parts[0] * 3600 + parts[1] * 60 + parts[2];
+
+                    const watchTime = 5 + delta;
+                    console.log("WatchTime: ", watchTime, " sec");
+                    await waitMust(watchTime / 2);
+                    await waitRandom(2);
+
+                    if (Math.random() < 0.5) {
+                        try {
+                            const likeBtn = await page.$('div[aria-label="Like"]');
+                            if (likeBtn) {
+                                await likeBtn.click();
+                                console.log('👍 Liked video');
+                            }
+                        } catch (e) {
+                            console.log('⚠️ Like button not found.');
+                        }
+                    } else {
+                        console.log('❌ Skipping Liking video');
+                    }
+
+                    await waitMust(watchTime / 2);
+                    await waitRandom(5);
+                    await page.goBack();
+                    await waitMust(5);
+                    watched++;
+
+                } catch (err) {
+                    console.error('❌ Error watching video:', err);
+                    continue;
+                }
+            }
+        }
+        console.log('✅ Finished watching videos.');
+    } catch (err) {
+        console.error(`An error occurred while video ${keyword}:`, error);
+    }
+}
+
+
 
 module.exports = {
     loginFacebook,
@@ -151,4 +336,6 @@ module.exports = {
     goBackToHome,
     searchPages,
     likePage,
+    likeRandomPost,
+    watchVideos,
 };

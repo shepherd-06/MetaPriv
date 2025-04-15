@@ -1,6 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 const { loginFacebook, interactWithProfile,
-    goBackToHome, searchPages, likePage } = require('./bot/facebookActions');
+    goBackToHome, searchPages, likePage,
+    likeRandomPost, watchVideos } = require('./bot/facebookActions');
 const { waitRandom, waitMust } = require('./bot/utility');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -56,8 +57,10 @@ function createWindow() {
         // await interactWithProfile(page); // go to profile and scroll a little bit.
         // await searchPages(page, "Pikachu");
 
-        let randomPikachuPage = dummyPageUrl[Math.floor(Math.random() * dummyPageUrl.length)];
-        await likePage(page, randomPikachuPage);
+        // let randomPikachuPage = dummyPageUrl[Math.floor(Math.random() * dummyPageUrl.length)];
+        // await likePage(page, randomPikachuPage);
+        // await likeRandomPost(page, randomPikachuPage);
+        await watchVideos(page, "batman");
 
         await waitRandom(10);
         await goBackToHome(page);
@@ -87,7 +90,9 @@ async function initBrowser() {
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--force-device-scale-factor=1',
-                '--disable-notifications'
+                '--disable-notifications',
+                '--disable-gpu',
+                '--disable-features=VizDisplayCompositor',
             ],
             userDataDir: userDataPath // Set the userDataDir to persist session data
         });
