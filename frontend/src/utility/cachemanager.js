@@ -1,4 +1,4 @@
-async function cacheManager() {
+export async function cacheManager() {
     const sessionId = localStorage.getItem('sessionId');
     const onboardingStep = localStorage.getItem('onboardingStep');
 
@@ -26,5 +26,3 @@ async function cacheManager() {
         onboardingStep: null,
     };
 }
-
-export default cacheManager;
