@@ -7,10 +7,10 @@ const { waitRandom, waitMust } = require('./bot/utility');
 /**
  * user management
  */
-const { createUser, loginUser, } = require('./database/users');
+const { createUser, loginUser,
+    setMasterPassword, verifyMasterPassword } = require('./database/users');
 const { initUserTable, initSessionTable } = require('./database/db');
 const { validateSession } = require('./database/session');
-
 
 const puppeteer = require('puppeteer');
 const { ipcMain } = require('electron');
@@ -165,4 +165,12 @@ ipcMain.handle('login-account', async (_event, data) => {
 ipcMain.handle('validate-session', async (_event, sessionId) => {
     const userId = await validateSession(sessionId);
     return userId ? { valid: true, userId } : { valid: false };
+});
+
+ipcMain.handle('set-master-password', async (_event, data) => {
+    return await setMasterPassword(data);
+});
+
+ipcMain.handle('verify-master-password', async (_event, data) => {
+    return await verifyMasterPassword(data);
 });

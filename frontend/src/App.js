@@ -8,6 +8,10 @@ import Dashboard from './pages/dashboard';
 import FacebookAuth from './pages/fbAuth';
 import MasterPassword from './pages/masterPassword';
 
+// util
+import cacheManager from './utility/cachemanager';
+
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -18,40 +22,10 @@ class App extends Component {
     };
   }
 
-  componentDidMount() {
-    const sessionId = localStorage.getItem('sessionId');
-    const onboardingStep = localStorage.getItem('onboardingStep');
-
-    if (sessionId) {
-      window.electronAPI.validateSession(sessionId).then((result) => {
-        if (result && result.valid) {
-          this.setState({
-            sessionId,
-            onboardingStep,
-            loading: false,
-          });
-        } else {
-          localStorage.removeItem('sessionId');
-          localStorage.removeItem('onboardingStep');
-          this.setState({
-            sessionId: null,
-            onboardingStep: '1',
-            loading: false,
-          });
-        }
-      }).catch((err) => {
-        console.error("Error validating session:", err);
-        localStorage.removeItem('sessionId');
-        localStorage.removeItem('onboardingStep');
-        this.setState({
-          sessionId: null,
-          onboardingStep: '1',
-          loading: false,
-        });
-      });
-    } else {
-      this.setState({ sessionId: null, onboardingStep: '1', loading: false });
-    }
+  async componentDidMount() {
+    const { sessionId, onboardingStep } = await cacheManager();
+    const loading = false;
+    this.setState({ sessionId, onboardingStep, loading });
   }
 
   render() {
@@ -71,7 +45,7 @@ class App extends Component {
             ) : onboardingStep === '2' ? (
               <Navigate to="/master-password" />
             ) : onboardingStep === '3' ? (
-              <Navigate to="/facebook-auth" />
+              <Navigate to="/master-password" />
             ) : (
               <Navigate to="/dashboard" />
             )

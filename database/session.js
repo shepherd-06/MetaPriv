@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const dbPath = path.join(__dirname, 'users.db');
 
+const sessions = {}; // In-memory session cache
 
 function createSession(userId) {
     return new Promise((resolve) => {
@@ -64,9 +65,38 @@ function invalidateSession(sessionId) {
     });
 }
 
+function storeMasterPasswordInSession(sessionId, masterPassword) {
+    return new Promise((resolve) => {
+        console.log(sessionId, " storeMasterPasswordInSession ", masterPassword);
+        if (!sessions[sessionId]) {
+            sessions[sessionId] = {};
+        }
+
+        sessions[sessionId].masterPassword = masterPassword;
+        resolve(true);
+    });
+}
+
+function getMasterPasswordFromSession(sessionId) {
+    return new Promise((resolve) => {
+        console.log(sessionId, " getMasterPasswordFromSession");
+        resolve(sessions[sessionId]?.masterPassword || null);
+    });
+}
+
+function clearSession(sessionId) {
+    return new Promise((resolve) => {
+        console.log(sessionId, " clearSession");
+        delete sessions[sessionId];
+        resolve(true);
+    });
+}
 
 module.exports = {
     createSession,
     validateSession,
-    invalidateSession
+    invalidateSession,
+    storeMasterPasswordInSession,
+    getMasterPasswordFromSession,
+    clearSession
 };
