@@ -42,12 +42,8 @@ class App extends Component {
           <Route path="/" element={
             !isLoggedIn ? (
               <Onboarding />
-            ) : onboardingStep === '2' ? (
-              <Navigate to="/master-password" />
-            ) : onboardingStep === '3' ? (
-              <Navigate to="/master-password" />
             ) : (
-              <Navigate to="/dashboard" />
+              <Navigate to="/master-password" />
             )
           } />
 

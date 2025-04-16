@@ -8,6 +8,7 @@ class MasterPassword extends Component {
         this.state = {
             password: '',
             confirmPassword: '',
+            unlockPassword: '',
             error: '',
             success: '',
             fbAuth: false,
@@ -27,6 +28,9 @@ class MasterPassword extends Component {
     };
 
     handleSubmit = async () => {
+        /**
+         * this beautiful function is for saving master Password
+         */
         const { password, confirmPassword } = this.state;
         const sessionId = localStorage.getItem('sessionId');
 
@@ -64,11 +68,38 @@ class MasterPassword extends Component {
     };
 
     handleUnlockPassword = async () => {
-        console.log("paka paka")
+        /**
+         * this one is to verify that master o password is correcto.
+         */
+        const { unlockPassword, sessionId } = this.state;
+
+        if (!unlockPassword || unlockPassword.length !== 24) {
+            this.setState({ error: 'Master Password must be exactly 24 characters long.' });
+            return;
+        }
+
+        const result = await window.electronAPI.verifyMasterPassword({
+            sessionId,
+            masterPassword: unlockPassword
+        });
+
+        if (result.success) {
+            this.setState({
+                success: result.message,
+                onboardingStep: result.onboardingStep,
+                fbAuth: result.onboardingStep === 4,
+            });
+            localStorage.setItem('onboardingStep', result.onboardingStep.toString());
+        } else {
+            this.setState({ error: result.message });
+        }
     };
 
     render() {
-        const { password, confirmPassword, error, success, fbAuth, onboardingStep } = this.state;
+        const {
+            password, confirmPassword, unlockPassword,
+            error, success, fbAuth, onboardingStep
+        } = this.state;
 
         if (fbAuth) {
             return <Navigate to="/facebook-auth" />;
@@ -112,18 +143,23 @@ class MasterPassword extends Component {
                             </div>
                         </>
                     )}
-                    {/* unlock for step 3 and 4 will go through this */}
-                    {onboardingStep !== "3" && (
+                    {/* unlock for step 3 and 4 */}
+                    {onboardingStep !== "2" && (
                         <div className="col-md-6">
                             <h2>🔓 Unlock Your Account</h2>
                             <input
                                 type="password"
                                 className="form-control mt-3"
                                 placeholder="Enter Master Password to Unlock"
+                                value={unlockPassword}
+                                onChange={(e) => this.handleChange('unlockPassword', e.target.value)}
                             />
-                            <button className="btn btn-primary w-100" onClick={this.handleUnlockPassword}>
+                            <button className="btn btn-primary w-100 mt-2" onClick={this.handleUnlockPassword}>
                                 Unlock Your Account
                             </button>
+
+                            {error && <div className="alert alert-danger mt-3">{error}</div>}
+                            {success && <div className="alert alert-success mt-3">{success}</div>}
                         </div>
                     )}
                 </div>

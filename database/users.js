@@ -141,11 +141,41 @@ function setMasterPassword({ sessionId, masterPassword }) {
     });
 }
 
-// Verify master password (data = { userId, masterPassword })
-function verifyMasterPassword({ userId, masterPassword }) {
-    return new Promise((resolve) => {
-        // This should compare the hashed version with DB
-        resolve({ success: true, message: '✅ [verifyMasterPassword] Placeholder implementation.' });
+// Verify master password (data = { sessionId, masterPassword })
+function verifyMasterPassword({ sessionId, masterPassword }) {
+    return new Promise(async (resolve) => {
+        try {
+            // Step 1: Validate session and get userId
+            const userId = await validateSession(sessionId);
+            if (!userId) {
+                return resolve({ success: false, message: '❌ Invalid or expired session.' });
+            }
+
+            // Step 2: Get hashed master password from DB
+            const db = new sqlite3.Database(dbPath);
+            db.get(
+                `SELECT masterPassword, fbEmail FROM users WHERE id = ?`,
+                [userId],
+                async (err, row) => {
+                    db.close();
+
+                    if (err || !row || !row.masterPassword) {
+                        return resolve({ success: false, message: '❌ Master password not set or DB error.' });
+                    }
+
+                    const match = await bcrypt.compare(masterPassword, row.masterPassword);
+                    const onboardingStep = row.fbEmail && row.fbEmail.trim() !== '' ? 5 : 4;
+                    if (match) {
+                        return resolve({ success: true, message: '✅ Master password verified.', onboardingStep: onboardingStep });
+                    } else {
+                        return resolve({ success: false, message: '❌ Incorrect master password.' });
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Error verifying master password:', error);
+            resolve({ success: false, message: '❌ Unexpected error during verification.' });
+        }
     });
 }
 
