@@ -112,8 +112,8 @@ class MasterPassword extends Component {
                             </div>
                         </>
                     )}
-                    {/* uunlock */}
-                    {onboardingStep === "3" && (
+                    {/* unlock for step 3 and 4 will go through this */}
+                    {onboardingStep !== "3" && (
                         <div className="col-md-6">
                             <h2>🔓 Unlock Your Account</h2>
                             <input

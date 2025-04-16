@@ -20,7 +20,7 @@ async function cacheManager() {
             localStorage.removeItem('onboardingStep');
         }
     }
-
+    window.location.href = "/";
     return {
         sessionId: null,
         onboardingStep: null,
