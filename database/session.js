@@ -4,7 +4,9 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const dbPath = path.join(__dirname, 'users.db');
 
-const sessions = {}; // In-memory session cache
+const keytar = require('keytar');
+const SERVICE_NAME = 'MetaPriv.MasterPassword'; // You can change this to whatever your app's name is
+
 
 function createSession(userId) {
     return new Promise((resolve) => {
@@ -65,32 +67,44 @@ function invalidateSession(sessionId) {
     });
 }
 
-function storeMasterPasswordInSession(sessionId, masterPassword) {
-    return new Promise((resolve) => {
-        console.log(sessionId, " storeMasterPasswordInSession ", masterPassword);
-        if (!sessions[sessionId]) {
-            sessions[sessionId] = {};
+async function storeMasterPasswordInSession(userId, masterPassword) {
+    try {
+        await keytar.setPassword(SERVICE_NAME, userId, masterPassword);
+        return true;
+    } catch (error) {
+        console.error("Error storing master password:", error);
+        return false;
+    }
+}
+
+async function getMasterPasswordFromSession(sessionId) {
+    try {
+        const userId = await validateSession(sessionId);
+        if (!userId) {
+            console.error("❌ Invalid or expired session.");
+            return null;
         }
 
-        sessions[sessionId].masterPassword = masterPassword;
-        resolve(true);
-    });
+        const password = await keytar.getPassword(SERVICE_NAME, userId);
+        return password || null;
+    } catch (error) {
+        console.error("Error retrieving master password:", error);
+        return null;
+    }
 }
 
-function getMasterPasswordFromSession(sessionId) {
-    return new Promise((resolve) => {
-        console.log(sessionId, " getMasterPasswordFromSession");
-        resolve(sessions[sessionId]?.masterPassword || null);
-    });
+
+async function clearSession(sessionId) {
+    try {
+        await keytar.deletePassword(SERVICE_NAME, sessionId);
+        console.log(`${sessionId} cleared from keychain.`);
+        return true;
+    } catch (error) {
+        console.error("Error clearing session:", error);
+        return false;
+    }
 }
 
-function clearSession(sessionId) {
-    return new Promise((resolve) => {
-        console.log(sessionId, " clearSession");
-        delete sessions[sessionId];
-        resolve(true);
-    });
-}
 
 module.exports = {
     createSession,

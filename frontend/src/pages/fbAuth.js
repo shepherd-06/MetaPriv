@@ -8,28 +8,43 @@ class FacebookAuth extends Component {
             fbEmail: '',
             fbPassword: '',
             error: '',
-            success: ''
+            success: '',
+            loading: false
         };
     }
 
     handleChange = (field, value) => {
-        this.setState({ [field]: value, error: '', success: '' });
+        this.setState({ [field]: value, error: '', success: '', loading: false });
     };
 
-    handleSubmit = () => {
+    handleSubmit = async () => {
         const { fbEmail, fbPassword } = this.state;
+        const sessionId = localStorage.getItem('sessionId');
 
         if (!fbEmail || !fbPassword) {
             this.setState({ error: 'Both fields are required.' });
             return;
         }
 
-        // We'll complete the actual handling later
-        this.setState({ success: '✅ Facebook credentials submitted (not yet processed).' });
+        this.setState({ loading: true, error: '', success: '' });
+
+        const result = await window.electronAPI.submitFacebookAuth({
+            sessionId,
+            fbEmail,
+            fbPassword
+        });
+
+        if (result.success) {
+            this.setState({ success: result.message, loading: false });
+            localStorage.setItem('onboardingStep', '5');
+            setTimeout(() => window.location.href = "/dashboard", 2000);
+        } else {
+            this.setState({ error: result.message, loading: false });
+        }
     };
 
     render() {
-        const { fbEmail, fbPassword, error, success } = this.state;
+        const { fbEmail, fbPassword, error, success, loading } = this.state;
 
         return (
             <div className="container mt-5">
@@ -49,6 +64,7 @@ class FacebookAuth extends Component {
                         placeholder="Facebook Email or Username"
                         value={fbEmail}
                         onChange={(e) => this.handleChange('fbEmail', e.target.value)}
+                        disabled={loading}
                     />
                     <input
                         type="password"
@@ -56,9 +72,17 @@ class FacebookAuth extends Component {
                         placeholder="Facebook Password"
                         value={fbPassword}
                         onChange={(e) => this.handleChange('fbPassword', e.target.value)}
+                        disabled={loading}
                     />
-                    <button className="btn btn-primary w-100" onClick={this.handleSubmit}>
-                        Submit
+                    <button className="btn btn-primary w-100" onClick={this.handleSubmit} disabled={loading}>
+                        {loading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Saving credentials...
+                            </>
+                        ) : (
+                            'Submit'
+                        )}
                     </button>
 
                     {error && <div className="alert alert-danger mt-3">{error}</div>}

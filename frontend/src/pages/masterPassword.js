@@ -61,7 +61,6 @@ class MasterPassword extends Component {
                 onboardingStep: "3",
             });
             localStorage.setItem('onboardingStep', "3");
-            console.log(localStorage.getItem('onboardingStep'), ">", sessionId);
         } else {
             this.setState({ error: result.message });
         }
@@ -104,6 +103,12 @@ class MasterPassword extends Component {
         if (fbAuth) {
             return <Navigate to="/facebook-auth" />;
         }
+
+        if (onboardingStep === 5) {
+            // fbAuth has been found in database.
+            return <Navigate to="/dashboard" />;
+        }
+
 
         return (
             <div className="container mt-5">

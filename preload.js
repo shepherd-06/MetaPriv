@@ -11,4 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     setMasterPassword: (data) => ipcRenderer.invoke('set-master-password', data),
     verifyMasterPassword: (data) => ipcRenderer.invoke('verify-master-password', data),
+
+    submitFacebookAuth: (data) => ipcRenderer.invoke('submit-facebook-auth', data),
 });

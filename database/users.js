@@ -8,6 +8,13 @@ const dbPath = path.join(__dirname, 'users.db');
  */
 const { createSession, storeMasterPasswordInSession, validateSession } = require('./session');
 
+/** 
+ * FB Auth
+*/
+const keytar = require('keytar');
+const { getMasterPasswordFromSession } = require('./session');
+const { aesEncrypt } = require('../utility/crypt');
+const SERVICE_NAME = 'MetaPriv.FBAuth';
 
 // Create a new user
 function createUser({ username, password }) {
@@ -126,7 +133,7 @@ function setMasterPassword({ sessionId, masterPassword }) {
                         return resolve({ success: false, message: '❌ Failed to save master password.' });
                     }
 
-                    const success = await storeMasterPasswordInSession(sessionId, masterPassword);
+                    const success = await storeMasterPasswordInSession(userId, masterPassword);
                     if (!success) {
                         return resolve({ success: false, message: '❌ Failed to store master password in session.' });
                     }
@@ -166,6 +173,9 @@ function verifyMasterPassword({ sessionId, masterPassword }) {
                     const match = await bcrypt.compare(masterPassword, row.masterPassword);
                     const onboardingStep = row.fbEmail && row.fbEmail.trim() !== '' ? 5 : 4;
                     if (match) {
+                        const state = await storeMasterPasswordInSession(userId, masterPassword);
+                        console.info("master password updated in keyTar ", state);
+                        console.info("onboarding step ", onboardingStep);
                         return resolve({ success: true, message: '✅ Master password verified.', onboardingStep: onboardingStep });
                     } else {
                         return resolve({ success: false, message: '❌ Incorrect master password.' });
@@ -180,10 +190,52 @@ function verifyMasterPassword({ sessionId, masterPassword }) {
 }
 
 
+// Set FB Auth
+async function storeFacebookCredentials({ sessionId, fbEmail, fbPassword }) {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return { success: false, message: 'Session expired or invalid.' };
+    }
+
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (!masterPassword) {
+        return { success: false, message: 'Master password not found in session.' };
+    }
+
+    // Encrypt email using master password
+    const encryptedEmail = aesEncrypt(fbEmail, masterPassword);
+
+    // Store encrypted email in DB
+    return new Promise((resolve) => {
+        const db = new sqlite3.Database(dbPath);
+        const updatedAt = new Date().toISOString();
+        db.run(
+            `UPDATE users SET fbEmail = ?, updated_at = ? WHERE id = ?`,
+            [encryptedEmail, updatedAt, userId],
+            async (err) => {
+                db.close();
+
+                if (err) {
+                    return resolve({ success: false, message: 'Database error.' });
+                }
+
+                // Store in system keychain
+                try {
+                    await keytar.setPassword(SERVICE_NAME, fbEmail, fbPassword);
+                    resolve({ success: true, message: '✅ Facebook credentials securely stored.' });
+                } catch (e) {
+                    resolve({ success: false, message: '❌ Failed to store password in keychain.' });
+                }
+            }
+        );
+    });
+}
+
 
 module.exports = {
     createUser,
     loginUser,
     setMasterPassword,
-    verifyMasterPassword
+    verifyMasterPassword,
+    storeFacebookCredentials
 };

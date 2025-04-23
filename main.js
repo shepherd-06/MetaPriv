@@ -8,7 +8,7 @@ const { waitRandom, waitMust } = require('./bot/utility');
  * user management
  */
 const { createUser, loginUser,
-    setMasterPassword, verifyMasterPassword } = require('./database/users');
+    setMasterPassword, verifyMasterPassword, storeFacebookCredentials } = require('./database/users');
 const { initUserTable, initSessionTable } = require('./database/db');
 const { validateSession } = require('./database/session');
 
@@ -173,4 +173,9 @@ ipcMain.handle('set-master-password', async (_event, data) => {
 
 ipcMain.handle('verify-master-password', async (_event, data) => {
     return await verifyMasterPassword(data);
+});
+
+ipcMain.handle('submit-facebook-auth', async (_event, data) => {
+    const { storeFacebookCredentials } = require('./database/users');
+    return await storeFacebookCredentials(data);
 });
