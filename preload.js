@@ -13,4 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     verifyMasterPassword: (data) => ipcRenderer.invoke('verify-master-password', data),
 
     submitFacebookAuth: (data) => ipcRenderer.invoke('submit-facebook-auth', data),
+
+    // 🆕 Bot process handling
+    isBotRunning: () => ipcRenderer.invoke('is-bot-running'),
+    stopBot: () => ipcRenderer.invoke('stop-bot'),
 });

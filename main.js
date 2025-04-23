@@ -19,6 +19,13 @@ const path = require('path');
 
 
 let browser = null;  // Global browser instance
+let botProcess = null; // Track Puppeteer page
+
+// Disable GPU acceleration for Electron
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
+
 
 let urls = [
     "www.facebook.com/friends", // friend list
@@ -116,10 +123,12 @@ app.on('activate', () => {
  */
 
 ipcMain.handle('run-bot', async () => {
+    if (botProcess) return '⚠️ Bot already running.';
     try {
         const isFirstRun = await initBrowser();
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
+        botProcess = browser;
 
         if (isFirstRun) {
             await loginFacebook(page);
@@ -140,6 +149,8 @@ ipcMain.handle('run-bot', async () => {
     } catch (err) {
         console.error('Run-bot error:', err);
         return 'Failed to run bot';
+    } finally {
+        botProcess = null;
     }
 });
 
@@ -178,4 +189,21 @@ ipcMain.handle('verify-master-password', async (_event, data) => {
 ipcMain.handle('submit-facebook-auth', async (_event, data) => {
     const { storeFacebookCredentials } = require('./database/users');
     return await storeFacebookCredentials(data);
+});
+
+ipcMain.handle('stop-bot', async () => {
+    if (botProcess) {
+        try {
+            await botProcess.close();
+            botProcess = null;
+            return { success: true, message: '✅ Bot stopped.' };
+        } catch (err) {
+            return { success: false, message: '❌ Failed to stop bot.' };
+        }
+    }
+    return { success: false, message: '⚠️ No bot process to stop.' };
+});
+
+ipcMain.handle('is-bot-running', () => {
+    return !!botProcess;
 });
