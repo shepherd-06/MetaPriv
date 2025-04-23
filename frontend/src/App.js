@@ -9,7 +9,7 @@ import FacebookAuth from './pages/fbAuth';
 import MasterPassword from './pages/masterPassword';
 
 // util
-import cacheManager from './utility/cachemanager';
+import { cacheManager } from './utility/cachemanager';
 
 
 class App extends Component {

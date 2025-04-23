@@ -11,6 +11,7 @@ export async function cacheManager() {
                     onboardingStep,
                 };
             } else {
+                // Session invalid/expired
                 localStorage.removeItem('sessionId');
                 localStorage.removeItem('onboardingStep');
             }
@@ -20,7 +21,7 @@ export async function cacheManager() {
             localStorage.removeItem('onboardingStep');
         }
     }
-    window.location.href = "/";
+
     return {
         sessionId: null,
         onboardingStep: null,

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Navigate } from 'react-router-dom';
-import cacheManager from '../utility/cachemanager';
+import { cacheManager } from "../utility/cachemanager";
 
 class MasterPassword extends Component {
     constructor(props) {
