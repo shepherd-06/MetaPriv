@@ -122,20 +122,37 @@ app.on('activate', () => {
  * Inter Process Communication
  */
 
-ipcMain.handle('run-bot', async () => {
+ipcMain.handle('run-bot', async (_event, { sessionId }) => {
     if (botProcess) return '⚠️ Bot already running.';
+    const userId = await validateSession(sessionId);
+
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session.',
+        };
+    }
+
     try {
-        const isFirstRun = await initBrowser();
+        await initBrowser();
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
         botProcess = browser;
 
-        if (isFirstRun) {
-            await loginFacebook(page);
+        try {
+            // we will try to login always. 
+            // if login form exist it will login.
+            // or else it will crash and load the facebook page. 
+            await loginFacebook(page, sessionId);
             await waitRandom(5);
+        } catch (err) {
+            console.error('User is probably logged in. || error: ', err);
+            // If login fails, we can still proceed to the main page
+            await page.goto("https://facebook.com");
+            await waitMust(10);
         }
 
-        await generateRandomInteraction(page);
+        // await generateRandomInteraction(page);
         await waitRandom(10);
         await goBackToHome(page);
 

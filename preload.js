@@ -1,7 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    runBot: () => ipcRenderer.invoke('run-bot'),
     quitApp: () => ipcRenderer.send('quit-app'),
 
     createAccount: (data) => ipcRenderer.invoke('create-account', data),
@@ -15,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     submitFacebookAuth: (data) => ipcRenderer.invoke('submit-facebook-auth', data),
 
     // 🆕 Bot process handling
+    runBot: (sessionId) => ipcRenderer.invoke('run-bot', sessionId),
     isBotRunning: () => ipcRenderer.invoke('is-bot-running'),
     stopBot: () => ipcRenderer.invoke('stop-bot'),
 });

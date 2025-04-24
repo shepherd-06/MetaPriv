@@ -1,23 +1,31 @@
 require('dotenv').config();
 const { waitRandom, waitMust } = require('./utility');
+const { getFacebookCredentials } = require('../database/users');
 
 
-async function loginFacebook(page) {
+async function loginFacebook(page, sessionId) {
     try {
         await page.goto('https://www.facebook.com');
         await waitRandom(10);
 
         const cookieButtonSelector = 'div[role="none"].x1ja2u2z.x78zum5.x2lah0s.x1n2onr6.xl56j7k.x6s0dn4.xozqiw3.x1q0g3np.xi112ho.x17zwfj4.x585lrc.x1403ito.x972fbf.xcfux6l.x1qhh985.xm0m39n.x9f619.xn6708d.x1ye3gou.xtvsq51.x1r1pt67 div[role="none"] span[dir="auto"]';
-        await page.click(cookieButtonSelector);
+        const cookieButton = await page.$(cookieButtonSelector);
+        if (cookieButton) await cookieButton.click();
 
-        // caution TODO: replace TO OS based password retrieval.
-        const test_email = process.env.TEST_FB_EMAIL;
-        const test_pass = process.env.TEST_FB_PASS;
+        const fb_data = await getFacebookCredentials(sessionId);
+        // possibility to ask for the current users computer password to unlock the credential,
+        if (!fb_data.success) {
+            console.error("❌ Facebook credentials : ", fb_data.message);
+            // TODO: ideally i should exit the app here or something!
+            return;
+        }
+        const fb_email = fb_data.email;
+        const fb_pass = fb_data.password;
 
         await new Promise(resolve => setTimeout(resolve, 1000));
-        await page.type('#email', test_email, { delay: 30 });
+        await page.type('#email', fb_email, { delay: 30 });
         await waitRandom(10);
-        await page.type('#pass', test_pass, { delay: 30 });
+        await page.type('#pass', fb_pass, { delay: 30 });
         await waitRandom(10);
         await page.click('button[name="login"]');
 

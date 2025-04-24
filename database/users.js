@@ -13,7 +13,7 @@ const { createSession, storeMasterPasswordInSession, validateSession } = require
 */
 const keytar = require('keytar');
 const { getMasterPasswordFromSession } = require('./session');
-const { aesEncrypt } = require('../utility/crypt');
+const { aesEncrypt, aesDecrypt } = require('../utility/crypt');
 const SERVICE_NAME = 'MetaPriv.FBAuth';
 
 // Create a new user
@@ -231,11 +231,55 @@ async function storeFacebookCredentials({ sessionId, fbEmail, fbPassword }) {
     });
 }
 
+async function getFacebookCredentials(sessionId) {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return { success: false, message: 'Session expired or invalid.' };
+    }
+
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (!masterPassword) {
+        return { success: false, message: 'Master password not found in session.' };
+    }
+
+    return new Promise((resolve) => {
+        const db = new sqlite3.Database(dbPath);
+
+        db.get(`SELECT fbEmail FROM users WHERE id = ?`, [userId], async (err, row) => {
+            db.close();
+
+            if (err || !row || !row.fbEmail) {
+                return resolve({ success: false, message: '❌ Could not fetch encrypted email.' });
+            }
+
+            try {
+                const decryptedEmail = aesDecrypt(row.fbEmail, masterPassword);
+                const storedPassword = await keytar.getPassword(SERVICE_NAME, decryptedEmail);
+
+                if (!storedPassword) {
+                    return resolve({ success: false, message: '❌ Password not found in keyring.' });
+                }
+
+                return resolve({
+                    success: true,
+                    email: decryptedEmail,
+                    password: storedPassword
+                });
+            } catch (error) {
+                console.error("Failed to decrypt or fetch credentials:", error);
+                return resolve({ success: false, message: '❌ Decryption or keytar error.' });
+            }
+        });
+    });
+}
+
+
 
 module.exports = {
     createUser,
     loginUser,
     setMasterPassword,
     verifyMasterPassword,
-    storeFacebookCredentials
+    storeFacebookCredentials,
+    getFacebookCredentials,
 };

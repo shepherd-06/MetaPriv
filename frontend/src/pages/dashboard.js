@@ -45,8 +45,11 @@ class Dashboard extends React.Component {
     }
 
     async handleRun() {
+        const sessionId = localStorage.getItem('sessionId');
         this.setState({ loadingBot: true });
-        await window.electronAPI.runBot();
+        await window.electronAPI.runBot({
+            sessionId,
+        });
 
         // // Wait 15 seconds then verify if it's running
         // setTimeout(async () => {
