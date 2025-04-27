@@ -273,7 +273,8 @@ async function watchVideos(page, keyword) {
 
         // Scroll and track videos
         const seen = new Set();
-        const maxVideos = Math.floor(Math.random() * 8) + 6; // 6 to 13
+        // const maxVideos = Math.floor(Math.random() * 8) + 6; // 6 to 13
+        const maxVideos = Math.floor(Math.random() * 2) + 4; // 2 to 4 // trail run
         let watched = 0;
 
         while (watched < maxVideos) {

@@ -9,7 +9,8 @@ const { waitRandom, waitMust } = require('./bot/utility');
  */
 const { createUser, loginUser,
     setMasterPassword, verifyMasterPassword, storeFacebookCredentials } = require('./database/users');
-const { initUserTable, initSessionTable } = require('./database/db');
+const { initUserTable, initSessionTable,
+    initKeywordAndPagesTables, initVideoTable } = require('./database/db');
 const { validateSession } = require('./database/session');
 
 const puppeteer = require('puppeteer');
@@ -68,10 +69,13 @@ function createWindow() {
     win.loadURL('http://localhost:3000'); // React dev server in dev mode.
 
     /**
-     * database setup
+     * database setup | will not create if already exists.
+     * this is to ensure that the database is created only once.
      */
     initUserTable(); // Ensure the table exists on app start
     initSessionTable();
+    initVideoTable();
+    initKeywordAndPagesTables();
 }
 
 async function initBrowser() {
@@ -151,17 +155,14 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
             await page.goto("https://facebook.com");
             await waitMust(10);
         }
-
-        // await generateRandomInteraction(page);
-        await waitRandom(10);
         await goBackToHome(page);
+        await waitRandom(20);
 
+        await watchVideos(page, "magic");
         await waitRandom(20);
         await browser.close();
 
         browser = null;
-        app.relaunch();
-        app.exit(0);
         return 'Bot finished';
     } catch (err) {
         console.error('Run-bot error:', err);

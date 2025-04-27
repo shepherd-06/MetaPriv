@@ -14,7 +14,8 @@ function createSession(userId) {
         const id = uuidv4();
         const sessionId = uuidv4(); // can use randomUUID() in newer Node
         const createdAt = new Date().toISOString();
-        const expiredAt = new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(); // expires in 12h
+        // const expiredAt = new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(); // expires in 12h
+        const expiredAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(); // expires in 7 days
 
         db.run(
             `INSERT INTO sessions (id, userId, sessionId, createdAt, expiredAt) VALUES (?, ?, ?, ?, ?)`,
