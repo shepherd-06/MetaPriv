@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from 'react-router-dom';
+import Sidebar from "../component/sidebar";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 class Dashboard extends React.Component {
@@ -73,10 +75,7 @@ class Dashboard extends React.Component {
             <div className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     {/* Hamburger */}
-                    <button className="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">
-                        ☰
-                    </button>
-
+                    <Sidebar />
                     <h2 className="m-0">🧠 MetaPriv Control Panel</h2>
 
                     <button className="btn btn-danger" onClick={this.handleQuit}>❌ Quit</button>
@@ -110,22 +109,6 @@ class Dashboard extends React.Component {
                             )}
                         </button>
                     )}
-                </div>
-
-                {/* Offcanvas Sidebar */}
-                <div className="offcanvas offcanvas-start" tabIndex="-1" id="sideMenu">
-                    <div className="offcanvas-header">
-                        <h5 className="offcanvas-title">📂 Menu</h5>
-                        <button type="button" className="btn-close" data-bs-dismiss="offcanvas"></button>
-                    </div>
-                    <div className="offcanvas-body">
-                        <ul className="list-group">
-                            <li className="list-group-item">Dashboard</li>
-                            <li className="list-group-item">Activity Log</li>
-                            <li className="list-group-item">Privacy Settings</li>
-                            {/* more sections here later */}
-                        </ul>
-                    </div>
                 </div>
             </div>
         );

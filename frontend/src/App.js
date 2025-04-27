@@ -7,6 +7,7 @@ import Onboarding from './pages/onboarding';
 import Dashboard from './pages/dashboard';
 import FacebookAuth from './pages/fbAuth';
 import MasterPassword from './pages/masterPassword';
+import Keyword from './pages/keywords';
 
 // util
 import { cacheManager } from './utility/cachemanager';
@@ -51,6 +52,11 @@ class App extends Component {
           <Route path="/dashboard" element={
             isLoggedIn ? <Dashboard /> : <Navigate to="/" />
           } />
+
+          <Route path="/keywords" element={
+            isLoggedIn ? <Keyword /> : <Navigate to="/" />
+          } />
+
           <Route path="/master-password" element={
             isLoggedIn ? <MasterPassword /> : <Navigate to="/" />
           } />
