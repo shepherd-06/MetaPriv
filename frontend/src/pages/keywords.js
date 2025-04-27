@@ -10,13 +10,23 @@ class Keyword extends React.Component {
         super(props);
         this.state = {
             showAddForm: false,
-            keywordInputs: [''],
+            keywordInputs: [''], // List of NEW keywords
+            keywordsList: [], // 🆕 list of active keywords
         };
 
         this.handleAddMoreInput = this.handleAddMoreInput.bind(this);
         this.toggleAddForm = this.toggleAddForm.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
         this.handleSubmitKeywords = this.handleSubmitKeywords.bind(this);
+    }
+
+    async componentDidMount() {
+        const sessionId = this.context;
+        if (!sessionId) {
+            window.location.href = "/";
+        } else {
+            await this.handleFetchKeywords();
+        }
     }
 
     toggleAddForm() {
@@ -35,10 +45,44 @@ class Keyword extends React.Component {
         this.setState({ keywordInputs: updatedInputs });
     }
 
-    handleSubmitKeywords() {
-        console.log("Submitting keywords:", this.state.keywordInputs);
-        // Placeholder: later will send to backend
+    async handleSubmitKeywords() {
+        const sessionId = this.context;
+        const { keywordInputs } = this.state;
+
+        // Clean up empty inputs
+        const keywordsToAdd = keywordInputs.map(k => k.trim()).filter(k => k);
+
+        if (keywordsToAdd.length === 0) {
+            alert("Please enter at least one keyword.");
+            return;
+        }
+
+        const result = await window.electronAPI.addKeywords({
+            sessionId,
+            keywords: keywordsToAdd,
+        });
+
+        if (result.success) {
+            alert(result.message);
+            this.setState({ keywordInputs: [''], showAddForm: false });
+            this.handleFetchKeywords(); // refresh
+        } else {
+            alert(result.message);
+        }
     }
+
+    async handleFetchKeywords() {
+        const sessionId = this.context; // from SessionContext
+        const result = await window.electronAPI.fetchKeywords(sessionId);
+
+        if (result.success) {
+            console.log("Fetched Keywords: ", result.keywords);
+            this.setState({ keywordsList: result.keywords });
+        } else {
+            console.error(result.message);
+        }
+    }
+
 
     render() {
         const { showAddForm, keywordInputs } = this.state;
@@ -56,7 +100,7 @@ class Keyword extends React.Component {
                         <button className="btn btn-primary me-2" onClick={this.toggleAddForm}>
                             ➕ Add Keyword
                         </button>
-                        <button className="btn btn-danger">
+                        <button className="btn btn-danger" disabled>
                             ➖ Remove Keyword
                         </button>
                     </div>
@@ -66,12 +110,21 @@ class Keyword extends React.Component {
                 <div className="row">
                     {/* Active Keywords */}
                     <div className="col-md-6">
-                        <h4>📝 Active Keywords</h4>
-                        <ul className="list-group mt-3">
-                            {/* Placeholder, later will be mapped from backend */}
-                            <li className="list-group-item">pikachu</li>
-                            <li className="list-group-item">privacy</li>
-                            <li className="list-group-item">security</li>
+                        <h4>Active Keywords</h4>
+                        <ul className="list-group">
+                            {this.state.keywordsList.length > 0 && this.state.keywordsList.map((keyword) => (
+                                <li key={keyword.id} className="list-group-item">
+                                    {keyword.text}
+                                </li>
+                            ))}
+
+                            {
+                                this.state.keywordsList.length === 0 && (
+                                    <p> No Active KeyWords at the moment!</p>
+                                )
+                            }
+
+
                         </ul>
                     </div>
 

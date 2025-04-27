@@ -4,28 +4,37 @@ const { v4: uuidv4 } = require('uuid');
 
 const dbPath = path.join(__dirname, 'users.db');
 
+const { validateSession } = require("./session");
+
 // Add keywords for a user (array of strings)
-async function addKeywords(userId, keywords) {
+async function addKeywordsForUser(userId, keywords) {
     const db = new sqlite3.Database(dbPath);
     const now = new Date().toISOString();
 
-    await Promise.all(keywords.map(keyword => {
-        return new Promise((resolve, reject) => {
-            const id = uuidv4();
-            db.run(
-                `INSERT INTO keywords (id, userId, keyword, createdAt, isActive)
-                 VALUES (?, ?, ?, ?, 1)`,
-                [id, userId, keyword, now],
-                (err) => {
-                    if (err) reject(err);
-                    else resolve();
-                }
-            );
-        });
-    }));
-
-    db.close();
+    try {
+        await Promise.all(keywords.map(keyword => {
+            return new Promise((resolve, reject) => {
+                const id = uuidv4();
+                db.run(
+                    `INSERT INTO keywords (id, userId, text, createdAt, isActive)
+                     VALUES (?, ?, ?, ?, 1)`,
+                    [id, userId, keyword, now],
+                    (err) => {
+                        if (err) reject(err);
+                        else resolve();
+                    }
+                );
+            });
+        }));
+        db.close();
+        return true;  // SUCCESS!
+    } catch (error) {
+        db.close();
+        console.error("Failed to add keywords:", error);
+        return false; // FAILURE
+    }
 }
+
 
 // Get a random active keyword for a user
 function getARandomKeyword(userId) {
@@ -78,9 +87,73 @@ function disableAllKeywords(userId) {
     });
 }
 
+function fetchKeywordsForUser(userId) {
+    return new Promise((resolve) => {
+        const db = new sqlite3.Database(dbPath);
+
+        db.all(
+            `SELECT id, text, isActive, createdAt FROM keywords WHERE userId = ? ORDER BY createdAt DESC`,
+            [userId],
+            (err, rows) => {
+                db.close();
+                if (err) {
+                    console.error("Error fetching keywords:", err);
+                    resolve([]);
+                } else {
+                    resolve(rows);
+                }
+            }
+        );
+    });
+}
+
+async function fetchAllKeywords(sessionId) {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session. Please log in again.',
+            keywords: [],
+        };
+    }
+
+    const keywords = await fetchKeywordsForUser(userId);
+
+    return {
+        success: true,
+        message: `✅ Retrieved ${keywords.length} keywords successfully.`,
+        keywords: keywords, // array of { id, text, isActive, createdAt }
+    };
+}
+
+
+async function addKeywords(sessionId, keywords) {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session. Please log in again.',
+        };
+    }
+
+    const result = await addKeywordsForUser(userId, keywords);
+
+    if (result) {
+        return {
+            success: true,
+            message: '✅ Keywords added successfully!',
+        };
+    } else {
+        return {
+            success: false,
+            message: '❌ Failed to add keywords!',
+        };
+    }
+}
+
+
+
 module.exports = {
-    addKeywords,
-    getARandomKeyword,
-    disableKeyword,
-    disableAllKeywords
+    fetchAllKeywords,
+    addKeywords
 };

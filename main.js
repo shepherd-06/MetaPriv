@@ -12,6 +12,7 @@ const { createUser, loginUser,
 const { initUserTable, initSessionTable,
     initKeywordAndPagesTables, initVideoTable } = require('./database/db');
 const { validateSession } = require('./database/session');
+const { fetchAllKeywords, addKeywords } = require('./database/keywords');
 
 const puppeteer = require('puppeteer');
 const { ipcMain } = require('electron');
@@ -224,4 +225,24 @@ ipcMain.handle('stop-bot', async () => {
 
 ipcMain.handle('is-bot-running', () => {
     return !!botProcess;
+});
+
+ipcMain.handle('fetch-keywords', async (_event, sessionId) => {
+    try {
+        const result = await fetchAllKeywords(sessionId);
+        return result; // This will return { success: true/false, message, keywords }
+    } catch (error) {
+        console.error('Error fetching keywords:', error);
+        return { success: false, message: '❌ Failed to fetch keywords due to an internal error.', keywords: [] };
+    }
+});
+
+ipcMain.handle('add-keywords', async (_event, { sessionId, keywords }) => {
+    try {
+        const result = await addKeywords(sessionId, keywords);
+        return result;
+    } catch (error) {
+        console.error('Error fetching keywords:', error);
+        return { success: false, message: '❌ Failed to ADD keywords due to an internal error.' };
+    }
 });
