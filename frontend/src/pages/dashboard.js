@@ -1,9 +1,12 @@
 import React from "react";
-import { Link } from 'react-router-dom';
 import Sidebar from "../component/sidebar";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import SessionContext from "../context/SessionContext";
+
 
 class Dashboard extends React.Component {
+    static contextType = SessionContext;
+
     constructor(props) {
         super(props);
         this.state = {
@@ -32,7 +35,7 @@ class Dashboard extends React.Component {
     }
 
     async checkSessionValidity() {
-        const sessionId = localStorage.getItem('sessionId');
+        const sessionId = this.context;
         const result = await window.electronAPI.validateSession(sessionId);
         if (!result || !result.valid) {
             localStorage.removeItem('sessionId');
@@ -47,7 +50,7 @@ class Dashboard extends React.Component {
     }
 
     async handleRun() {
-        const sessionId = localStorage.getItem('sessionId');
+        const sessionId = this.context;
         this.setState({ loadingBot: true });
         await window.electronAPI.runBot({
             sessionId,
