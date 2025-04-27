@@ -1,8 +1,11 @@
 import React from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Sidebar from "../component/sidebar";
+import SessionContext from "../context/SessionContext";
 
 class Keyword extends React.Component {
+    static contextType = SessionContext;
+
     constructor(props) {
         super(props);
         this.state = {

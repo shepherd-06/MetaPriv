@@ -12,6 +12,9 @@ import Keyword from './pages/keywords';
 // util
 import { cacheManager } from './utility/cachemanager';
 
+// context
+import SessionContext from './context/SessionContext';
+
 
 class App extends Component {
   constructor(props) {
@@ -37,37 +40,39 @@ class App extends Component {
     const isLoggedIn = !!sessionId;
 
     return (
-      <Router>
-        <Routes>
-          {/* Home Route: determine onboarding flow */}
-          <Route path="/" element={
-            !isLoggedIn ? (
-              <Onboarding />
-            ) : (
-              <Navigate to="/master-password" />
-            )
-          } />
+      <SessionContext.Provider value={sessionId}>
+        <Router>
+          <Routes>
+            {/* Home Route: determine onboarding flow */}
+            <Route path="/" element={
+              !isLoggedIn ? (
+                <Onboarding />
+              ) : (
+                <Navigate to="/master-password" />
+              )
+            } />
 
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={
-            isLoggedIn ? <Dashboard /> : <Navigate to="/" />
-          } />
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+              isLoggedIn ? <Dashboard /> : <Navigate to="/" />
+            } />
 
-          <Route path="/keywords" element={
-            isLoggedIn ? <Keyword /> : <Navigate to="/" />
-          } />
+            <Route path="/keywords" element={
+              isLoggedIn ? <Keyword /> : <Navigate to="/" />
+            } />
 
-          <Route path="/master-password" element={
-            isLoggedIn ? <MasterPassword /> : <Navigate to="/" />
-          } />
-          <Route path="/facebook-auth" element={
-            isLoggedIn ? <FacebookAuth /> : <Navigate to="/" />
-          } />
+            <Route path="/master-password" element={
+              isLoggedIn ? <MasterPassword /> : <Navigate to="/" />
+            } />
+            <Route path="/facebook-auth" element={
+              isLoggedIn ? <FacebookAuth /> : <Navigate to="/" />
+            } />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Router>
+      </SessionContext.Provider>
     );
   }
 }
