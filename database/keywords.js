@@ -12,28 +12,51 @@ async function addKeywordsForUser(userId, keywords) {
     const now = new Date().toISOString();
 
     try {
-        await Promise.all(keywords.map(keyword => {
+        // Clean up keywords first (lowercase + trim)
+        const cleanedKeywords = keywords.map(kw => kw.trim().toLowerCase()).filter(kw => kw.length > 0);
+
+        await Promise.all(cleanedKeywords.map(keyword => {
             return new Promise((resolve, reject) => {
-                const id = uuidv4();
-                db.run(
-                    `INSERT INTO keywords (id, userId, text, createdAt, isActive)
-                     VALUES (?, ?, ?, ?, 1)`,
-                    [id, userId, keyword, now],
-                    (err) => {
-                        if (err) reject(err);
-                        else resolve();
+                // First, check if the keyword already exists for this user
+                db.get(
+                    `SELECT id FROM keywords WHERE userId = ? AND text = ?`,
+                    [userId, keyword],
+                    (err, row) => {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        if (row) {
+                            // Keyword already exists - skip adding
+                            console.log(`Keyword already exists: ${keyword}`);
+                            return resolve();
+                        }
+
+                        // Otherwise, insert new keyword
+                        const id = uuidv4();
+                        db.run(
+                            `INSERT INTO keywords (id, userId, text, createdAt, isActive)
+                             VALUES (?, ?, ?, ?, 1)`,
+                            [id, userId, keyword, now],
+                            (insertErr) => {
+                                if (insertErr) reject(insertErr);
+                                else resolve();
+                            }
+                        );
                     }
                 );
             });
         }));
+
         db.close();
-        return true;  // SUCCESS!
+        return true;  // SUCCESS
     } catch (error) {
         db.close();
-        console.error("Failed to add keywords:", error);
+        console.error("❌ Failed to add keywords:", error);
         return false; // FAILURE
     }
 }
+
 
 
 // Get a random active keyword for a user

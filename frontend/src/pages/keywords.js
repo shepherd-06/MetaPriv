@@ -112,11 +112,13 @@ class Keyword extends React.Component {
                     <div className="col-md-6">
                         <h4>Active Keywords</h4>
                         <ul className="list-group">
-                            {this.state.keywordsList.length > 0 && this.state.keywordsList.map((keyword) => (
-                                <li key={keyword.id} className="list-group-item">
-                                    {keyword.text}
-                                </li>
-                            ))}
+                            <div style={{ height: "400px", overflowY: "auto" }}>
+                                {this.state.keywordsList.length > 0 && this.state.keywordsList.map((keyword) => (
+                                    <li key={keyword.id} className="list-group-item">
+                                        {keyword.text}
+                                    </li>
+                                ))}
+                            </div>
 
                             {
                                 this.state.keywordsList.length === 0 && (

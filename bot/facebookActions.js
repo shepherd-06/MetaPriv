@@ -3,6 +3,7 @@ const { waitRandom, waitMust } = require('./utility');
 const { getFacebookCredentials } = require('../database/users');
 const { getARandomKeyword } = require('../database/keywords');
 const { addAPage, getARandomPageUrl, markPageAsLiked } = require('../database/pages');
+const { addAVideo } = require("../database/videos");
 
 
 async function loginFacebook(page, sessionId) {
@@ -356,6 +357,7 @@ async function watchVideos(page) {
                     console.log("WatchTime: ", watchTime, " sec");
                     await waitMust(watchTime / 2);
                     await waitRandom(2);
+                    let isLiked = 0;
 
                     if (Math.random() < 0.5) {
                         try {
@@ -363,6 +365,7 @@ async function watchVideos(page) {
                             if (likeBtn) {
                                 await likeBtn.click();
                                 console.log('👍 Liked video');
+                                isLiked = 1;
                             }
                         } catch (e) {
                             console.log('⚠️ Like button not found.');
@@ -370,6 +373,9 @@ async function watchVideos(page) {
                     } else {
                         console.log('❌ Skipping Liking video');
                     }
+
+                    const status = addAVideo(postUrl, pageUrl, keyword, userId, "", isLiked);
+                    console.log(status.message);
 
                     await waitMust(watchTime / 2);
                     await waitRandom(5);
