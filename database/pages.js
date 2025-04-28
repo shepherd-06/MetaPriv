@@ -6,32 +6,53 @@ const dbPath = path.join(__dirname, 'users.db');
 function addAPage({ keywordId, pageUrl, isLiked = 0 }) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
-        const id = uuidv4();
-        const createdAt = new Date().toISOString();
 
-        db.run(
-            `INSERT INTO pages (id, keywordId, pageUrl, isLiked, createdAt) VALUES (?, ?, ?, ?, ?)`,
-            [id, keywordId, pageUrl, isLiked, createdAt],
-            function (err) {
+        db.get(`SELECT id FROM pages WHERE pageUrl = ?`, [pageUrl], (err, row) => {
+            if (err) {
                 db.close();
-                if (err) {
-                    console.error("Error adding page:", err);
-                    reject(err);
-                } else {
-                    resolve({ success: true, id });
-                }
+                console.error("Error checking existing page:", err);
+                return reject(err);
             }
-        );
+
+            if (row) {
+                // Page already exists, return success with existing ID
+                db.close();
+                return resolve({ success: true, id: row.id, existing: true });
+            }
+
+            // Otherwise insert new page
+            const id = uuidv4();
+            const createdAt = new Date().toISOString();
+
+            db.run(
+                `INSERT INTO pages (id, keywordId, pageUrl, isLiked, createdAt) VALUES (?, ?, ?, ?, ?)`,
+                [id, keywordId, pageUrl, isLiked, createdAt],
+                function (insertErr) {
+                    db.close();
+                    if (insertErr) {
+                        console.error("Error adding page:", insertErr);
+                        return reject(insertErr);
+                    } else {
+                        return resolve({ success: true, id, existing: false });
+                    }
+                }
+            );
+        });
     });
 }
 
-function getARandomPageUrl(keywordId) {
+
+function getARandomPageUrl(isLiked = 0) {
+    /**
+     * gets a random page URL, if the page is already liked or not liked.
+     * 
+     */
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
 
         db.all(
-            `SELECT pageUrl FROM pages WHERE keywordId = ? AND isLiked = 1`,
-            [keywordId],
+            `SELECT pageUrl FROM pages WHERE isLiked = ?`,
+            [isLiked],
             (err, rows) => {
                 db.close();
                 if (err) {
@@ -69,9 +90,36 @@ function disableAPage(pageUrl) {
     });
 }
 
+function markPageAsLiked(pageUrl) {
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(dbPath);
+        const updatedAt = new Date().toISOString();
+
+        db.run(
+            `UPDATE pages SET isLiked = 1, updatedAt = ? WHERE pageUrl = ?`,
+            [updatedAt, pageUrl],
+            function (err) {
+                db.close();
+                if (err) {
+                    console.error("Error updating page like status:", err);
+                    return reject(err);
+                }
+
+                if (this.changes === 0) {
+                    // No page found to update
+                    return resolve({ success: false, message: 'Page not found.' });
+                }
+
+                return resolve({ success: true, message: 'Page marked as liked.' });
+            }
+        );
+    });
+}
+
 
 module.exports = {
     addAPage,
     getARandomPageUrl,
-    disableAPage
+    disableAPage,
+    markPageAsLiked
 }

@@ -49,7 +49,10 @@ function getARandomKeyword(userId) {
                 if (!rows || rows.length === 0) return resolve(null);
 
                 const randomIndex = Math.floor(Math.random() * rows.length);
-                resolve(rows[randomIndex].keyword);
+                resolve({
+                    keyword: rows[randomIndex].keyword,
+                    id: rows[randomIndex].id
+                });
             }
         );
     });
@@ -155,5 +158,6 @@ async function addKeywords(sessionId, keywords) {
 
 module.exports = {
     fetchAllKeywords,
-    addKeywords
+    addKeywords,
+    getARandomKeyword
 };

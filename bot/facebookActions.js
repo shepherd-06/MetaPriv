@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { waitRandom, waitMust } = require('./utility');
 const { getFacebookCredentials } = require('../database/users');
+const { getARandomKeyword } = require('../database/keywords');
+const { addAPage, getARandomPageUrl, markPageAsLiked } = require('../database/pages');
 
 
 async function loginFacebook(page, sessionId) {
@@ -77,13 +79,15 @@ async function goBackToHome(page) {
     }
 }
 
-async function searchPages(page, keywords) {
-    console.log(`Searching pages for keyword: ${keywords}`);
+async function searchPages(page, userId) {
+    // First get a random keyword from the database.
+    const { keyword, id } = await getARandomKeyword(userId);
+    console.log(`Searching pages for keyword: ${keyword}`);
     let pageURLs = [];
 
     try {
         // Navigate to Facebook's search page for pages with the specified keywords
-        await page.goto(`https://www.facebook.com/search/pages/?q=${keywords}`);
+        await page.goto(`https://www.facebook.com/search/pages/?q=${keyword}`);
         await waitMust(15); // Wait for initial content load
 
         // Scroll to the bottom of the page four times to load more content
@@ -108,8 +112,17 @@ async function searchPages(page, keywords) {
         }
         console.log('Found URLs:', pageURLs);
         /**
-         * TODO: save pageURLs in database.
+         * Save pageURLs in database.
          */
+        if (pageURLs.length > 0) {
+            for (const url of pageURLs) {
+                await addAPage({
+                    keywordId: id,
+                    pageUrl: url,
+                    isLiked: 0
+                });
+            }
+        }
         await waitRandom(20);
     } catch (error) {
         console.error('An error occurred while searching for pages:', error);
@@ -117,12 +130,14 @@ async function searchPages(page, keywords) {
     return pageURLs;
 }
 
-async function likePage(page, pageUrl) {
+async function likePage(page) {
     /**
      * Like/Follow the page from the URL.
      * Store the pageName in the database
      */
     try {
+        const pageUrl = getARandomPageUrl();
+        let status = false;
         await page.goto(pageUrl);
         await waitMust(10); // Adjust wait time as necessary for the page to load
 
@@ -134,18 +149,22 @@ async function likePage(page, pageUrl) {
         if (likeButton) {
             await likeButton.click();
             console.log(`Liked page: ${pageName}`);
+            status = true;
         } else {
             // If Like button isn't found, look for the Follow button
             const followButton = await page.$('div[aria-label="Follow"]');
             if (followButton) {
                 await followButton.click();
                 console.log(`Followed page: ${pageName}`);
+                status = true;
             }
         }
         await waitRandom(20);
+        if (status) {
+            markPageAsLiked(pageUrl);
+        }
         // Log the action and the page name
         console.log(`Action completed on: ${pageName}`);
-
     } catch (error) {
         console.error(`An error occurred while processing ${pageUrl}:`, error);
     }
@@ -188,7 +207,8 @@ async function generateRandomInteraction(page) {
 }
 
 
-async function likeRandomPost(page, pageUrl, eff_privacy = 0.5) {
+async function likeRandomPost(page, eff_privacy = 0.5) {
+    const pageUrl = getARandomPageUrl(1);
     await page.goto(pageUrl);
     await waitMust(10); // Adjust wait time as necessary for the page to load
 
@@ -261,11 +281,13 @@ async function likeRandomPost(page, pageUrl, eff_privacy = 0.5) {
     }
 }
 
-async function watchVideos(page, keyword) {
+async function watchVideos(page) {
     /**
      * We watch videos here from the keyword.
      */
     try {
+        const { keyword, id } = await getARandomKeyword(userId);
+        console.log(`Searching pages for keyword: ${keyword}`);
         const url = `https://www.facebook.com/watch/search/?q=${keyword}`;
         await page.goto(url);
         await waitMust(10);
