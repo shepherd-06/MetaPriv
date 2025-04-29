@@ -131,7 +131,7 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
         botProcess = browser;
-        writeLog("MetaPriv Loading....", masterPassword);
+        writeLog("MetaPriv Starting....", masterPassword);
 
         try {
             // we will try to login always. 
@@ -145,20 +145,20 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
             await page.goto("https://facebook.com");
             await waitMust(10);
         }
-        // await goBackToHome(page, masterPassword);
-        // await waitRandom(20);
-        // await searchPages(page, userId);
+        await goBackToHome(page, masterPassword);
+        await waitRandom(20);
+        await searchPages(page, userId, masterPassword);
         // await waitRandom(30);
-        // await likePage(page, userId);
+        await likePage(page, userId, masterPassword);
         // await waitRandom(30);
 
-        // await likeRandomPost(page);
+        await likeRandomPost(page, masterPassword);
         // await waitRandom(20);
 
-        // await watchVideos(page, userId);
+        await watchVideos(page, userId, masterPassword);
         // await waitRandom(20);
 
-        // await goBackToHome(page);
+        await goBackToHome(page, masterPassword);
         await waitRandom(20);
         await browser.close();
 
@@ -228,21 +228,31 @@ ipcMain.handle('is-bot-running', () => {
 });
 
 ipcMain.handle('fetch-keywords', async (_event, sessionId) => {
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return { success: false, message: '❌ Internal/MasterPassword is null!', keywords: [] };
+    }
     try {
         const result = await fetchAllKeywords(sessionId);
         return result; // This will return { success: true/false, message, keywords }
     } catch (error) {
-        console.error('Error fetching keywords:', error);
+        writeLog(`Error fetching keywords: ${error}`, masterPassword);
         return { success: false, message: '❌ Failed to fetch keywords due to an internal error.', keywords: [] };
     }
 });
 
 ipcMain.handle('add-keywords', async (_event, { sessionId, keywords }) => {
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return { success: false, message: '❌ Internal/MasterPassword is null!', keywords: [] };
+    }
     try {
         const result = await addKeywords(sessionId, keywords);
         return result;
     } catch (error) {
-        console.error('Error fetching keywords:', error);
+        writeLog(`Error adding keywords: ${error}`, masterPassword);
         return { success: false, message: '❌ Failed to ADD keywords due to an internal error.' };
     }
 });

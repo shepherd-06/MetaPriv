@@ -82,10 +82,10 @@ async function goBackToHome(page, masterPassword) {
     }
 }
 
-async function searchPages(page, userId) {
+async function searchPages(page, userId, masterPassword) {
     // First get a random keyword from the database.
     const { keyword, id } = await getARandomKeyword(userId);
-    console.log(`Searching pages for keyword: ${keyword} with id ${id}`);
+    writeLog(`Searching pages for keyword: ${keyword} with id ${id}`, masterPassword);
     let pageURLs = [];
 
     try {
@@ -113,7 +113,7 @@ async function searchPages(page, userId) {
                 pageURLs.push(url);
             }
         }
-        console.log('Found URLs:', pageURLs);
+        writeLog(`Found URLs: , ${pageURLs}`, masterPassword);
         /**
          * Save pageURLs in database.
          */
@@ -128,21 +128,21 @@ async function searchPages(page, userId) {
         }
         await waitRandom(20);
     } catch (error) {
-        console.error('An error occurred while searching for pages:', error);
+        writeLog(`An error occurred while searching for pages: , ${error}`, masterPassword);
     }
     return pageURLs;
 }
 
-async function likePage(page, userId) {
+async function likePage(page, userId, masterPassword) {
     /**
      * Like/Follow the page from the URL.
      * Store the pageName in the database
      */
     try {
         const pageUrl = await getARandomPageUrl();
-        console.log("Going to page : ", pageUrl);
+        writeLog(`Going to page: ${pageUrl}`, masterPassword);
         if (pageUrl == null) {
-            console.log("pageUrl came null");
+            writeLog("pageUrl came null from db", masterPassword);
             return
         }
         let status = false;
@@ -156,14 +156,14 @@ async function likePage(page, userId) {
         const likeButton = await page.$('div[aria-label="Like"]');
         if (likeButton) {
             await likeButton.click();
-            console.log(`Liked page: ${pageName}`);
+            writeLog(`Liked page: ${pageName}`, masterPassword);
             status = true;
         } else {
             // If Like button isn't found, look for the Follow button
             const followButton = await page.$('div[aria-label="Follow"]');
             if (followButton) {
                 await followButton.click();
-                console.log(`Followed page: ${pageName}`);
+                writeLog(`Followed page: ${pageName}`, masterPassword);
                 status = true;
             }
         }
@@ -171,10 +171,10 @@ async function likePage(page, userId) {
         if (status) {
             await markPageAsLiked(pageUrl);
             // Log the action and the page name
-            console.log(`Action completed on: ${pageName}`);
+            writeLog(`Action completed on: ${pageName}`, masterPassword);
         }
     } catch (error) {
-        console.error(`An error occurred while processing pageUrl:`, error);
+        writeLog(`An error occurred while processing pageUrl: ${error}`, masterPassword);
     }
 }
 
@@ -216,9 +216,9 @@ async function generateRandomInteraction(page) {
 }
 
 
-async function likeRandomPost(page) {
+async function likeRandomPost(page, masterPassword) {
     const pageUrl = await getARandomPageUrl(1);
-    console.log("Going to page : ", pageUrl);
+    writeLog(`Going to page:  ${pageUrl}`, masterPassword);
     await page.goto(pageUrl);
     await waitMust(10);
 
@@ -257,27 +257,27 @@ async function likeRandomPost(page) {
                         await likeBtn.click();
                         likeCount++;
 
-                        console.log(`✅ Liked post #${likeCount}`);
+                        writeLog(`✅ Liked post #${likeCount}`, masterPassword);
 
                         // Optional: Get post URL for logging
                         const postLink = await postElement.$('a[role="link"]');
                         if (postLink) {
                             const postUrl = await (await postLink.getProperty('href')).jsonValue();
-                            console.log(`Liked post: ${postUrl}`);
+                            writeLog(`Liked post: ${postUrl}`, masterPassword);
                         }
 
                         // Short wait after liking
                         await waitMust(10);
                     } catch (e) {
-                        console.error(`Failed to like post:`, e);
+                        writeLog(`Failed to like post: ${e}`, masterPassword);
                     }
                 }
             } else {
-                console.log("Skipping Like");
+                writeLog(`Skipping Like`, masterPassword);
             }
 
             if (likeCount >= randomBreak) {
-                console.log(`🔁 Random break reached after ${likeCount} likes.`);
+                writeLog(`🔁 Random break reached after ${likeCount} likes.`, masterPassword);
                 return;
             }
         }
@@ -293,13 +293,13 @@ async function likeRandomPost(page) {
     }
 }
 
-async function watchVideos(page, userId) {
+async function watchVideos(page, userId, masterPassword) {
     /**
      * We watch videos here from the keyword.
      */
     try {
         const { keyword, id } = await getARandomKeyword(userId);
-        console.log(`Searching pages for keyword: ${keyword}`);
+        writeLog(`Searching pages for keyword: ${keyword}`, masterPassword);
         const url = `https://www.facebook.com/watch/search/?q=${keyword}`;
         await page.goto(url);
         await waitMust(10);
@@ -327,7 +327,7 @@ async function watchVideos(page, userId) {
             }
 
             if (newVideos.length === 0) {
-                console.log('No more new videos to watch.');
+                writeLog(`No more new videos to watch. Keyword: ${keyword}`, masterPassword);
                 break;
             }
 
@@ -351,9 +351,9 @@ async function watchVideos(page, userId) {
                     const postUrl = await links[0].evaluate(el => el.href.split('&external_log_id')[0]);
                     const pageUrl = await links[1].evaluate(el => el.href);
 
-                    console.log(`▶️ Watching video: ${videoLength}`);
-                    console.log(`🔗 Post: ${postUrl}`);
-                    console.log(`📄 Page: ${pageUrl}`);
+                    writeLog(`▶️ Watching video: ${videoLength}`, masterPassword);
+                    writeLog(`🔗 Post: ${postUrl}`, masterPassword);
+                    writeLog(`📄 Page: ${pageUrl}`, masterPassword);
 
                     await videoLengthHandle.click();
                     await waitMust(5);
@@ -365,7 +365,7 @@ async function watchVideos(page, userId) {
                     else if (parts.length === 3) delta = parts[0] * 3600 + parts[1] * 60 + parts[2];
 
                     const watchTime = 5 + delta;
-                    console.log("WatchTime: ", watchTime, " sec");
+                    writeLog(`WatchTime: ${watchTime} sec`, masterPassword);
                     // await waitMust(watchTime / 2);
                     await waitMust(12); // watch it less time than needed during test. 
                     await waitRandom(12);
@@ -376,14 +376,14 @@ async function watchVideos(page, userId) {
                             const likeBtn = await page.$('div[aria-label="Like"]');
                             if (likeBtn) {
                                 await likeBtn.click();
-                                console.log('👍 Liked video');
+                                writeLog(`keyword: ${keyword}: 👍 Liked video`, masterPassword);
                                 isLiked = 1;
                             }
                         } catch (e) {
-                            console.log('⚠️ Like button not found.');
+                            writeLog(`keyword: ${keyword}: ⚠️ Like button not found.`, masterPassword);
                         }
                     } else {
-                        console.log('❌ Skipping Liking video');
+                        writeLog(`keyword: ${keyword}: ❌ Skipping Liking video.`, masterPassword);
                     }
 
                     const status = await addAVideo({
@@ -394,7 +394,7 @@ async function watchVideos(page, userId) {
                         screenshot_name: "",
                         liked: isLiked
                     });
-                    console.log(status.message);
+                    writeLog(`keyword: ${keyword}: db inset: ${status.message}`, masterPassword);
 
                     // await waitMust(watchTime / 2);
                     await waitRandom(5);
@@ -403,14 +403,14 @@ async function watchVideos(page, userId) {
                     watched++;
 
                 } catch (err) {
-                    console.error('❌ Error watching video:', err);
+                    writeLog(`❌ Error watching video: ${err}`, masterPassword);
                     continue;
                 }
             }
         }
-        console.log('✅ Finished watching videos.');
+        writeLog(`✅ Finished watching videos.: ${keyword}`, masterPassword);
     } catch (err) {
-        console.error(`An error occurred while watching video :`, error);
+        writeLog(`An error occurred while watching video: ${err}`, masterPassword);
     }
 }
 
