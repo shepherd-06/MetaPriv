@@ -83,7 +83,7 @@ async function goBackToHome(page) {
 async function searchPages(page, userId) {
     // First get a random keyword from the database.
     const { keyword, id } = await getARandomKeyword(userId);
-    console.log(`Searching pages for keyword: ${keyword}`);
+    console.log(`Searching pages for keyword: ${keyword} with id ${id}`);
     let pageURLs = [];
 
     try {
@@ -131,13 +131,18 @@ async function searchPages(page, userId) {
     return pageURLs;
 }
 
-async function likePage(page) {
+async function likePage(page, userId) {
     /**
      * Like/Follow the page from the URL.
      * Store the pageName in the database
      */
     try {
-        const pageUrl = getARandomPageUrl();
+        const pageUrl = await getARandomPageUrl();
+        console.log("Going to page : ", pageUrl);
+        if (pageUrl == null) {
+            console.log("pageUrl came null");
+            return
+        }
         let status = false;
         await page.goto(pageUrl);
         await waitMust(10); // Adjust wait time as necessary for the page to load
@@ -162,12 +167,12 @@ async function likePage(page) {
         }
         await waitRandom(20);
         if (status) {
-            markPageAsLiked(pageUrl);
+            await markPageAsLiked(pageUrl);
+            // Log the action and the page name
+            console.log(`Action completed on: ${pageName}`);
         }
-        // Log the action and the page name
-        console.log(`Action completed on: ${pageName}`);
     } catch (error) {
-        console.error(`An error occurred while processing ${pageUrl}:`, error);
+        console.error(`An error occurred while processing pageUrl:`, error);
     }
 }
 
@@ -282,7 +287,7 @@ async function likeRandomPost(page, eff_privacy = 0.5) {
     }
 }
 
-async function watchVideos(page) {
+async function watchVideos(page, userId) {
     /**
      * We watch videos here from the keyword.
      */
@@ -297,7 +302,7 @@ async function watchVideos(page) {
         // Scroll and track videos
         const seen = new Set();
         // const maxVideos = Math.floor(Math.random() * 8) + 6; // 6 to 13
-        const maxVideos = Math.floor(Math.random() * 2) + 4; // 2 to 4 // trail run
+        const maxVideos = 2; // watch 2 videos during test.
         let watched = 0;
 
         while (watched < maxVideos) {
@@ -355,11 +360,12 @@ async function watchVideos(page) {
 
                     const watchTime = 5 + delta;
                     console.log("WatchTime: ", watchTime, " sec");
-                    await waitMust(watchTime / 2);
-                    await waitRandom(2);
+                    // await waitMust(watchTime / 2);
+                    await waitMust(12); // watch it less time than needed during test. 
+                    await waitRandom(12);
                     let isLiked = 0;
 
-                    if (Math.random() < 0.5) {
+                    if (Math.random() < Math.random()) {
                         try {
                             const likeBtn = await page.$('div[aria-label="Like"]');
                             if (likeBtn) {
@@ -374,13 +380,20 @@ async function watchVideos(page) {
                         console.log('❌ Skipping Liking video');
                     }
 
-                    const status = addAVideo(postUrl, pageUrl, keyword, userId, "", isLiked);
+                    const status = await addAVideo({
+                        post_URL: postUrl,
+                        page_URL: pageUrl,
+                        keyword: keyword,
+                        userId: userId,
+                        screenshot_name: "",
+                        liked: isLiked
+                    });
                     console.log(status.message);
 
-                    await waitMust(watchTime / 2);
+                    // await waitMust(watchTime / 2);
                     await waitRandom(5);
                     await page.goBack();
-                    await waitMust(5);
+                    await waitMust(10);
                     watched++;
 
                 } catch (err) {
@@ -391,7 +404,7 @@ async function watchVideos(page) {
         }
         console.log('✅ Finished watching videos.');
     } catch (err) {
-        console.error(`An error occurred while video ${keyword}:`, error);
+        console.error(`An error occurred while watching video :`, error);
     }
 }
 

@@ -23,3 +23,4 @@ logs/
 *.db
 user_data/
 .env
+useless

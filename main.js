@@ -158,9 +158,16 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
         }
         await goBackToHome(page);
         await waitRandom(20);
+        // await searchPages(page, userId);
+        // await waitRandom(30);
+        // await likePage(page, userId);
+        // await waitRandom(30);
 
-        // await watchVideos(page, "magic");
-        // await waitRandom(20);
+        await watchVideos(page, userId);
+        await waitRandom(20);
+
+        await goBackToHome(page);
+        await waitRandom(110);
         await browser.close();
 
         browser = null;
