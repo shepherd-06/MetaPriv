@@ -55,11 +55,6 @@ class Dashboard extends React.Component {
         await window.electronAPI.runBot({
             sessionId,
         });
-
-        // // Wait 15 seconds then verify if it's running
-        // setTimeout(async () => {
-        //     await this.checkBotStatus();
-        // }, 15000);
     }
 
     async handleStopBot() {

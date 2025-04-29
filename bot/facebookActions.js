@@ -178,6 +178,7 @@ async function likePage(page, userId) {
 
 async function generateRandomInteraction(page) {
     /**
+     * Incomplete Func.
      * this function is supposed to create some random interaction on home screen 
      * at some point.
      */
@@ -213,10 +214,11 @@ async function generateRandomInteraction(page) {
 }
 
 
-async function likeRandomPost(page, eff_privacy = 0.5) {
-    const pageUrl = getARandomPageUrl(1);
+async function likeRandomPost(page) {
+    const pageUrl = await getARandomPageUrl(1);
+    console.log("Going to page : ", pageUrl);
     await page.goto(pageUrl);
-    await waitMust(10); // Adjust wait time as necessary for the page to load
+    await waitMust(10);
 
     let likeCount = 0;
     const randomBreak = Math.floor(Math.random() * 1) + 4; // Between 
@@ -246,7 +248,7 @@ async function likeRandomPost(page, eff_privacy = 0.5) {
             }
 
             // Step 4: Randomly decide whether to like
-            if (Math.random() < eff_privacy) {
+            if (Math.random() > Math.random()) {
                 const likeBtn = await postElement.$('div[aria-label="Like"]');
                 if (likeBtn) {
                     try {
@@ -268,6 +270,8 @@ async function likeRandomPost(page, eff_privacy = 0.5) {
                         console.error(`Failed to like post:`, e);
                     }
                 }
+            } else {
+                console.log("Skipping Like");
             }
 
             if (likeCount >= randomBreak) {

@@ -163,8 +163,11 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
         // await likePage(page, userId);
         // await waitRandom(30);
 
-        await watchVideos(page, userId);
+        await likeRandomPost(page);
         await waitRandom(20);
+
+        // await watchVideos(page, userId);
+        // await waitRandom(20);
 
         await goBackToHome(page);
         await waitRandom(110);
