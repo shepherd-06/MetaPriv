@@ -64,7 +64,7 @@ function getARandomKeyword(userId) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
         db.all(
-            `SELECT keyword FROM keywords WHERE userId = ? AND isActive = 1`,
+            `SELECT id, text FROM keywords WHERE userId = ? AND isActive = 1`,
             [userId],
             (err, rows) => {
                 db.close();
@@ -73,7 +73,7 @@ function getARandomKeyword(userId) {
 
                 const randomIndex = Math.floor(Math.random() * rows.length);
                 resolve({
-                    keyword: rows[randomIndex].keyword,
+                    keyword: rows[randomIndex].text,
                     id: rows[randomIndex].id
                 });
             }
@@ -86,7 +86,7 @@ function disableKeyword(userId, keyword) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
         db.run(
-            `UPDATE keywords SET isActive = 0 WHERE userId = ? AND keyword = ?`,
+            `UPDATE keywords SET isActive = 0 WHERE userId = ? AND text = ?`,
             [userId, keyword],
             function (err) {
                 db.close();

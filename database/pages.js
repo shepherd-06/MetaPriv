@@ -45,7 +45,6 @@ function addAPage({ keywordId, pageUrl, isLiked = 0 }) {
 function getARandomPageUrl(isLiked = 0) {
     /**
      * gets a random page URL, if the page is already liked or not liked.
-     * 
      */
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
@@ -62,7 +61,11 @@ function getARandomPageUrl(isLiked = 0) {
                     resolve(null);
                 } else {
                     const randomRow = rows[Math.floor(Math.random() * rows.length)];
-                    resolve(randomRow.pageUrl);
+                    if (randomRow && typeof randomRow.pageUrl === 'string' && randomRow.pageUrl.startsWith('http')) {
+                        resolve(randomRow.pageUrl);
+                    } else {
+                        resolve(null); // or reject with error
+                    }
                 }
             }
         );

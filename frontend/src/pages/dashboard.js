@@ -46,7 +46,7 @@ class Dashboard extends React.Component {
 
     async checkBotStatus() {
         const result = await window.electronAPI.isBotRunning();
-        this.setState({ botRunning: (result && result.running) || false, loadingBot: false });
+        this.setState({ botRunning: result, loadingBot: false });
     }
 
     async handleRun() {
@@ -81,24 +81,32 @@ class Dashboard extends React.Component {
                     <Sidebar />
                     <h2 className="m-0">🧠 MetaPriv Control Panel</h2>
 
-                    <button className="btn btn-danger" onClick={this.handleQuit}>❌ Quit</button>
+                    <button className="btn btn-danger" onClick={this.handleQuit}>❌ Quit App</button>
                 </div>
 
                 <div className="text-center">
                     <p className="text-muted">Use the buttons below to interact with the automation bot.</p>
 
-                    <p className="small"> botRunning: {botRunning}, isLoading: {loadingBot} </p>
-
                     {botRunning ? (
-                        <>
-                            <p className="text-success">✅ Bot is running...</p>
-                            <button className="btn btn-warning me-2" onClick={this.handleStopBot}>
-                                ⛔ Stop Bot
-                            </button>
-                        </>
+                        <div className="row justify-content-center align-items-center mb-3">
+                            <div className="col-auto">
+                                <p className="text-success m-0" style={{
+                                    padding: "5px 10px",
+                                    border: "1px dashed #32CBFF",
+                                    borderRadius: "5px"
+                                }}>
+                                    ✅ Bot is running...
+                                </p>
+                            </div>
+                            <div className="col-auto">
+                                <button className="btn btn-warning" onClick={this.handleStopBot}>
+                                    ⛔ Stop Bot
+                                </button>
+                            </div>
+                        </div>
                     ) : (
                         <button
-                            className="btn btn-primary"
+                            className="btn btn-success"
                             onClick={this.handleRun}
                             disabled={loadingBot}
                         >
