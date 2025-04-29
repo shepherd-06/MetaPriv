@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { aesEncrypt, aesDecrypt } = require('./crypto');
+const { aesEncrypt, aesDecrypt } = require('./crypt');
 
 
 const logDir = path.join(__dirname, '..', 'logs');

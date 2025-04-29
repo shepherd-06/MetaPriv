@@ -5,8 +5,10 @@ const { getARandomKeyword } = require('../database/keywords');
 const { addAPage, getARandomPageUrl, markPageAsLiked } = require('../database/pages');
 const { addAVideo } = require("../database/videos");
 
+const { writeLog } = require('../utility/logmanager');
 
-async function loginFacebook(page, sessionId) {
+
+async function loginFacebook(page, sessionId, masterPassword) {
     try {
         await page.goto('https://www.facebook.com');
         await waitRandom(10);
@@ -18,7 +20,7 @@ async function loginFacebook(page, sessionId) {
         const fb_data = await getFacebookCredentials(sessionId);
         // possibility to ask for the current users computer password to unlock the credential,
         if (!fb_data.success) {
-            console.error("❌ Facebook credentials : ", fb_data.message);
+            writeLog(`❌ Facebook credentials : ${fb_data.message}`, masterPassword);
             // TODO: ideally i should exit the app here or something!
             return;
         }
@@ -35,9 +37,9 @@ async function loginFacebook(page, sessionId) {
         // at least 10 seconds waiting.
         await waitMust(20);
         // Commented out to prevent automatic navigation wait
-        console.log('Logged in or still on login page for debugging.');
+        writeLog('Logged in or still on login page for debugging.', masterPassword);
     } catch (error) {
-        console.error('An error occurred:', error);
+        writeLog(`An error occurred ${error}`, masterPassword);
     }
 }
 
@@ -65,18 +67,18 @@ async function interactWithProfile(page) {
     }
 }
 
-async function goBackToHome(page) {
+async function goBackToHome(page, masterPassword) {
     /**
      * function to go back home when needed.
      */
     try {
-        console.log("Attempting to click the Facebook logo...");
+        writeLog("Attempting to click the Facebook logo...", masterPassword);
         const logoSelector = 'a[aria-label="Facebook"]';
         await page.click(logoSelector);
-        console.log("Facebook logo clicked successfully.");
+        writeLog("Facebook logo clicked successfully. Refreshing home or going back to home", masterPassword);
         await waitMust(10); // Wait 10 seconds
     } catch (error) {
-        console.error('An error occurred while trying to click the Facebook logo:', error);
+        writeLog(`An error occurred while trying to click the Facebook logo: ${error}`, masterPassword);
     }
 }
 

@@ -1,4 +1,8 @@
 const { app, BrowserWindow } = require('electron');
+
+/**
+ * Bot Management
+ */
 const { loginFacebook, interactWithProfile,
     goBackToHome, searchPages, likePage,
     likeRandomPost, watchVideos, generateRandomInteraction } = require('./bot/facebookActions');
@@ -8,12 +12,16 @@ const { waitRandom, waitMust } = require('./bot/utility');
  * user management
  */
 const { createUser, loginUser,
-    setMasterPassword, verifyMasterPassword, storeFacebookCredentials } = require('./database/users');
+    setMasterPassword, verifyMasterPassword, storeFacebookCredentials, } = require('./database/users');
 const { initUserTable, initSessionTable,
     initKeywordAndPagesTables, initVideoTable } = require('./database/db');
-const { validateSession } = require('./database/session');
+const { validateSession, getMasterPasswordFromSession } = require('./database/session');
 const { fetchAllKeywords, addKeywords } = require('./database/keywords');
 
+/**
+ * Utility and Others
+ */
+const { writeLog } = require('./utility/logmanager');
 const puppeteer = require('puppeteer');
 const { ipcMain } = require('electron');
 const fs = require('fs');
@@ -27,32 +35,6 @@ let botProcess = null; // Track Puppeteer page
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
-
-
-let urls = [
-    "www.facebook.com/friends", // friend list
-    "www.facebook.com/watch", // videos
-    // suggested bookmarks and stuff
-    "https://www.facebook.com/pages/?category=top&ref=bookmarks",
-    // recent feed
-    "https://www.facebook.com/?sk=h_chr",
-    // standard feed
-    "https://www.facebook.com/"
-]
-
-const dummyPageUrl = [
-    'https://www.facebook.com/detectivepikachumovie?__tn__=%3C',
-    'https://www.facebook.com/PikachuPratt?__tn__=%3C',
-    'https://www.facebook.com/PikachuPikaPi?__tn__=%3C',
-    'https://www.facebook.com/IconFighter?__tn__=%3C',
-    'https://www.facebook.com/originalhipsterpikachu?__tn__=%3C',
-    'https://www.facebook.com/PikachuRidy?__tn__=%3C',
-    'https://www.facebook.com/theodorepikachutwicetheyorkielove?__tn__=%3C',
-    'https://www.facebook.com/PikachuYT0?__tn__=%3C',
-    'https://www.facebook.com/PikachuBunny?__tn__=%3C',
-    'https://www.facebook.com/Albinnnn?__tn__=%3C',
-    'https://www.facebook.com/Kimotom75?__tn__=%3C'
-]
 
 
 function createWindow() {
@@ -138,45 +120,53 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
         };
     }
 
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return "❌ Internal/MasterPassword is null!";
+    }
+
     try {
         await initBrowser();
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
         botProcess = browser;
+        writeLog("MetaPriv Loading....", masterPassword);
 
         try {
             // we will try to login always. 
             // if login form exist it will login.
             // or else it will crash and load the facebook page. 
-            await loginFacebook(page, sessionId);
+            await loginFacebook(page, sessionId, masterPassword);
             await waitRandom(5);
         } catch (err) {
-            console.error('User is probably logged in. || error: ', err);
+            writeLog(`User is probably logged in. || error: ${err}`, masterPassword);
             // If login fails, we can still proceed to the main page
             await page.goto("https://facebook.com");
             await waitMust(10);
         }
-        await goBackToHome(page);
-        await waitRandom(20);
+        // await goBackToHome(page, masterPassword);
+        // await waitRandom(20);
         // await searchPages(page, userId);
         // await waitRandom(30);
         // await likePage(page, userId);
         // await waitRandom(30);
 
-        await likeRandomPost(page);
-        await waitRandom(20);
+        // await likeRandomPost(page);
+        // await waitRandom(20);
 
         // await watchVideos(page, userId);
         // await waitRandom(20);
 
-        await goBackToHome(page);
-        await waitRandom(110);
+        // await goBackToHome(page);
+        await waitRandom(20);
         await browser.close();
 
         browser = null;
+        writeLog("MetaPriv Finished", masterPassword);
         return 'Bot finished';
     } catch (err) {
-        console.error('Run-bot error:', err);
+        writeLog(`Run-bot error: ${err}`, masterPassword);
         return 'Failed to run bot';
     } finally {
         botProcess = null;
