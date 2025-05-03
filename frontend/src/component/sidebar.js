@@ -1,6 +1,7 @@
 import React from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Link } from 'react-router-dom';
+import { logout } from "../utility/logout";
 
 class Sidebar extends React.Component {
     render() {
@@ -19,17 +20,25 @@ class Sidebar extends React.Component {
                     </div>
                     <div className="offcanvas-body">
                         <ul className="list-group">
-                            <li className="list-group-item">
+                            <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/dashboard" className="text-decoration-none">🏠 Dashboard</Link>
                             </li>
-                            <li className="list-group-item">
+                            <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/keywords" className="text-decoration-none">🔑 Keywords</Link>
                             </li>
-                            <li className="list-group-item">
-                                <Link to="/logs" className="text-decoration-none">🗒️ Activity Log</Link>
+                            <li className="list-group-item" style={{ cursor: 'pointer' }}>
+                                <Link to="/activity-log" className="text-decoration-none">🗒️ Activity Log</Link>
                             </li>
-                            <li className="list-group-item">
-                                <Link to="/settings" className="text-decoration-none">⚙️ Privacy Settings</Link>
+                            {/* <li className="list-group-item" style={{ cursor: 'pointer' }}>
+                                <Link to="/settings" className="text-decoration-none" disabled>⚙️ Privacy Settings</Link>
+                            </li> */}
+
+                            <li
+                                className="list-group-item text-primary"
+                                style={{ cursor: 'pointer' }}
+                                onClick={logout}
+                            >
+                                🚪 Logout
                             </li>
                         </ul>
                     </div>

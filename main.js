@@ -15,13 +15,13 @@ const { createUser, loginUser,
     setMasterPassword, verifyMasterPassword, storeFacebookCredentials, } = require('./database/users');
 const { initUserTable, initSessionTable,
     initKeywordAndPagesTables, initVideoTable } = require('./database/db');
-const { validateSession, getMasterPasswordFromSession } = require('./database/session');
+const { validateSession, getMasterPasswordFromSession, invalidateSession, clearSession } = require('./database/session');
 const { fetchAllKeywords, addKeywords } = require('./database/keywords');
 
 /**
  * Utility and Others
  */
-const { writeLog } = require('./utility/logmanager');
+const { writeLog, readLog, readAllLog } = require('./utility/logmanager');
 const puppeteer = require('puppeteer');
 const { ipcMain } = require('electron');
 const fs = require('fs');
@@ -255,4 +255,50 @@ ipcMain.handle('add-keywords', async (_event, { sessionId, keywords }) => {
         writeLog(`Error adding keywords: ${error}`, masterPassword);
         return { success: false, message: '❌ Failed to ADD keywords due to an internal error.' };
     }
+});
+
+
+ipcMain.handle('fetch-recent-logs', async (_event, sessionId) => {
+    // Placeholder for now
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return { success: false, message: '❌ Internal/MasterPassword is null!', logs: [] };
+    }
+
+    logs = readLog(masterPassword, 5);
+
+    // Later you will actually fetch and return logs here.
+    return {
+        success: true,
+        logs: [],
+    };
+});
+
+ipcMain.handle('activity-logs', async (_event, sessionId) => {
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return { success: false, message: '❌ Internal/MasterPassword is null!', logs: [] };
+    }
+
+    logs = readAllLog(masterPassword);
+    return {
+        success: true,
+        logs: logs,
+    };
+});
+
+
+ipcMain.handle('invalidate-session', async (_event, sessionId) => {
+    try {
+
+        await invalidateSession(sessionId);
+        await clearSession(sessionId);
+        return { success: true, message: 'Session invalidated. Logout complete!' };
+    } catch (error) {
+        console.error("Error retrieving master password:", error);
+        return null;
+    }
+
 });

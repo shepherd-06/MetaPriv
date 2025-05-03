@@ -59,7 +59,33 @@ function readLog(key, limit = 50) {
     }
 }
 
+
+function readAllLog(key) {
+    const result = [];
+    try {
+        if (!fs.existsSync(logFile)) return result;
+
+        const lines = fs.readFileSync(logFile, 'utf-8')
+            .split(/\r?\n/)
+            .filter(line => line.trim() !== '');
+
+        lines.forEach(line => {
+            try {
+                const decrypted = aesDecrypt(line, key);
+                result.push(decrypted);
+            } catch (e) {
+                result.push(`Failed to decrypt - ${line}`);
+            }
+        });
+
+    } catch (err) {
+        console.error('Failed to read log:', err);
+    }
+    return result;
+}
+
 module.exports = {
     writeLog,
     readLog,
+    readAllLog,
 };

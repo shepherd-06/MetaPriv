@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // session
     validateSession: (sessionId) => ipcRenderer.invoke('validate-session', sessionId),
+    invalidateSession: (sessionId) => ipcRenderer.invoke('invalidate-session', sessionId),
 
     // master password
     setMasterPassword: (data) => ipcRenderer.invoke('set-master-password', data),
@@ -24,4 +25,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // KeyWords
     fetchKeywords: (sessionId) => ipcRenderer.invoke('fetch-keywords', sessionId),
     addKeywords: (data) => ipcRenderer.invoke('add-keywords', data),
+
+    // Logs
+    fetchRecentLogs: (sessionId) => ipcRenderer.invoke('fetch-recent-logs', sessionId),
+    fetchAllLogs: (sessionId) => ipcRenderer.invoke('activity-logs', sessionId),
+
+
 });

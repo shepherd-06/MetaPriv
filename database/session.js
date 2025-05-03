@@ -82,7 +82,7 @@ async function getMasterPasswordFromSession(sessionId) {
     try {
         const userId = await validateSession(sessionId);
         if (!userId) {
-            console.error("❌ Invalid or expired session.");
+            console.error("❌ Invalid or expired session. ", sessionId);
             return null;
         }
 

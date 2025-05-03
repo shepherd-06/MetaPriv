@@ -8,6 +8,7 @@ import Dashboard from './pages/dashboard';
 import FacebookAuth from './pages/fbAuth';
 import MasterPassword from './pages/masterPassword';
 import Keyword from './pages/keywords';
+import ActivityLogView from './pages/activity';
 
 // util
 import { cacheManager } from './utility/cachemanager';
@@ -66,6 +67,10 @@ class App extends Component {
             } />
             <Route path="/facebook-auth" element={
               isLoggedIn ? <FacebookAuth /> : <Navigate to="/" />
+            } />
+
+            <Route path="/activity-log" element={
+              isLoggedIn ? <ActivityLogView /> : <Navigate to="/" />
             } />
 
             {/* Fallback */}
