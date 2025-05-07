@@ -9,6 +9,7 @@ import FacebookAuth from './pages/fbAuth';
 import MasterPassword from './pages/masterPassword';
 import Keyword from './pages/keywords';
 import ActivityLogView from './pages/activity';
+import Settings from './pages/settings';
 
 // util
 import { cacheManager } from './utility/cachemanager';
@@ -71,6 +72,10 @@ class App extends Component {
 
             <Route path="/activity-log" element={
               isLoggedIn ? <ActivityLogView /> : <Navigate to="/" />
+            } />
+
+            <Route path="/settings" element={
+              isLoggedIn ? <Settings /> : <Navigate to="/" />
             } />
 
             {/* Fallback */}

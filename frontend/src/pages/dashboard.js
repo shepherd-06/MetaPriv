@@ -2,7 +2,7 @@ import React from "react";
 import Sidebar from "../component/sidebar";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import SessionContext from "../context/SessionContext";
-import ShowLog from "../component/showLog";
+import ShowActiveLog from "../component/showLog";
 
 
 class Dashboard extends React.Component {
@@ -120,7 +120,7 @@ class Dashboard extends React.Component {
 
                 {/* Show Live Logs only if bot is running */}
                 {botRunning && (
-                    <ShowLog />
+                    <ShowActiveLog isBotRunning={botRunning} />
                 )}
             </div>
         );

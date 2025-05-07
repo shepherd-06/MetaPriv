@@ -29,9 +29,9 @@ class Sidebar extends React.Component {
                             <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/activity-log" className="text-decoration-none">🗒️ Activity Log</Link>
                             </li>
-                            {/* <li className="list-group-item" style={{ cursor: 'pointer' }}>
-                                <Link to="/settings" className="text-decoration-none" disabled>⚙️ Privacy Settings</Link>
-                            </li> */}
+                            <li className="list-group-item" style={{ cursor: 'pointer' }}>
+                                <Link to="/settings" className="text-decoration-none">⚙️ Privacy Settings</Link>
+                            </li>
 
                             <li
                                 className="list-group-item text-primary"
