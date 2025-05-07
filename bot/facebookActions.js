@@ -43,27 +43,43 @@ async function loginFacebook(page, sessionId, masterPassword) {
     }
 }
 
-async function interactWithProfile(page) {
+async function interactWithProfile(page, masterPassword) {
     /**
      * After Facebook has been loaded, go to profile, scroll a little bit for no apparent reason,
      * go back to home page.
      */
     try {
         await page.goto('https://www.facebook.com');
+        writeLog(`interactWithProfile: Waiting 10 seconds `, masterPassword);
         await waitMust(10);
-        console.log("Interacting with profile");
         const profileSelector = 'a[aria-label*="Timeline"]'; // This selector targets a link to a user's timeline, assuming 'Timeline' is part of the aria-label
         await page.click(profileSelector);
+        writeLog(`interactWithProfile: Profile `, masterPassword);
         // Wait a random amount of time between 1 to 20 seconds, then scroll
+        writeLog(`interactWithProfile: Waiting Random `, masterPassword);
         await waitRandom(20);
-        await page.evaluate(() => window.scrollBy(0, 500)); // Scroll down 500 pixels
+        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
+        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
         await waitMust(10); // Wait 10 seconds
 
+        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
+        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
+        await waitMust(10); // Wait 10 seconds
+
+        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
+        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
+        await waitMust(10); // Wait 10 seconds
+
+        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
+        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
+        await waitMust(10); // Wait 10 seconds
+
+        writeLog(`Profile interaction completed`, masterPassword);
         // Navigate back to the homepage
-        await goBackToHome(page);
-        console.log('Profile interaction completed');
+        await goBackToHome(page, masterPassword);
     } catch (error) {
-        console.error('An error occurred:', error);
+        writeLog(`interactWithProfile: An error occurred: ${error} `, masterPassword);
+        await goBackToHome(page, masterPassword);
     }
 }
 

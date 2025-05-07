@@ -27,7 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     addKeywords: (data) => ipcRenderer.invoke('add-keywords', data),
 
     // Logs
-    fetchRecentLogs: (sessionId) => ipcRenderer.invoke('fetch-recent-logs', sessionId),
+    fetchRecentLogs: (data) => ipcRenderer.invoke('fetch-recent-logs', data),
     fetchAllLogs: (sessionId) => ipcRenderer.invoke('activity-logs', sessionId),
 
 

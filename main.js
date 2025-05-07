@@ -146,19 +146,20 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
             await waitMust(10);
         }
         await goBackToHome(page, masterPassword);
-        await waitRandom(20);
-        await searchPages(page, userId, masterPassword);
-        // await waitRandom(30);
-        await likePage(page, userId, masterPassword);
-        // await waitRandom(30);
-
-        await likeRandomPost(page, masterPassword);
+        await interactWithProfile(page, masterPassword);
         // await waitRandom(20);
+        // await searchPages(page, userId, masterPassword);
+        // // await waitRandom(30);
+        // await likePage(page, userId, masterPassword);
+        // // await waitRandom(30);
 
-        await watchVideos(page, userId, masterPassword);
-        // await waitRandom(20);
+        // await likeRandomPost(page, masterPassword);
+        // // await waitRandom(20);
 
-        await goBackToHome(page, masterPassword);
+        // await watchVideos(page, userId, masterPassword);
+        // // await waitRandom(20);
+
+        // await goBackToHome(page, masterPassword);
         await waitRandom(20);
         await browser.close();
 
@@ -258,22 +259,30 @@ ipcMain.handle('add-keywords', async (_event, { sessionId, keywords }) => {
 });
 
 
-ipcMain.handle('fetch-recent-logs', async (_event, sessionId) => {
-    // Placeholder for now
+ipcMain.handle('fetch-recent-logs', async (_event, data) => {
+    const sessionId = data.sessionId;
+    const currentTime = data.currentTime;
+    const lastMessage = data.lastMessage;
+
     const masterPassword = await getMasterPasswordFromSession(sessionId);
     if (masterPassword === null) {
         console.error("masterPassword returned null from the OS. Abort!");
         return { success: false, message: '❌ Internal/MasterPassword is null!', logs: [] };
     }
+    console.log("currentTime: ", currentTime, " Last Message: ", lastMessage);
 
-    logs = readLog(masterPassword, 5);
-
-    // Later you will actually fetch and return logs here.
-    return {
-        success: true,
-        logs: [],
-    };
+    try {
+        const logs = await readLog(masterPassword, currentTime, lastMessage);
+        return {
+            success: true,
+            logs: logs,
+        };
+    } catch (error) {
+        writeLog(`Error reading logs: ${error}`, masterPassword);
+        return { success: false, message: '❌ Failed to read logs.', logs: [] };
+    }
 });
+
 
 ipcMain.handle('activity-logs', async (_event, sessionId) => {
     const masterPassword = await getMasterPasswordFromSession(sessionId);
@@ -281,12 +290,17 @@ ipcMain.handle('activity-logs', async (_event, sessionId) => {
         console.error("masterPassword returned null from the OS. Abort!");
         return { success: false, message: '❌ Internal/MasterPassword is null!', logs: [] };
     }
+    try {
 
-    logs = readAllLog(masterPassword);
-    return {
-        success: true,
-        logs: logs,
-    };
+        logs = readAllLog(masterPassword);
+        return {
+            success: true,
+            logs: logs,
+        };
+    } catch (error) {
+        writeLog(`Error reading all logs: ${error}`, masterPassword);
+        return { success: false, message: '❌ Failed to read all logs.', logs: [] };
+    }
 });
 
 
@@ -297,7 +311,7 @@ ipcMain.handle('invalidate-session', async (_event, sessionId) => {
         await clearSession(sessionId);
         return { success: true, message: 'Session invalidated. Logout complete!' };
     } catch (error) {
-        console.error("Error retrieving master password:", error);
+        console.error("Invalid Session Error occurred : ", error);
         return null;
     }
 
