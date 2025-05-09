@@ -1,41 +1,61 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow } = require("electron");
 
 /**
  * Bot Management
  */
-const { loginFacebook, interactWithProfile,
-    goBackToHome, searchPages, likePage,
-    likeRandomPost, watchVideos, generateRandomInteraction } = require('./bot/facebookActions');
-const { waitRandom, waitMust } = require('./bot/utility');
+const {
+    loginFacebook,
+    interactWithProfile,
+    goBackToHome,
+    searchPages,
+    likePage,
+    likeRandomPost,
+    watchVideos,
+    generateRandomInteraction,
+} = require("./bot/facebookActions");
+const { waitRandom, waitMust } = require("./bot/utility");
 
 /**
  * user management
  */
-const { createUser, loginUser,
-    setMasterPassword, verifyMasterPassword, storeFacebookCredentials, } = require('./database/users');
-const { initUserTable, initSessionTable,
-    initKeywordAndPagesTables, initVideoTable } = require('./database/db');
-const { validateSession, getMasterPasswordFromSession, invalidateSession, clearSession } = require('./database/session');
-const { fetchAllKeywords, addKeywords } = require('./database/keywords');
+const {
+    createUser,
+    loginUser,
+    setMasterPassword,
+    verifyMasterPassword,
+    storeFacebookCredentials,
+} = require("./database/users");
+const {
+    initUserTable,
+    initSessionTable,
+    initKeywordAndPagesTables,
+    initVideoTable,
+    initSyncConfigTable,
+} = require("./database/db");
+const {
+    validateSession,
+    getMasterPasswordFromSession,
+    invalidateSession,
+    clearSession,
+} = require("./database/session");
+const { fetchAllKeywords, addKeywords } = require("./database/keywords");
 
 /**
  * Utility and Others
  */
-const { writeLog, readLog, readAllLog } = require('./utility/logmanager');
-const puppeteer = require('puppeteer');
-const { ipcMain } = require('electron');
-const fs = require('fs');
-const path = require('path');
+const { writeLog, readLog, readAllLog } = require("./utility/logmanager");
+const puppeteer = require("puppeteer");
+const { ipcMain } = require("electron");
+const fs = require("fs");
+const path = require("path");
 
-
-let browser = null;  // Global browser instance
+let browser = null; // Global browser instance
 let botProcess = null; // Track Puppeteer page
 
 // Disable GPU acceleration for Electron
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-software-rasterizer');
-app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
-
+app.commandLine.appendSwitch("disable-gpu");
+app.commandLine.appendSwitch("disable-software-rasterizer");
+app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor");
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -43,13 +63,13 @@ function createWindow() {
         height: 600,
         webPreferences: {
             nodeIntegration: true,
-            preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: false
-        }
+            preload: path.join(__dirname, "preload.js"),
+            nodeIntegration: false,
+        },
     });
 
     // win.loadFile(path.join(__dirname, 'frontend/build/index.html'));
-    win.loadURL('http://localhost:3000'); // React dev server in dev mode.
+    win.loadURL("http://localhost:3000"); // React dev server in dev mode.
 
     /**
      * database setup | will not create if already exists.
@@ -59,34 +79,35 @@ function createWindow() {
     initSessionTable();
     initVideoTable();
     initKeywordAndPagesTables();
+    initSyncConfigTable();
 }
 
 async function initBrowser() {
-    const userDataPath = path.join(__dirname, 'user_data');
+    const userDataPath = path.join(__dirname, "user_data");
     const isFirstRun = !fs.existsSync(userDataPath);
 
     if (!browser) {
         browser = await puppeteer.launch({
             headless: false,
             args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--force-device-scale-factor=1',
-                '--disable-notifications',
-                '--disable-gpu',
-                '--disable-features=VizDisplayCompositor',
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--force-device-scale-factor=1",
+                "--disable-notifications",
+                "--disable-gpu",
+                "--disable-features=VizDisplayCompositor",
             ],
-            userDataDir: userDataPath // Set the userDataDir to persist session data
+            userDataDir: userDataPath, // Set the userDataDir to persist session data
         });
     }
 
-    return isFirstRun;  // Return whether it's the first run based on the existence of user_data
+    return isFirstRun; // Return whether it's the first run based on the existence of user_data
 }
 
 app.whenReady().then(createWindow);
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
         if (browser) {
             browser.close().then(() => {
                 browser = null;
@@ -98,8 +119,7 @@ app.on('window-all-closed', () => {
     }
 });
 
-
-app.on('activate', () => {
+app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
     }
@@ -109,14 +129,14 @@ app.on('activate', () => {
  * Inter Process Communication
  */
 
-ipcMain.handle('run-bot', async (_event, { sessionId }) => {
-    if (botProcess) return '⚠️ Bot already running.';
+ipcMain.handle("run-bot", async (_event, { sessionId }) => {
+    if (botProcess) return "⚠️ Bot already running.";
     const userId = await validateSession(sessionId);
 
     if (!userId) {
         return {
             success: false,
-            message: '❌ Invalid session.',
+            message: "❌ Invalid session.",
         };
     }
 
@@ -134,9 +154,9 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
         writeLog("MetaPriv Starting....", masterPassword);
 
         try {
-            // we will try to login always. 
+            // we will try to login always.
             // if login form exist it will login.
-            // or else it will crash and load the facebook page. 
+            // or else it will crash and load the facebook page.
             await loginFacebook(page, sessionId, masterPassword);
             await waitRandom(5);
         } catch (err) {
@@ -165,16 +185,16 @@ ipcMain.handle('run-bot', async (_event, { sessionId }) => {
 
         browser = null;
         writeLog("MetaPriv Finished", masterPassword);
-        return 'Bot finished';
+        return "Bot finished";
     } catch (err) {
         writeLog(`Run-bot error: ${err}`, masterPassword);
-        return 'Failed to run bot';
+        return "Failed to run bot";
     } finally {
         botProcess = null;
     }
 });
 
-ipcMain.on('quit-app', () => {
+ipcMain.on("quit-app", () => {
     if (browser) {
         browser.close().then(() => {
             browser = null;
@@ -185,81 +205,95 @@ ipcMain.on('quit-app', () => {
     }
 });
 
-ipcMain.handle('create-account', async (_event, data) => {
+ipcMain.handle("create-account", async (_event, data) => {
     return await createUser(data);
 });
 
-ipcMain.handle('login-account', async (_event, data) => {
+ipcMain.handle("login-account", async (_event, data) => {
     return await loginUser(data);
 });
 
-ipcMain.handle('validate-session', async (_event, sessionId) => {
+ipcMain.handle("validate-session", async (_event, sessionId) => {
     const userId = await validateSession(sessionId);
     return userId ? { valid: true, userId } : { valid: false };
 });
 
-ipcMain.handle('set-master-password', async (_event, data) => {
+ipcMain.handle("set-master-password", async (_event, data) => {
     return await setMasterPassword(data);
 });
 
-ipcMain.handle('verify-master-password', async (_event, data) => {
+ipcMain.handle("verify-master-password", async (_event, data) => {
     return await verifyMasterPassword(data);
 });
 
-ipcMain.handle('submit-facebook-auth', async (_event, data) => {
-    const { storeFacebookCredentials } = require('./database/users');
+ipcMain.handle("submit-facebook-auth", async (_event, data) => {
+    const { storeFacebookCredentials } = require("./database/users");
     return await storeFacebookCredentials(data);
 });
 
-ipcMain.handle('stop-bot', async () => {
+ipcMain.handle("stop-bot", async () => {
     if (botProcess) {
         try {
             await botProcess.close();
             botProcess = null;
-            return { success: true, message: '✅ Bot stopped.' };
+            return { success: true, message: "✅ Bot stopped." };
         } catch (err) {
-            return { success: false, message: '❌ Failed to stop bot.' };
+            return { success: false, message: "❌ Failed to stop bot." };
         }
     }
-    return { success: false, message: '⚠️ No bot process to stop.' };
+    return { success: false, message: "⚠️ No bot process to stop." };
 });
 
-ipcMain.handle('is-bot-running', () => {
+ipcMain.handle("is-bot-running", () => {
     return !!botProcess;
 });
 
-ipcMain.handle('fetch-keywords', async (_event, sessionId) => {
+ipcMain.handle("fetch-keywords", async (_event, sessionId) => {
     const masterPassword = await getMasterPasswordFromSession(sessionId);
     if (masterPassword === null) {
         console.error("masterPassword returned null from the OS. Abort!");
-        return { success: false, message: '❌ Internal/MasterPassword is null!', keywords: [] };
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!",
+            keywords: [],
+        };
     }
     try {
         const result = await fetchAllKeywords(sessionId);
         return result; // This will return { success: true/false, message, keywords }
     } catch (error) {
         writeLog(`Error fetching keywords: ${error}`, masterPassword);
-        return { success: false, message: '❌ Failed to fetch keywords due to an internal error.', keywords: [] };
+        return {
+            success: false,
+            message: "❌ Failed to fetch keywords due to an internal error.",
+            keywords: [],
+        };
     }
 });
 
-ipcMain.handle('add-keywords', async (_event, { sessionId, keywords }) => {
+ipcMain.handle("add-keywords", async (_event, { sessionId, keywords }) => {
     const masterPassword = await getMasterPasswordFromSession(sessionId);
     if (masterPassword === null) {
         console.error("masterPassword returned null from the OS. Abort!");
-        return { success: false, message: '❌ Internal/MasterPassword is null!', keywords: [] };
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!",
+            keywords: [],
+        };
     }
     try {
         const result = await addKeywords(sessionId, keywords);
         return result;
     } catch (error) {
         writeLog(`Error adding keywords: ${error}`, masterPassword);
-        return { success: false, message: '❌ Failed to ADD keywords due to an internal error.' };
+        return {
+            success: false,
+            message: "❌ Failed to ADD keywords due to an internal error.",
+        };
     }
 });
 
-
-ipcMain.handle('fetch-recent-logs', async (_event, data) => {
+ipcMain.handle("fetch-recent-logs", async (_event, data) => {
     const sessionId = data.sessionId;
     const currentTime = data.currentTime;
     const lastMessage = data.lastMessage;
@@ -267,7 +301,11 @@ ipcMain.handle('fetch-recent-logs', async (_event, data) => {
     const masterPassword = await getMasterPasswordFromSession(sessionId);
     if (masterPassword === null) {
         console.error("masterPassword returned null from the OS. Abort!");
-        return { success: false, message: '❌ Internal/MasterPassword is null!', logs: [] };
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!",
+            logs: [],
+        };
     }
     console.log("currentTime: ", currentTime, " Last Message: ", lastMessage);
 
@@ -279,19 +317,21 @@ ipcMain.handle('fetch-recent-logs', async (_event, data) => {
         };
     } catch (error) {
         writeLog(`Error reading logs: ${error}`, masterPassword);
-        return { success: false, message: '❌ Failed to read logs.', logs: [] };
+        return { success: false, message: "❌ Failed to read logs.", logs: [] };
     }
 });
 
-
-ipcMain.handle('activity-logs', async (_event, sessionId) => {
+ipcMain.handle("activity-logs", async (_event, sessionId) => {
     const masterPassword = await getMasterPasswordFromSession(sessionId);
     if (masterPassword === null) {
         console.error("masterPassword returned null from the OS. Abort!");
-        return { success: false, message: '❌ Internal/MasterPassword is null!', logs: [] };
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!",
+            logs: [],
+        };
     }
     try {
-
         logs = readAllLog(masterPassword);
         return {
             success: true,
@@ -299,20 +339,17 @@ ipcMain.handle('activity-logs', async (_event, sessionId) => {
         };
     } catch (error) {
         writeLog(`Error reading all logs: ${error}`, masterPassword);
-        return { success: false, message: '❌ Failed to read all logs.', logs: [] };
+        return { success: false, message: "❌ Failed to read all logs.", logs: [] };
     }
 });
 
-
-ipcMain.handle('invalidate-session', async (_event, sessionId) => {
+ipcMain.handle("invalidate-session", async (_event, sessionId) => {
     try {
-
         await invalidateSession(sessionId);
         await clearSession(sessionId);
-        return { success: true, message: 'Session invalidated. Logout complete!' };
+        return { success: true, message: "Session invalidated. Logout complete!" };
     } catch (error) {
         console.error("Invalid Session Error occurred : ", error);
         return null;
     }
-
 });

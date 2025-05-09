@@ -41,7 +41,7 @@ class Settings extends React.Component {
         const { syncEnabled, backendUrl, syncPeriod, botRunFrequency } = this.state;
 
         return (
-            <div className="container my-4">
+            <div style={{ height: '100vh', overflowY: 'auto', paddingBottom: "50px" }} className="container my-4">
 
                 <div className="d-flex justify-content-left align-items-center mb-4">
                     {/* Hamburger */}
@@ -120,6 +120,7 @@ class Settings extends React.Component {
                         <button
                             className="btn btn-danger"
                             onClick={this.handleClearKeywords}
+                            disabled
                         >
                             Clear Keywords
                         </button>
@@ -139,6 +140,7 @@ class Settings extends React.Component {
                                 name="botRunFrequency"
                                 value={botRunFrequency}
                                 onChange={this.handleInputChange}
+                                disabled
                             >
                                 <option value="3">Every 3 hours</option>
                                 <option value="6">Every 6 hours</option>
@@ -155,6 +157,7 @@ class Settings extends React.Component {
                         <button
                             className="btn btn-primary"
                             onClick={this.handleSaveBotFrequency}
+                            disabled
                         >
                             Save Bot Settings
                         </button>

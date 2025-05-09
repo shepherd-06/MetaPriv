@@ -1,10 +1,11 @@
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
-const dbPath = path.join(__dirname, 'users.db');
+const path = require("path");
+const sqlite3 = require("sqlite3").verbose();
+const dbPath = path.join(__dirname, "users.db");
 
 // Ensure DB and users table exist
 function initUserTable() {
   const db = new sqlite3.Database(dbPath);
+  // 0 = false, 1 = true
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -14,7 +15,8 @@ function initUserTable() {
       fbEmail TEXT DEFAULT NULL,
       created_at TEXT,
       updated_at TEXT,
-      last_login TEXT
+      last_login TEXT,
+      isSync INTEGER DEFAULT 0
     );
   `);
   db.close();
@@ -35,7 +37,6 @@ function initSessionTable() {
   `);
   db.close();
 }
-
 
 function initVideoTable() {
   const db = new sqlite3.Database(dbPath);
@@ -109,9 +110,30 @@ function initKeywordAndPagesTables() {
   });
 }
 
+function initSyncConfigTable() {
+  const db = new sqlite3.Database(dbPath);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS syncConfigs (
+      userId TEXT PRIMARY KEY,
+      backendUrl TEXT,
+      backendStatus INTEGER DEFAULT 400, 
+      syncFrequency TEXT,
+      botRunFrequency TEXT,
+      createdAt TEXT,
+      updatedAt TEXT,
+      lastVideoSyncId TEXT,
+      lastKeywordSyncId TEXT,
+      lastPageSyncId TEXT,
+      FOREIGN KEY(userId) REFERENCES users(id)
+    );
+  `);
+  db.close();
+}
+
 module.exports = {
   initUserTable,
   initSessionTable,
   initVideoTable,
   initKeywordAndPagesTables,
+  initSyncConfigTable,
 };
