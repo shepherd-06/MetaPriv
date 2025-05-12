@@ -39,6 +39,7 @@ const {
     clearSession,
 } = require("./database/session");
 const { fetchAllKeywords, addKeywords } = require("./database/keywords");
+const { saveSyncStatus } = require("./database/sync");
 
 /**
  * Utility and Others
@@ -48,6 +49,8 @@ const puppeteer = require("puppeteer");
 const { ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const axios = require('axios');
+
 
 let browser = null; // Global browser instance
 let botProcess = null; // Track Puppeteer page
@@ -351,5 +354,61 @@ ipcMain.handle("invalidate-session", async (_event, sessionId) => {
     } catch (error) {
         console.error("Invalid Session Error occurred : ", error);
         return null;
+    }
+});
+
+ipcMain.handle('save-sync-settings', async (_event, { sessionId, backendUrl, syncPeriod }) => {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session. Please log in again.',
+        };
+    }
+
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!"
+        };
+    }
+
+    try {
+        // Normalize backend URL to base
+        const urlObject = new URL(backendUrl);
+        const baseUrl = `${urlObject.protocol}//${urlObject.hostname}${urlObject.port ? `:${urlObject.port}` : ''}/`;
+
+        // Check /status endpoint
+        const statusUrl = new URL('/status', baseUrl).href;
+        const response = await axios.get(statusUrl);
+
+        if (response.status !== 200) {
+            return {
+                success: false,
+                message: `❌ Backend /status returned status ${response.status}`,
+            };
+        }
+
+        // Save only baseUrl (clean) to DB
+        const result = await saveSyncStatus(userId, baseUrl, syncPeriod);
+        if (result.success) {
+            return {
+                success: true,
+                message: '✅ Sync settings saved successfully!',
+            };
+        } else {
+            return {
+                success: false,
+                message: `❌ Failed to save sync settings! ${result.message}`,
+            };
+        }
+    } catch (error) {
+        writeLog(`Error during sync settings save: ${error}`, masterPassword);
+        return {
+            success: false,
+            message: `❌ Error Occurred: ${error.message}`,
+        };
     }
 });

@@ -30,5 +30,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     fetchRecentLogs: (data) => ipcRenderer.invoke('fetch-recent-logs', data),
     fetchAllLogs: (sessionId) => ipcRenderer.invoke('activity-logs', sessionId),
 
-
+    // SYNC
+    saveSyncSettings: (data) => ipcRenderer.invoke('save-sync-settings', data)
 });

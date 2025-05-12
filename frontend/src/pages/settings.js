@@ -1,8 +1,11 @@
 import React from 'react';
 import Sidebar from "../component/sidebar";
+import SessionContext from "../context/SessionContext";
 
 
 class Settings extends React.Component {
+    static contextType = SessionContext;
+
     constructor(props) {
         super(props);
         this.state = {
@@ -21,11 +24,38 @@ class Settings extends React.Component {
         this.setState({ [e.target.name]: e.target.value });
     };
 
-    handleSaveBackendUrl = () => {
-        console.log('Saved Backend URL:', this.state.backendUrl);
-        console.log('Sync Period:', this.state.syncPeriod);
-        // Add your save logic here
+    handleSaveBackendUrl = async () => {
+        const { syncEnabled, backendUrl, syncPeriod } = this.state;
+
+        if (!syncEnabled) {
+            console.log('Sync is not enabled.');
+            return;
+        }
+
+        if (!backendUrl) {
+            console.error('Backend URL is required.');
+            return;
+        }
+
+        try {
+            const sessionId = this.context;
+            const result = await window.electronAPI.saveSyncSettings({
+                sessionId,
+                backendUrl,
+                syncPeriod
+            });
+
+            if (result.success) {
+                alert(result.message); // or use a nicer toast UI
+            } else {
+                alert(`Failed: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error saving sync settings:', error);
+            alert(`Error: ${error.message}`);
+        }
     };
+
 
     handleClearKeywords = () => {
         console.log('Clearing all keywords...');
