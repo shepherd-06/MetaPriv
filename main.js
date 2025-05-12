@@ -39,7 +39,7 @@ const {
     clearSession,
 } = require("./database/session");
 const { fetchAllKeywords, addKeywords } = require("./database/keywords");
-const { saveSyncStatus } = require("./database/sync");
+const { saveSyncStatus, fetchSyncStatus } = require("./database/sync");
 
 /**
  * Utility and Others
@@ -406,6 +406,48 @@ ipcMain.handle('save-sync-settings', async (_event, { sessionId, backendUrl, syn
         }
     } catch (error) {
         writeLog(`Error during sync settings save: ${error}`, masterPassword);
+        return {
+            success: false,
+            message: `❌ Error Occurred: ${error.message}`,
+        };
+    }
+});
+
+
+ipcMain.handle("fetch-sync-status", async (_event, sessionId) => {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session. Please log in again.',
+        };
+    }
+
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!"
+        };
+    }
+
+    try {
+        const result = await fetchSyncStatus(userId);
+        if (result.success) {
+            return {
+                success: true,
+                message: '✅ Sync status fetched successfully!',
+                data: result,
+            };
+        } else {
+            return {
+                success: false,
+                message: `❌ Failed to fetch sync status! ${result.message}`,
+            };
+        }
+    } catch (error) {
+        writeLog(`Error during sync status fetch: ${error}`, masterPassword);
         return {
             success: false,
             message: `❌ Error Occurred: ${error.message}`,

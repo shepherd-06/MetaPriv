@@ -16,6 +16,10 @@ class Settings extends React.Component {
         };
     }
 
+    componentDidMount() {
+        this.refreshSyncStatus();
+    }
+
     handleToggleSync = () => {
         this.setState((prevState) => ({ syncEnabled: !prevState.syncEnabled }));
     };
@@ -46,7 +50,8 @@ class Settings extends React.Component {
             });
 
             if (result.success) {
-                alert(result.message); // or use a nicer toast UI
+                alert(result.message);
+                this.refreshSyncStatus(); // Refresh after save
             } else {
                 alert(`Failed: ${result.message}`);
             }
@@ -65,6 +70,27 @@ class Settings extends React.Component {
     handleSaveBotFrequency = () => {
         console.log('Saved Bot Run Frequency:', this.state.botRunFrequency);
         // Add your save logic here
+    };
+
+    refreshSyncStatus = async () => {
+        const sessionId = this.context;
+
+        try {
+            const result = await window.electronAPI.fetchSyncStatus(sessionId);
+            if (result.success && result.data) {
+                const { backendUrl, syncPeriod } = result.data;
+
+                this.setState({
+                    syncEnabled: true,
+                    backendUrl: backendUrl || '',
+                    syncPeriod: syncPeriod || '1'
+                });
+            } else {
+                console.warn('No sync config found or fetch failed:', result.message);
+            }
+        } catch (err) {
+            console.error('Error fetching sync status:', err);
+        }
     };
 
     render() {
