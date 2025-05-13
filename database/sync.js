@@ -129,22 +129,34 @@ async function runSyncForUser(userId, masterPassword) {
         let pageResult = null;
         let videoResult = null;
         const userResult = await syncUser(userId, backendUrl, masterPassword);
+
         if (userResult.success === true) {
             keywordResult = await syncKeywords(userId, backendUrl, masterPassword);
             pageResult = await syncPages(userId, backendUrl, masterPassword);
             videoResult = await syncVideos(userId, backendUrl, masterPassword);
-        }
 
-        return {
-            success: true,
-            message: '✅ Sync complete',
-            results: {
-                user: userResult,
-                keywords: keywordResult,
-                pages: pageResult,
-                videos: videoResult,
-            }
-        };
+            return {
+                success: true,
+                message: '✅ Sync complete',
+                results: {
+                    user: userResult,
+                    keywords: keywordResult,
+                    pages: pageResult,
+                    videos: videoResult,
+                }
+            };
+        } else {
+            return {
+                success: userResult.success,
+                message: `❌ Error syncing! ${userResult.message}`,
+                results: {
+                    user: userResult,
+                    keywords: keywordResult,
+                    pages: pageResult,
+                    videos: videoResult,
+                }
+            };
+        }
     } catch (err) {
         writeLog(`❌ Error in runSyncForUser: ${err.message}`, masterPassword);
         return {
