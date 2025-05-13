@@ -39,7 +39,7 @@ const {
     clearSession,
 } = require("./database/session");
 const { fetchAllKeywords, addKeywords } = require("./database/keywords");
-const { saveSyncStatus, fetchSyncStatus } = require("./database/sync");
+const { saveSyncStatus, fetchSyncStatus, runSyncForUser } = require("./database/sync");
 
 /**
  * Utility and Others
@@ -452,5 +452,28 @@ ipcMain.handle("fetch-sync-status", async (_event, sessionId) => {
             success: false,
             message: `❌ Error Occurred: ${error.message}`,
         };
+    }
+});
+
+
+ipcMain.handle('run-manual-sync', async (_event, sessionId) => {
+    const userId = await validateSession(sessionId);
+    if (!userId) return { success: false, message: 'Invalid session.' };
+
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return {
+            success: false,
+            message: "❌ Internal Error Occurred! Please login again!"
+        };
+    }
+
+    try {
+        // Your manual sync logic here
+        return await runSyncForUser(userId, masterPassword);
+    } catch (err) {
+        console.error('Manual sync error:', err);
+        return { success: false, message: err.message };
     }
 });

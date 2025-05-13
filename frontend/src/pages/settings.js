@@ -12,7 +12,10 @@ class Settings extends React.Component {
             syncEnabled: false,
             backendUrl: '',
             syncPeriod: '1',
-            botRunFrequency: '3'
+            botRunFrequency: '3',
+            isSyncActive: false,
+            syncing: false,
+            syncResults: null
         };
     }
 
@@ -83,13 +86,36 @@ class Settings extends React.Component {
                 this.setState({
                     syncEnabled: true,
                     backendUrl: backendUrl || '',
-                    syncPeriod: syncPeriod || '1'
+                    syncPeriod: syncPeriod || '1',
+                    isSyncActive: true
                 });
             } else {
                 console.warn('No sync config found or fetch failed:', result.message);
             }
         } catch (err) {
             console.error('Error fetching sync status:', err);
+        }
+    };
+
+    handleSyncNow = async () => {
+        const sessionId = this.context;
+        this.setState({ syncing: true });
+
+        try {
+            // You can define this API in your electron main process
+            const result = await window.electronAPI.runManualSync(sessionId);
+
+            if (result.success) {
+                alert('✅ Sync completed successfully!');
+                this.setState({ syncResults: result.results });
+            } else {
+                alert(`❌ Sync failed: ${result.message}`);
+            }
+        } catch (err) {
+            console.error('Error during manual sync:', err);
+            alert('❌ An error occurred during sync.');
+        } finally {
+            this.setState({ syncing: false });
         }
     };
 
@@ -108,9 +134,39 @@ class Settings extends React.Component {
 
                 {/* Sync Section */}
                 <div className="card mb-4">
-                    <div className="card-header">
-                        <h5>Sync Settings</h5>
+                    <div className="card-header d-flex justify-content-between align-items-center">
+                        <h5 className="mb-0">Sync Settings</h5>
+                        {syncEnabled && this.state.isSyncActive && (
+                            this.state.syncing ? (
+                                <div className="spinner-border text-success spinner-border-sm" role="status">
+                                    <span className="visually-hidden">Syncing...</span>
+                                </div>
+                            ) : (
+                                <button className="btn btn-outline-success btn-sm" onClick={this.handleSyncNow}>
+                                    Sync Now
+                                </button>
+                            )
+                        )}
                     </div>
+
+                    <div>
+                        {this.state.syncResults && (
+                            <div className="mt-3" style={{ padding: '10px', backgroundColor: '#C7D6D5', }}>
+                                <h6>Latest Sync Summary</h6>
+                                <ul className="list-group list-group-flush" style={{ borderRadius: '5px' }}>
+                                    {Object.entries(this.state.syncResults).map(([key, result]) => (
+                                        <li key={key} className="list-group-item d-flex justify-content-between align-items-center">
+                                            {key.charAt(0).toUpperCase() + key.slice(1)}:
+                                            <span className={result.success ? 'text-success' : 'text-danger'}>
+                                                {result.message}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="card-body">
                         <div className="form-check form-switch mb-3">
                             <input
