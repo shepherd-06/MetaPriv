@@ -72,7 +72,8 @@ function createWindow() {
     });
 
     // win.loadFile(path.join(__dirname, 'frontend/build/index.html'));
-    win.loadURL("http://localhost:3000"); // React dev server in dev mode.
+    win.loadURL("http://localhost:3000"); // React dev server in dev mode. 
+    // // if fails. crash
 
     /**
      * database setup | will not create if already exists.
@@ -170,12 +171,17 @@ ipcMain.handle("run-bot", async (_event, { sessionId }) => {
         }
         await goBackToHome(page, masterPassword);
         await interactWithProfile(page, masterPassword);
-        // await waitRandom(20);
-        // await searchPages(page, userId, masterPassword);
-        // // await waitRandom(30);
-        // await likePage(page, userId, masterPassword);
-        // // await waitRandom(30);
+        await waitRandom(20);
 
+        // for (let i = 0; i < 10; i++) {
+        //     await searchPages(page, userId, masterPassword);
+        //     await waitRandom(30);
+        // }
+
+        for (let i = 0; i < 100; i++) {
+            await likePage(page, userId, masterPassword);
+            await waitRandom(30);
+        }
         // await likeRandomPost(page, masterPassword);
         // // await waitRandom(20);
 
