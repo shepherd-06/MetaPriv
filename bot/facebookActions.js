@@ -58,19 +58,9 @@ async function interactWithProfile(page, masterPassword) {
         // Wait a random amount of time between 1 to 20 seconds, then scroll
         writeLog(`interactWithProfile: Waiting Random `, masterPassword);
         await waitRandom(20);
-        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
-        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
-        await waitMust(10); // Wait 10 seconds
+        const random = Math.floor(Math.random() * (400 - 200 + 1)) + 200;
 
-        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
-        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
-        await waitMust(10); // Wait 10 seconds
-
-        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
-        writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
-        await waitMust(10); // Wait 10 seconds
-
-        await page.evaluate(() => window.scrollBy(0, 20)); // Scroll down 20 pixels
+        await page.evaluate(() => window.scrollBy(0, random)); // Scroll down 20 pixels
         writeLog(`interactWithProfile: Scrolling random Random, waiting 10 seconds`, masterPassword);
         await waitMust(10); // Wait 10 seconds
 
@@ -323,8 +313,7 @@ async function watchVideos(page, userId, masterPassword) {
 
         // Scroll and track videos
         const seen = new Set();
-        // const maxVideos = Math.floor(Math.random() * 8) + 6; // 6 to 13
-        const maxVideos = 2; // watch 2 videos during test.
+        const maxVideos = Math.floor(Math.random() * 8) + 6; // 6 to 13
         let watched = 0;
 
         while (watched < maxVideos) {
@@ -367,6 +356,8 @@ async function watchVideos(page, userId, masterPassword) {
                     const postUrl = await links[0].evaluate(el => el.href.split('&external_log_id')[0]);
                     const pageUrl = await links[1].evaluate(el => el.href);
 
+                    if (Number.isNaN(videoLength)) continue;
+
                     writeLog(`▶️ Watching video: ${videoLength}`, masterPassword);
                     writeLog(`🔗 Post: ${postUrl}`, masterPassword);
                     writeLog(`📄 Page: ${pageUrl}`, masterPassword);
@@ -382,12 +373,12 @@ async function watchVideos(page, userId, masterPassword) {
 
                     const watchTime = 5 + delta;
                     writeLog(`WatchTime: ${watchTime} sec`, masterPassword);
-                    // await waitMust(watchTime / 2);
-                    await waitMust(12); // watch it less time than needed during test. 
+                    await waitMust(watchTime / 2);
                     await waitRandom(12);
                     let isLiked = 0;
 
-                    if (Math.random() < Math.random()) {
+                    if (Math.random() < 0.8) {
+                        // 80% chance of liking a video.
                         try {
                             const likeBtn = await page.$('div[aria-label="Like"]');
                             if (likeBtn) {
@@ -408,7 +399,8 @@ async function watchVideos(page, userId, masterPassword) {
                         keyword: keyword,
                         userId: userId,
                         screenshot_name: "",
-                        liked: isLiked
+                        liked: isLiked,
+                        watchTime: watchTime,
                     });
                     writeLog(`keyword: ${keyword}: db inset: ${status.message}`, masterPassword);
 

@@ -105,7 +105,7 @@ async function readLog(key, currentTime, lastMessage) {
         const match = decryptedLine.match(/^\[(.*?)\]/); // Check if this line has a timestamp
         if (match) {
             // This is a new log entry (timestamped)
-            console.log("Match found : ", match);
+            // console.log("Match found : ", match);
             // multi-line log before, handle it first
             if (bufferLog) {
                 // the previous buffered log
@@ -135,18 +135,18 @@ async function readLog(key, currentTime, lastMessage) {
             // Start a new buffer with this new log entry
             bufferLog = decryptedLine;
             lastTimestamp = match[1]; // Update current timestamp
-            console.log("Start a new buffer with this new log entry ", bufferLog);
-            console.log("lastTimestamp: ", lastTimestamp);
+            // console.log("Start a new buffer with this new log entry ", bufferLog);
+            // console.log("lastTimestamp: ", lastTimestamp);
 
         } else {
             // Continuation of the previous log entry
             if (bufferLog) {
                 bufferLog += '\n' + decryptedLine;
-                console.log("Continuation of the previous log entry ", bufferLog);
+                // console.log("Continuation of the previous log entry ", bufferLog);
             } else {
                 // Very rare case: continuation without any previous log
                 bufferLog = decryptedLine;
-                console.log("very rare case: ", bufferLog);
+                // console.log("very rare case: ", bufferLog);
             }
         }
     }

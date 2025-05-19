@@ -215,23 +215,25 @@ ipcMain.handle("run-bot", async (_event, { sessionId }) => {
             await waitMust(10);
         }
         await goBackToHome(page, masterPassword);
-        await interactWithProfile(page, masterPassword);
-        await waitRandom(20);
+        // await interactWithProfile(page, masterPassword);
+        // await waitRandom(20);
 
         // for (let i = 0; i < 10; i++) {
         //     await searchPages(page, userId, masterPassword);
         //     await waitRandom(30);
         // }
 
-        for (let i = 0; i < 100; i++) {
-            await likePage(page, userId, masterPassword);
-            await waitRandom(30);
-        }
-        // await likeRandomPost(page, masterPassword);
-        // // await waitRandom(20);
+        // for (let i = 0; i < 100; i++) {
+        //     await likePage(page, userId, masterPassword);
+        //     await waitRandom(30);
+        // }
 
-        // await watchVideos(page, userId, masterPassword);
-        // // await waitRandom(20);
+        // await likeRandomPost(page, masterPassword);
+        // await waitRandom(20);
+        for (let i = 0; i < 10; i++) {
+            await watchVideos(page, userId, masterPassword);
+            await waitRandom(20);
+        }
 
         // await goBackToHome(page, masterPassword);
         await waitRandom(20);
@@ -361,7 +363,7 @@ ipcMain.handle("fetch-recent-logs", async (_event, data) => {
             logs: [],
         };
     }
-    console.log("currentTime: ", currentTime, " Last Message: ", lastMessage);
+    // console.log("currentTime: ", currentTime, " Last Message: ", lastMessage);
 
     try {
         const logs = await readLog(masterPassword, currentTime, lastMessage);

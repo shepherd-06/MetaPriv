@@ -51,7 +51,8 @@ function initVideoTable() {
           liked INTEGER,
           time TEXT,
           screenshot_name TEXT,
-          watched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          watched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          watchTime INTEGER
       );
   `;
 
