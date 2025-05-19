@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, Tray, Menu } = require("electron");
 
 /**
  * Bot Management
@@ -55,6 +55,7 @@ const axios = require('axios');
 
 let browser = null; // Global browser instance
 let botProcess = null; // Track Puppeteer page
+let tray = null;
 
 // Disable GPU acceleration for Electron
 app.commandLine.appendSwitch("disable-gpu");
@@ -90,6 +91,44 @@ function createWindow() {
     initVideoTable();
     initKeywordAndPagesTables();
     initSyncConfigTable();
+
+    /**
+     * TRAAAAy
+     */
+    // Minimize to tray behavior
+    win.on('minimize', (event) => {
+        event.preventDefault();
+        win.hide();
+    });
+
+    // Restore from tray when clicked on Dock (Mac)
+    app.on('activate', () => {
+        if (win) win.show();
+    });
+
+    // ✅ Setup Tray
+    tray = new Tray(path.join(__dirname, 'MetaPriv-32.png'));
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: 'Open MetaPriv',
+            click: () => {
+                win.show();
+            },
+        },
+        {
+            label: 'Close MetaPriv',
+            click: () => {
+                app.quit();
+            },
+        },
+    ]);
+    tray.setToolTip('MetaPriv');
+    tray.setContextMenu(contextMenu);
+
+    // ✅ Show on click (optional)
+    tray.on('click', () => {
+        win.show();
+    });
 }
 
 async function initBrowser() {
