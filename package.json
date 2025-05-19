@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "An automated tool that allows Facebook users to obfuscate their data and conceal their real interests and habits from Facebook.",
   "main": "main.js",
+  "build": {
+    "productName": "MetaPriv"
+  },
   "scripts": {
     "start": "electron .",
     "debug": "electron --trace-warnings .",

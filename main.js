@@ -60,10 +60,15 @@ app.commandLine.appendSwitch("disable-gpu");
 app.commandLine.appendSwitch("disable-software-rasterizer");
 app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor");
 
+// Declare App name
+app.setName("MetaPriv");
+
+
 function createWindow() {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
+        title: "MetaPriv",
         webPreferences: {
             nodeIntegration: true,
             preload: path.join(__dirname, "preload.js"),
