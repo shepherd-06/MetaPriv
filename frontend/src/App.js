@@ -10,6 +10,7 @@ import MasterPassword from './pages/masterPassword';
 import Keyword from './pages/keywords';
 import ActivityLogView from './pages/activity';
 import Settings from './pages/settings';
+import Stat from './pages/stat';
 
 // util
 import { cacheManager } from './utility/cachemanager';
@@ -76,6 +77,10 @@ class App extends Component {
 
             <Route path="/settings" element={
               isLoggedIn ? <Settings /> : <Navigate to="/" />
+            } />
+
+            <Route path="/stat" element={
+              isLoggedIn ? <Stat /> : <Navigate to="/" />
             } />
 
             {/* Fallback */}

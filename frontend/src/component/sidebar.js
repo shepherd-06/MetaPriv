@@ -23,12 +23,19 @@ class Sidebar extends React.Component {
                             <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/dashboard" className="text-decoration-none">🏠 Dashboard</Link>
                             </li>
+
                             <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/keywords" className="text-decoration-none">🔑 Keywords</Link>
                             </li>
+
                             <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/activity-log" className="text-decoration-none">🗒️ Activity Log</Link>
                             </li>
+
+                            <li className="list-group-item" style={{ cursor: 'pointer' }}>
+                                <Link to="/stat" className="text-decoration-none">📊 Statistics</Link>
+                            </li>
+
                             <li className="list-group-item" style={{ cursor: 'pointer' }}>
                                 <Link to="/settings" className="text-decoration-none">⚙️ Privacy Settings</Link>
                             </li>
