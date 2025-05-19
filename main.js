@@ -40,6 +40,7 @@ const {
 } = require("./database/session");
 const { fetchAllKeywords, addKeywords } = require("./database/keywords");
 const { saveSyncStatus, fetchSyncStatus, runSyncForUser } = require("./database/sync");
+const { getUsageStats } = require("./database/stat");
 
 /**
  * Utility and Others
@@ -486,5 +487,16 @@ ipcMain.handle('run-manual-sync', async (_event, sessionId) => {
     } catch (err) {
         console.error('Manual sync error:', err);
         return { success: false, message: err.message };
+    }
+});
+
+
+ipcMain.handle('get-usage-stats', async (_event, sessionId) => {
+    try {
+        const stats = await getUsageStats(sessionId);
+        return { success: true, stats };
+    } catch (error) {
+        console.error('❌ Failed to get usage stats:', error.message);
+        return { success: false, error: error.message };
     }
 });
