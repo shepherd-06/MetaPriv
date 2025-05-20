@@ -4,9 +4,12 @@ const { getFacebookCredentials } = require('../database/users');
 const { getARandomKeyword } = require('../database/keywords');
 const { addAPage, getARandomPageUrl, markPageAsLiked } = require('../database/pages');
 const { addAVideo } = require("../database/videos");
+const { insertPost } = require("../database/posts");
 
 const { writeLog } = require('../utility/logmanager');
 
+const crypto = require('crypto');
+const { write } = require('fs');
 
 async function loginFacebook(page, sessionId, masterPassword) {
     try {
@@ -299,6 +302,93 @@ async function likeRandomPost(page, masterPassword) {
     }
 }
 
+async function likeRandomPostFromPage(page, masterPassword) {
+    const pageUrl = await getARandomPageUrl(1);
+    writeLog(`Going to page: ${pageUrl}`, masterPassword);
+    await page.goto(pageUrl);
+    writeLog(`Waiting for 10 seconds...`, masterPassword);
+    await waitMust(10);
+
+    let likedPosts = 0;
+    const seenHashes = new Set();
+    let scrollAttempts = 0;
+    const maxLikes = Math.floor(Math.random() * 20) + 10; // 10 to 29 posts like in random
+    noNewPost = 0
+
+    while (likedPosts < maxLikes) {
+        const postHandles = await page.$$('div.x1a2a7pz');
+
+        let newPostsFound = false;
+
+        for (const post of postHandles) {
+            const contentHandle = await post.$('div.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.x1vvkbs.x126k92a');
+            if (!contentHandle) continue;
+
+            const text = await post.evaluate(el => {
+                const content = el.querySelector('div.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.x1vvkbs.x126k92a');
+                return content ? content.innerText.trim() : '';
+            });
+
+            const hash = crypto.createHash('sha256').update(text).digest('hex');
+            if (!text || seenHashes.has(hash)) continue;
+
+            seenHashes.add(hash);
+            writeLog(`--- New Post ---\n ${text}`, masterPassword);
+            newPostsFound = true;
+
+            // Attempt to find and click Like
+            const likeDiv = await post.$('div.x9f619.x1ja2u2z.x78zum5.x1n2onr6.x1r8uery.x1iyjqo2.xs83m0k.xeuugli.xl56j7k.x6s0dn4.xozqiw3.x1q0g3np.xn6708d.x1ye3gou.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.xn3w4p2.xuxw1ft');
+            if (likeDiv) {
+                const spanWithI = await likeDiv.$('span > i.x1b0d499.x1d69dk1');
+                if (spanWithI) {
+                    try {
+                        if (Math.random() < 0.7) {
+                            // 70% chance to like 
+                            await likeDiv.click();
+                            likedPosts++;
+                            writeLog(`✔️ Liked post (${likedPosts}/${maxLikes})`, masterPassword);
+                            insertPost(pageUrl, hash, 1); // no liked
+                        } else {
+                            writeLog(`❌ Skipping Like`, masterPassword);
+                            insertPost(pageUrl, hash, 0); // no liked
+                        }
+                        await waitMust(5);
+                        await waitRandom(10);
+                    } catch (err) {
+                        writeLog(`❌ Error clicking Like: ${err.message}`, masterPassword);
+                    }
+                } else {
+                    writeLog(`❌ No <i> tag found in Like button`, masterPassword);
+                }
+            } else {
+                writeLog(`❌ Like button div not found in post`, masterPassword);
+            }
+        }
+
+        if (!newPostsFound) {
+            await page.evaluate(() => window.scrollBy(0, 1000));
+            writeLog(`No new posts found. Scrolling down 1000px...`, masterPassword);
+            await waitMust(10);
+            await waitRandom(2);
+            scrollAttempts++;
+            noNewPost++;
+        } else {
+            await page.evaluate(() => window.scrollBy(0, 500));
+            writeLog(`New posts found. Scrolling down 500px...`, masterPassword);
+            await waitMust(10);
+            await waitRandom(2);
+            noNewPost = 0;
+        }
+
+        if (noNewPost > 3) {
+            writeLog(`Leaving the page: ${pageUrl} because no new posts!`, masterPassword);
+            break;
+        }
+    }
+    writeLog(`✅ Total unique posts seen: ${seenHashes.size}, Total liked: ${likedPosts}`, masterPassword);
+}
+
+
 async function watchVideos(page, userId, masterPassword) {
     /**
      * We watch videos here from the keyword.
@@ -433,4 +523,5 @@ module.exports = {
     likeRandomPost,
     watchVideos,
     generateRandomInteraction,
+    likeRandomPostFromPage,
 };

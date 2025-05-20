@@ -131,10 +131,27 @@ function initSyncConfigTable() {
   db.close();
 }
 
+function initPostsTable() {
+  const db = new sqlite3.Database(dbPath);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS posts (
+        id TEXT PRIMARY KEY,
+        pageId TEXT NOT NULL,
+        postTitle TEXT NOT NULL,
+        isLiked INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT,
+        FOREIGN KEY (pageId) REFERENCES pages(id) ON DELETE CASCADE
+    );
+  `);
+  db.close();
+}
+
 module.exports = {
   initUserTable,
   initSessionTable,
   initVideoTable,
   initKeywordAndPagesTables,
   initSyncConfigTable,
+  initPostsTable
 };

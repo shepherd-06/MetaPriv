@@ -12,6 +12,7 @@ const {
     likeRandomPost,
     watchVideos,
     generateRandomInteraction,
+    likeRandomPostFromPage
 } = require("./bot/facebookActions");
 const { waitRandom, waitMust } = require("./bot/utility");
 
@@ -31,6 +32,7 @@ const {
     initKeywordAndPagesTables,
     initVideoTable,
     initSyncConfigTable,
+    initPostsTable,
 } = require("./database/db");
 const {
     validateSession,
@@ -91,6 +93,7 @@ function createWindow() {
     initVideoTable();
     initKeywordAndPagesTables();
     initSyncConfigTable();
+    initPostsTable();
 
     /**
      * TRAAAAy
@@ -153,7 +156,39 @@ async function initBrowser() {
     return isFirstRun; // Return whether it's the first run based on the existence of user_data
 }
 
+async function testWindow() {
+    const win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        title: "MetaPriv - Test Window",
+        webPreferences: {
+            nodeIntegration: true,
+            preload: path.join(__dirname, "preload.js"),
+            nodeIntegration: false,
+        },
+    });
+
+    initPostsTable();
+
+    try {
+        await initBrowser();
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 720 });
+        console.log("Browser initialized successfully.");
+
+        await waitMust(5);
+        likeRandomPostFromPage(page);
+
+    } catch (error) {
+        console.error("Error initializing browser:", error);
+        return;
+    }
+}
+
+
+
 app.whenReady().then(createWindow);
+// app.whenReady().then(testWindow); // TEST
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
@@ -230,10 +265,13 @@ ipcMain.handle("run-bot", async (_event, { sessionId }) => {
 
         // await likeRandomPost(page, masterPassword);
         // await waitRandom(20);
-        for (let i = 0; i < 10; i++) {
-            await watchVideos(page, userId, masterPassword);
-            await waitRandom(20);
-        }
+
+        await likeRandomPostFromPage(page, masterPassword);
+
+        // for (let i = 0; i < 10; i++) {
+        //     await watchVideos(page, userId, masterPassword);
+        //     await waitRandom(20);
+        // }
 
         // await goBackToHome(page, masterPassword);
         await waitRandom(20);

@@ -41,7 +41,6 @@ function addAPage({ keywordId, pageUrl, isLiked = 0 }) {
     });
 }
 
-
 function getARandomPageUrl(isLiked = 0) {
     /**
      * gets a random page URL, if the page is already liked or not liked.
