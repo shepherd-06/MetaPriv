@@ -53,9 +53,9 @@ async function getUsageStats(sessionId) {
 
                                                     db.all(
                                                         `SELECT k.id as keywordId, k.text as keyword, p.pageUrl, p.isLiked, p.createdAt, p.updatedAt
-                                   FROM keywords k
-                                   LEFT JOIN pages p ON k.id = p.keywordId
-                                   WHERE k.userId = ?`,
+                                                         FROM keywords k
+                                                         LEFT JOIN pages p ON k.id = p.keywordId
+                                                         WHERE k.userId = ?`,
                                                         [userId],
                                                         (err6, keywordPages) => {
                                                             if (err6) return reject(err6);
@@ -63,15 +63,34 @@ async function getUsageStats(sessionId) {
 
                                                             db.all(
                                                                 `SELECT page_URL as pageUrl, post_URL as postUrl, liked, watched_at
-                                       FROM videos
-                                       WHERE userId = ?`,
+                                                                 FROM videos
+                                                                 WHERE userId = ?`,
                                                                 [userId],
                                                                 (err7, pageVideos) => {
                                                                     if (err7) return reject(err7);
                                                                     stats.pageVideoMap = pageVideos;
 
-                                                                    db.close();
-                                                                    resolve(stats);
+                                                                    db.all(
+                                                                        `SELECT 
+                                                                            k.id as keywordId,
+                                                                            k.text as keyword,
+                                                                            posts.postTitle,
+                                                                            posts.createdAt,
+                                                                            posts.updatedAt
+                                                                         FROM keywords k
+                                                                         JOIN pages p ON p.keywordId = k.id
+                                                                         JOIN posts ON posts.pageId = p.id
+                                                                         WHERE k.userId = ? AND posts.isLiked = 1
+                                                                         ORDER BY posts.createdAt DESC`,
+                                                                        [userId],
+                                                                        (err8, likedPostsByKeyword) => {
+                                                                            if (err8) return reject(err8);
+                                                                            stats.likedPostsByKeyword = likedPostsByKeyword;
+
+                                                                            db.close();
+                                                                            resolve(stats);
+                                                                        }
+                                                                    );
                                                                 }
                                                             );
                                                         }

@@ -55,6 +55,11 @@ class Stat extends React.Component {
             xAxis: {
                 type: 'category',
                 data: data.map(item => item.keyword),
+                axisLabel: {
+                    rotate: 45,
+                    fontSize: 10,
+                    overflow: 'truncate'
+                }
             },
             yAxis: {
                 type: 'value',
@@ -105,6 +110,11 @@ class Stat extends React.Component {
             xAxis: {
                 type: 'category',
                 data: Object.keys(keywordLikeMap),
+                axisLabel: {
+                    rotate: 45,
+                    fontSize: 10,
+                    overflow: 'truncate'
+                }
             },
             yAxis: {
                 type: 'value',
@@ -123,8 +133,16 @@ class Stat extends React.Component {
 
         const pageCountMap = {};
         raw.forEach(({ pageUrl }) => {
-            if (!pageCountMap[pageUrl]) pageCountMap[pageUrl] = 0;
-            pageCountMap[pageUrl]++;
+            try {
+                const pathParts = new URL(pageUrl).pathname.split('/').filter(Boolean);
+                const username = pathParts[0] || pageUrl;
+                if (!pageCountMap[username]) pageCountMap[username] = 0;
+                pageCountMap[username]++;
+            } catch {
+                // fallback if URL parsing fails
+                if (!pageCountMap[pageUrl]) pageCountMap[pageUrl] = 0;
+                pageCountMap[pageUrl]++;
+            }
         });
 
         const topPages = Object.entries(pageCountMap)
@@ -136,7 +154,7 @@ class Stat extends React.Component {
             tooltip: {},
             xAxis: {
                 type: 'category',
-                data: topPages.map(([url]) => url),
+                data: topPages.map(([username]) => username),
                 axisLabel: {
                     rotate: 45,
                     fontSize: 10,
@@ -150,6 +168,40 @@ class Stat extends React.Component {
                 {
                     type: 'bar',
                     data: topPages.map(([, count]) => count),
+                },
+            ],
+        };
+    }
+
+    getLikedPostsByKeywordOption() {
+        const raw = this.state.stats.likedPostsByKeyword || [];
+
+        const keywordCounts = {};
+        raw.forEach(({ keyword }) => {
+            if (!keywordCounts[keyword]) keywordCounts[keyword] = 0;
+            keywordCounts[keyword]++;
+        });
+
+        const sorted = Object.entries(keywordCounts).sort((a, b) => b[1] - a[1]); // sort by count
+
+        return {
+            title: { text: 'Liked Posts per Keyword' },
+            tooltip: {},
+            xAxis: {
+                type: 'value',
+            },
+            yAxis: {
+                type: 'category',
+                data: sorted.map(([keyword]) => keyword),
+                axisLabel: {
+                    fontSize: 10,
+                    overflow: 'truncate',
+                },
+            },
+            series: [
+                {
+                    type: 'bar',
+                    data: sorted.map(([, count]) => count),
                 },
             ],
         };
@@ -184,12 +236,16 @@ class Stat extends React.Component {
                             <ReactECharts option={this.getDailyLineOption()} />
                         </div>
 
-                        <div className="col-md-6 mb-10">
+                        <div className="col-md-6 mb-4">
                             <ReactECharts option={this.getPageLikesPerKeywordOption()} />
                         </div>
 
                         <div className="col-md-6 mb-4">
                             <ReactECharts option={this.getVideosPerPageOption()} />
+                        </div>
+
+                        <div className="col-md-12 mb-4">
+                            <ReactECharts option={this.getLikedPostsByKeywordOption()} />
                         </div>
                     </div>
                 )}
