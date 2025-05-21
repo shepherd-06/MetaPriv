@@ -40,7 +40,7 @@ const {
     invalidateSession,
     clearSession,
 } = require("./database/session");
-const { fetchAllKeywords, addKeywords } = require("./database/keywords");
+const { fetchAllKeywords, addKeywords, numberOfKeywords } = require("./database/keywords");
 const { saveSyncStatus, fetchSyncStatus, runSyncForUser } = require("./database/sync");
 const { getUsageStats } = require("./database/stat");
 
@@ -186,7 +186,6 @@ async function testWindow() {
 }
 
 
-
 app.whenReady().then(createWindow);
 // app.whenReady().then(testWindow); // TEST
 
@@ -253,25 +252,27 @@ ipcMain.handle("run-bot", async (_event, { sessionId }) => {
         // await interactWithProfile(page, masterPassword);
         // await waitRandom(20);
 
-        // for (let i = 0; i < 10; i++) {
-        //     await searchPages(page, userId, masterPassword);
-        //     await waitRandom(30);
-        // }
+        // check here if there are active keywords
+        const result = await numberOfKeywords(sessionId);
+        if (result.success === false) {
+            writeLog("No active keywords found. Exiting bot.", masterPassword);
+            browser = null;
+            return "No active keywords found. Exiting bot.";
+        } else {
+            writeLog(`Found ${result.message} active keywords.`, masterPassword);
+        }
 
-        // for (let i = 0; i < 100; i++) {
-        //     await likePage(page, userId, masterPassword);
-        //     await waitRandom(30);
-        // }
-
-        // await likeRandomPost(page, masterPassword);
-        // await waitRandom(20);
+        await searchPages(page, userId, masterPassword);
+        await waitRandom(30);
 
         await likeRandomPostFromPage(page, masterPassword);
+        await waitRandom(100);
 
-        // for (let i = 0; i < 10; i++) {
-        //     await watchVideos(page, userId, masterPassword);
-        //     await waitRandom(20);
-        // }
+        await likePage(page, userId, masterPassword);
+        await waitRandom(100);
+
+        await watchVideos(page, userId, masterPassword);
+        await waitRandom(200);
 
         // await goBackToHome(page, masterPassword);
         await waitRandom(20);

@@ -133,6 +133,26 @@ function fetchKeywordsForUser(userId) {
     });
 }
 
+function count(userId) {
+    return new Promise((resolve) => {
+        const db = new sqlite3.Database(dbPath);
+
+        db.get(
+            `SELECT COUNT(*) as count FROM keywords WHERE userId = ?`,
+            [userId],
+            (err, row) => {
+                db.close();
+                if (err) {
+                    console.error("Error counting keywords:", err);
+                    resolve(0);
+                } else {
+                    resolve(row.count);
+                }
+            }
+        );
+    });
+}
+
 async function fetchAllKeywords(sessionId) {
     const userId = await validateSession(sessionId);
     if (!userId) {
@@ -177,10 +197,33 @@ async function addKeywords(sessionId, keywords) {
     }
 }
 
+async function numberOfKeywords(sessionId) {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session. Please log in again.',
+        };
+    }
+
+    const countResult = await count(userId);
+    if (countResult === 0) {
+        return {
+            success: false,
+            message: '❌ No keywords found for this user.',
+        };
+    }
+    return {
+        success: true,
+        message: `✅ Found ${countResult} keywords.`,
+    };
+}
+
 
 
 module.exports = {
     fetchAllKeywords,
     addKeywords,
-    getARandomKeyword
+    getARandomKeyword,
+    numberOfKeywords
 };
