@@ -49,11 +49,26 @@ const { getUsageStats } = require("./database/stat");
  */
 const { writeLog, readLog, readAllLog } = require("./utility/logmanager");
 const puppeteer = require("puppeteer");
+
 const { ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
-const axios = require('axios');
 
+try {
+    const axios = require('axios');
+} catch (err) {
+    console.error("❌ Error loading AXIOS:", err);
+}
+
+app.setAboutPanelOptions({}); // To initialize app early
+
+app.on('will-finish-launching', () => {
+    app.disableHardwareAcceleration(); // extra safety
+});
+app.on('ready', () => {
+    app.setLoginItemSettings({ openAtLogin: false }); // also forces init
+});
+app.setAppUserModelId(process.execPath); // for Windows tray bugs too
 
 let browser = null; // Global browser instance
 let botProcess = null; // Track Puppeteer page
@@ -80,9 +95,8 @@ function createWindow() {
         },
     });
 
-    // win.loadFile(path.join(__dirname, 'frontend/build/index.html'));
-    win.loadURL("http://localhost:3000"); // React dev server in dev mode. 
-    // // if fails. crash
+    const indexPath = path.join(__dirname, 'frontend', 'build', 'index.html');
+    win.loadURL(`file://${indexPath}`);
 
     /**
      * database setup | will not create if already exists.
@@ -110,7 +124,7 @@ function createWindow() {
     });
 
     // ✅ Setup Tray
-    tray = new Tray(path.join(__dirname, 'MetaPriv-32.png'));
+    tray = new Tray(path.join(__dirname, "assets", 'MetaPriv-32.png'));
     const contextMenu = Menu.buildFromTemplate([
         {
             label: 'Open MetaPriv',
@@ -135,7 +149,12 @@ function createWindow() {
 }
 
 async function initBrowser() {
-    const userDataPath = path.join(__dirname, "user_data");
+    const userDataPath = path.join(app.getPath('userData'), 'user_data');
+
+    // Ensure the directory exists
+    if (!fs.existsSync(userDataPath)) {
+        fs.mkdirSync(userDataPath, { recursive: true });
+    }
     const isFirstRun = !fs.existsSync(userDataPath);
 
     if (!browser) {
@@ -185,6 +204,10 @@ async function testWindow() {
     }
 }
 
+
+app.on('ready', () => {
+    app.setAppUserModelId('fi.tuni.asif.ibtehaz'); // good to match build ID
+});
 
 app.whenReady().then(createWindow);
 // app.whenReady().then(testWindow); // TEST

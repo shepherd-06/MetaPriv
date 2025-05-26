@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { Navigate } from 'react-router-dom';
 
 class FacebookAuth extends Component {
     constructor(props) {
@@ -9,7 +10,8 @@ class FacebookAuth extends Component {
             fbPassword: '',
             error: '',
             success: '',
-            loading: false
+            loading: false,
+            redirectToDashboard: false
         };
     }
 
@@ -37,14 +39,20 @@ class FacebookAuth extends Component {
         if (result.success) {
             this.setState({ success: result.message, loading: false });
             localStorage.setItem('onboardingStep', '5');
-            setTimeout(() => window.location.href = "/dashboard", 2000);
+            setTimeout(() => {
+                this.setState({ redirectToDashboard: true });
+            }, 2000);
         } else {
             this.setState({ error: result.message, loading: false });
         }
     };
 
     render() {
-        const { fbEmail, fbPassword, error, success, loading } = this.state;
+        const { fbEmail, fbPassword, error, success, loading, redirectToDashboard } = this.state;
+
+        if (redirectToDashboard) {
+            return <Navigate to="/dashboard" />;
+        }
 
         return (
             <div className="container mt-5">

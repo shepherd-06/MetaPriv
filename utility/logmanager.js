@@ -3,15 +3,18 @@ const readline = require('readline');
 const path = require('path');
 const os = require('os');
 const { aesEncrypt, aesDecrypt } = require('./crypt');
+const { app } = require('electron');
 
+// Get the user-writable directory provided by Electron
+const logDir = path.join(app.getPath('userData'), 'logs');
 
-const logDir = path.join(__dirname, '..', 'logs');
-const logFile = path.join(logDir, 'bot_logs.log');
-
-// Ensure log folder exists
+// Ensure the directory exists
 if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir);
+    fs.mkdirSync(logDir, { recursive: true });
 }
+
+// Define the log file path
+const logFile = path.join(logDir, 'bot_logs.log');
 
 /**
  * Write an encrypted log entry with timestamp.

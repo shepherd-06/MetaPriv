@@ -1,6 +1,16 @@
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const dbPath = path.join(__dirname, 'users.db');
+const { app } = require('electron');
+const fs = require('fs');
+
+const dbDir = app.getPath('userData');
+const dbPath = path.join(dbDir, 'users.db');
+
+// Ensure the directory exists (just in case)
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const axios = require('axios');
 
 const { writeLog } = require('../utility/logmanager');
