@@ -1,9 +1,9 @@
 import React from "react";
+import { Link, Navigate } from "react-router-dom";
 import Sidebar from "../component/sidebar";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import SessionContext from "../context/SessionContext";
 import ShowActiveLog from "../component/showLog";
-
 
 class Dashboard extends React.Component {
     static contextType = SessionContext;
@@ -14,6 +14,13 @@ class Dashboard extends React.Component {
             sessionValid: true,
             botRunning: false,
             loadingBot: false,
+            checkingKeywords: true,
+            keywordStatus: null,
+            redirectToKeywords: false,
+            showToast: false, // show/hide toast
+            toastMessage: '', // message text
+            toastType: '',    // success, warning, etc.
+
         };
 
         this.handleRun = this.handleRun.bind(this);
@@ -21,13 +28,15 @@ class Dashboard extends React.Component {
         this.handleStopBot = this.handleStopBot.bind(this);
         this.checkSessionValidity = this.checkSessionValidity.bind(this);
         this.checkBotStatus = this.checkBotStatus.bind(this);
+        this.checkKeywordStatus = this.checkKeywordStatus.bind(this); // 🆕
     }
 
     async componentDidMount() {
         await this.checkSessionValidity();
         await this.checkBotStatus();
-        this.sessionInterval = setInterval(this.checkSessionValidity, 5 * 60 * 1000); // every 5 min
-        this.botStatusInterval = setInterval(this.checkBotStatus, 5 * 1000); // every 5 sec
+        await this.checkKeywordStatus(); // 🆕
+        this.sessionInterval = setInterval(this.checkSessionValidity, 5 * 60 * 1000);
+        this.botStatusInterval = setInterval(this.checkBotStatus, 5 * 1000);
     }
 
     componentWillUnmount() {
@@ -41,7 +50,8 @@ class Dashboard extends React.Component {
         if (!result || !result.valid) {
             localStorage.removeItem('sessionId');
             localStorage.removeItem('onboardingStep');
-            window.location.href = "/"; // redirect to login
+            // TODO: need to have a proper logout function
+            return <Navigate to="/" />;
         }
     }
 
@@ -49,6 +59,43 @@ class Dashboard extends React.Component {
         const result = await window.electronAPI.isBotRunning();
         this.setState({ botRunning: result, loadingBot: false });
     }
+
+    async checkKeywordStatus() {
+        const sessionId = this.context;
+        this.setState({ checkingKeywords: true });
+
+        const result = await window.electronAPI.countKeywords(sessionId);
+
+        if (result && !result.success) {
+            // No keywords: show warning toast and redirect
+            this.setState({
+                showToast: true,
+                toastMessage: '❌ No keywords found. Redirecting in 2 seconds...',
+                toastType: 'warning',
+            });
+            setTimeout(() => {
+                this.setState({ redirectToKeywords: true });
+            }, 2000);
+        } else if (result && result.success) {
+            // Keywords found: show success toast
+            this.setState({
+                showToast: true,
+                toastMessage: `${result.message}. Ready to run the bot!`,
+                toastType: 'success',
+            });
+        }
+
+        this.setState({
+            checkingKeywords: false,
+            keywordStatus: result,
+        });
+
+        // Hide toast after a while
+        setTimeout(() => {
+            this.setState({ showToast: false });
+        }, 4000);
+    }
+
 
     async handleRun() {
         const sessionId = this.context;
@@ -68,15 +115,17 @@ class Dashboard extends React.Component {
     }
 
     render() {
-        const { botRunning, loadingBot } = this.state;
+        const { botRunning, loadingBot, checkingKeywords, keywordStatus, redirectToKeywords } = this.state;
+
+        if (redirectToKeywords) {
+            return <Navigate to="/keywords" replace />;
+        }
 
         return (
             <div className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    {/* Hamburger */}
                     <Sidebar />
                     <h2 className="m-0">🧠 MetaPriv Control Panel</h2>
-
                     <button className="btn btn-danger" onClick={this.handleQuit}>❌ Quit App</button>
                 </div>
 
@@ -118,10 +167,18 @@ class Dashboard extends React.Component {
                     )}
                 </div>
 
-                {/* Show Live Logs only if bot is running */}
-                {botRunning && (
-                    <ShowActiveLog isBotRunning={botRunning} />
-                )}
+                {botRunning && <ShowActiveLog isBotRunning={botRunning} />}
+
+                {/* Toast */}
+                <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 9999 }}>
+                    <div className={`toast align-items-center text-bg-${this.state.toastType} border-0 ${this.state.showToast ? 'show' : ''}`} role="alert" aria-live="assertive" aria-atomic="true">
+                        <div className="d-flex">
+                            <div className="toast-body">
+                                {this.state.toastMessage}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

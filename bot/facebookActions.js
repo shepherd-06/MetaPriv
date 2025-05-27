@@ -512,6 +512,24 @@ async function watchVideos(page, userId, masterPassword) {
     }
 }
 
+async function isOnFacebookHome(page, masterPassword) {
+    try {
+        const url = await page.url();
+        writeLog(`🌐 Current URL: ${url}`, masterPassword);
+
+        // Facebook home URLs (can adjust if needed)
+        const homePatterns = [
+            "https://www.facebook.com/",
+            "https://www.facebook.com/?sk=welcome",
+            "https://www.facebook.com/home.php"
+        ];
+
+        return homePatterns.some(pattern => url.startsWith(pattern));
+    } catch (error) {
+        writeLog(`❌ Failed to get current URL: ${error}`, masterPassword);
+        return null;
+    }
+}
 
 
 module.exports = {
@@ -524,4 +542,5 @@ module.exports = {
     watchVideos,
     generateRandomInteraction,
     likeRandomPostFromPage,
+    isOnFacebookHome
 };

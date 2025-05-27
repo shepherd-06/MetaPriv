@@ -12,7 +12,8 @@ const {
     likeRandomPost,
     watchVideos,
     generateRandomInteraction,
-    likeRandomPostFromPage
+    likeRandomPostFromPage,
+    isOnFacebookHome
 } = require("./bot/facebookActions");
 const { waitRandom, waitMust } = require("./bot/utility");
 
@@ -272,30 +273,49 @@ ipcMain.handle("run-bot", async (_event, { sessionId }) => {
             await waitMust(10);
         }
         await goBackToHome(page, masterPassword);
-        // await interactWithProfile(page, masterPassword);
-        // await waitRandom(20);
 
-        // check here if there are active keywords
-        const result = await numberOfKeywords(sessionId);
-        if (result.success === false) {
-            writeLog("No active keywords found. Exiting bot.", masterPassword);
-            browser = null;
-            return "No active keywords found. Exiting bot.";
-        } else {
-            writeLog(`Found ${result.message} active keywords.`, masterPassword);
+        const status = await isOnFacebookHome(page, masterPassword);
+        if (!status) {
+            writeLog("❌ Not on Facebook Home Page. Aborting bot run.", masterPassword);
+            return "❌ Not on Facebook Home Page. Aborting bot run.";
         }
 
-        await searchPages(page, userId, masterPassword);
-        await waitRandom(30);
+        // await interactWithProfile(page, masterPassword);
+        // await waitRandom(20);
+        // check here if there are active keywords
 
-        await likeRandomPostFromPage(page, masterPassword);
-        await waitRandom(100);
+        // Linear flow with probability checks
+        if (Math.random() <= 0.10) {
+            writeLog(`🔍 Running searchPages... Probability 10%`, masterPassword);
+            await searchPages(page, userId, masterPassword);
+            await waitRandom(30);
+        } else {
+            writeLog(`🔍 Skipping searchPages...`, masterPassword);
+        }
 
-        await likePage(page, userId, masterPassword);
-        await waitRandom(100);
+        if (Math.random() <= 0.15) {
+            writeLog(`👍 Running likeRandomPostFromPage... Probability 15%`, masterPassword);
+            await likeRandomPostFromPage(page, masterPassword);
+            await waitRandom(100);
+        } else {
+            writeLog(`👍 Skipping likeRandomPostFromPage...`, masterPassword);
+        }
 
-        await watchVideos(page, userId, masterPassword);
-        await waitRandom(200);
+        if (Math.random() <= 0.05) {
+            writeLog(`🌐 Running likePage... Probability 5%`, masterPassword);
+            await likePage(page, userId, masterPassword);
+            await waitRandom(100);
+        } else {
+            writeLog(`🌐 Skipping likePage...`, masterPassword);
+        }
+
+        if (Math.random() <= 0.70) {
+            writeLog(`🎥 Running watchVideos... Probability 70%`, masterPassword);
+            await watchVideos(page, userId, masterPassword);
+            await waitRandom(200);
+        } else {
+            writeLog(`🎥 Skipping watchVideos...`, masterPassword);
+        }
 
         // await goBackToHome(page, masterPassword);
         await waitRandom(20);
@@ -305,6 +325,7 @@ ipcMain.handle("run-bot", async (_event, { sessionId }) => {
         writeLog("MetaPriv Finished", masterPassword);
         return "Bot finished";
     } catch (err) {
+        console.error(err.stack);
         writeLog(`Run-bot error: ${err}`, masterPassword);
         return "Failed to run bot";
     } finally {
@@ -603,3 +624,33 @@ ipcMain.handle('get-usage-stats', async (_event, sessionId) => {
         return { success: false, error: error.message };
     }
 });
+
+ipcMain.handle('count-keywords', async (_event, sessionId) => {
+    const userId = await validateSession(sessionId);
+    if (!userId) {
+        return {
+            success: false,
+            message: '❌ Invalid session. Please log in again.',
+        };
+    }
+
+    const masterPassword = await getMasterPasswordFromSession(sessionId);
+    if (masterPassword === null) {
+        console.error("masterPassword returned null from the OS. Abort!");
+        return {
+            success: false,
+            message: "❌ Internal/MasterPassword is null!",
+        };
+    }
+    try {
+        const result = await numberOfKeywords(userId);
+        return result; // This will return { success: true/false, message, count }
+    } catch (error) {
+        writeLog(`Error counting keywords: ${error}`, masterPassword);
+        return {
+            success: false,
+            message: "❌ Failed to count keywords due to an internal error.",
+        };
+    }
+}
+);

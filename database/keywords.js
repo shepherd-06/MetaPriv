@@ -206,15 +206,7 @@ async function addKeywords(sessionId, keywords) {
     }
 }
 
-async function numberOfKeywords(sessionId) {
-    const userId = await validateSession(sessionId);
-    if (!userId) {
-        return {
-            success: false,
-            message: '❌ Invalid session. Please log in again.',
-        };
-    }
-
+async function numberOfKeywords(userId) {
     const countResult = await count(userId);
     if (countResult === 0) {
         return {
