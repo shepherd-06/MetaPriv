@@ -1,0 +1,33 @@
+{
+  "name": "metapriv-setup",
+  "version": "1.0.4-alpha",
+  "description": "MetaPriv Setup Helper",
+  "main": "electron/install.js",
+  "scripts": {
+    "start": "electron .",
+    "bump": "node version-updater.js",
+    "pack": "electron-builder --dir",
+    "dist": "npm run bump && electron-builder"
+  },
+  "build": {
+    "appId": "com.metapriv.setup",
+    "productName": "MetaPriv Setup",
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "electron": "^36.3.1",
+    "electron-builder": "^26.0.12"
+  }
+}
