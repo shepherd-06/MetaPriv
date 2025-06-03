@@ -5,6 +5,8 @@ const os = require('os');
 const fs = require('fs');
 
 let mainWindow;
+let setupRunning = false;
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -23,16 +25,27 @@ function createWindow() {
 app.whenReady().then(createWindow);
 
 ipcMain.on('start-setup', (event) => {
-    const INSTALL_DIR = path.join(app.getPath('home'), 'Library', 'MetaPriv');
-    const GIT_REPO = 'https://github.com/shepherd-06/MetaPriv.git';
-    const GIT_TARGET_BRANCH = 'dev';
-
     function log(message) {
         event.sender.send('log', message);
     }
 
+    if (setupRunning) {
+        log('⚠️ Setup already running. Ignoring duplicate trigger.\n')
+        return;
+    }
+    setupRunning = true;
+
+
+    const INSTALL_DIR = path.join(app.getPath('home'), 'Library', 'MetaPriv');
+    const GIT_REPO = 'https://github.com/shepherd-06/MetaPriv.git';
+    const GIT_TARGET_BRANCH = 'dev';
+    const GIT_TARGET_TAG = 'v0.1.0-pre-alpha';
+    const homeDir = os.homedir();
+
+
     function findExecutable(name) {
         const searchPaths = [
+            path.join(homeDir, '.nvm/versions/node'),
             '/usr/local/bin',
             '/usr/bin',
             '/opt/homebrew/bin',
@@ -56,6 +69,7 @@ ipcMain.on('start-setup', (event) => {
 
     // Fix the PATH for subprocesses
     const extraDirs = [
+        path.join(homeDir, '.nvm/versions/node'),
         '/usr/local/bin',
         '/opt/homebrew/bin',
         '/usr/bin',
@@ -97,12 +111,32 @@ ipcMain.on('start-setup', (event) => {
 
             if (fs.existsSync(path.join(INSTALL_DIR, '.git'))) {
                 log(`📁 MetaPriv already exists at ${INSTALL_DIR}`);
-                await runCommand('git fetch', INSTALL_DIR);
-                await runCommand(`git checkout ${GIT_TARGET_BRANCH}`, INSTALL_DIR);
-                await runCommand('git pull', INSTALL_DIR);
+                await runCommand('git fetch --tags', INSTALL_DIR);
+
+                // Get current tag (or commit hash)
+                const currentRef = await new Promise((resolve) => {
+                    exec('git describe --tags --exact-match', { cwd: INSTALL_DIR }, (err, stdout) => {
+                        if (!err) {
+                            resolve(stdout.trim());
+                        } else {
+                            // Fallback to commit hash if not on tag
+                            exec('git rev-parse HEAD', { cwd: INSTALL_DIR }, (_, fallback) => {
+                                resolve(fallback.trim());
+                            });
+                        }
+                    });
+                });
+
+                if (currentRef === GIT_TARGET_TAG) {
+                    log(`✅ Already on tag ${GIT_TARGET_TAG}, no update needed.`);
+                } else {
+                    log(`🔁 Switching to tag ${GIT_TARGET_TAG}...`);
+                    await runCommand(`git checkout tags/${GIT_TARGET_TAG}`, INSTALL_DIR);
+                }
+
             } else {
-                log(`📥 Cloning MetaPriv (${GIT_TARGET_BRANCH})...`);
-                await runCommand(`git clone --branch ${GIT_TARGET_BRANCH} --depth 1 ${GIT_REPO} "${INSTALL_DIR}"`);
+                log(`📥 Cloning MetaPriv at tag ${GIT_TARGET_TAG}...`);
+                await runCommand(`git clone --branch ${GIT_TARGET_TAG} --depth 1 ${GIT_REPO} "${INSTALL_DIR}"`);
             }
 
             await runCommand(`${NPM_PATH} install`, INSTALL_DIR);
@@ -139,6 +173,8 @@ ipcMain.on('start-setup', (event) => {
 
         } catch (err) {
             log(`❌ Error: ${err.message}`);
+        } finally {
+            setupRunning = false;
         }
     }
 

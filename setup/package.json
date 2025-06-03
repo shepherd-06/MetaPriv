@@ -1,6 +1,6 @@
 {
   "name": "metapriv-setup",
-  "version": "1.0.4-alpha",
+  "version": "1.0.9-alpha",
   "description": "MetaPriv Setup Helper",
   "main": "electron/install.js",
   "scripts": {
