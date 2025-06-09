@@ -9,7 +9,6 @@ const { insertPost } = require("../database/posts");
 const { writeLog } = require('../utility/logmanager');
 
 const crypto = require('crypto');
-const { write } = require('fs');
 
 async function loginFacebook(page, sessionId, masterPassword) {
     try {
@@ -93,7 +92,7 @@ async function goBackToHome(page, masterPassword) {
 
 async function searchPages(page, userId, masterPassword) {
     // First get a random keyword from the database.
-    const { keyword, id } = await getARandomKeyword(userId);
+    const { keyword, id } = await getARandomKeyword(userId, masterPassword);
     writeLog(`Searching pages for keyword: ${keyword} with id ${id}`, masterPassword);
     let pageURLs = [];
 
@@ -132,7 +131,7 @@ async function searchPages(page, userId, masterPassword) {
                     keywordId: id,
                     pageUrl: url,
                     isLiked: 0
-                });
+                }, masterPassword);
             }
         }
         await waitRandom(20);
@@ -148,7 +147,7 @@ async function likePage(page, userId, masterPassword) {
      * Store the pageName in the database
      */
     try {
-        const pageUrl = await getARandomPageUrl();
+        const pageUrl = await getARandomPageUrl(masterPassword = masterPassword);
         writeLog(`Going to page: ${pageUrl}`, masterPassword);
         if (pageUrl == null) {
             writeLog("pageUrl came null from db", masterPassword);
@@ -161,27 +160,33 @@ async function likePage(page, userId, masterPassword) {
         // Get the page name
         const pageName = await page.$eval('h1.html-h1', el => el.innerText.trim());
 
-        // Check if the Like button is present
-        const likeButton = await page.$('div[aria-label="Like"]');
-        if (likeButton) {
-            await likeButton.click();
-            writeLog(`Liked page: ${pageName}`, masterPassword);
-            status = true;
-        } else {
-            // If Like button isn't found, look for the Follow button
-            const followButton = await page.$('div[aria-label="Follow"]');
-            if (followButton) {
-                await followButton.click();
-                writeLog(`Followed page: ${pageName}`, masterPassword);
+        if (Math.random() < 0.05) {
+            // 5% chance to liking the page
+            // Check if the Like button is present
+            const likeButton = await page.$('div[aria-label="Like"]');
+            if (likeButton) {
+                await likeButton.click();
+                writeLog(`Liked page: ${pageName}`, masterPassword);
                 status = true;
+            } else {
+                // If Like button isn't found, look for the Follow button
+                const followButton = await page.$('div[aria-label="Follow"]');
+                if (followButton) {
+                    await followButton.click();
+                    writeLog(`Followed page: ${pageName}`, masterPassword);
+                    status = true;
+                }
             }
+            await waitRandom(20);
+            if (status) {
+                await markPageAsLiked(pageUrl, masterPassword);
+                // Log the action and the page name
+                writeLog(`Action completed on: ${pageName}`, masterPassword);
+            }
+        } else {
+            writeLog(`Skipped Liking page: ${pageName}.`, masterPassword);
         }
-        await waitRandom(20);
-        if (status) {
-            await markPageAsLiked(pageUrl);
-            // Log the action and the page name
-            writeLog(`Action completed on: ${pageName}`, masterPassword);
-        }
+
     } catch (error) {
         writeLog(`An error occurred while processing pageUrl: ${error}`, masterPassword);
     }
@@ -226,7 +231,7 @@ async function generateRandomInteraction(page) {
 
 
 async function likeRandomPost(page, masterPassword) {
-    const pageUrl = await getARandomPageUrl(1);
+    const pageUrl = await getARandomPageUrl(1, masterPassword);
     writeLog(`Going to page:  ${pageUrl}`, masterPassword);
     await page.goto(pageUrl);
     await waitMust(10);
@@ -303,19 +308,20 @@ async function likeRandomPost(page, masterPassword) {
 }
 
 async function likeRandomPostFromPage(page, masterPassword) {
-    const pageUrl = await getARandomPageUrl(1);
+    const pageUrl = await getARandomPageUrl(masterPassword = masterPassword);
     writeLog(`Going to page: ${pageUrl}`, masterPassword);
     await page.goto(pageUrl);
     writeLog(`Waiting for 10 seconds...`, masterPassword);
     await waitMust(10);
 
     let likedPosts = 0;
+    let skippedLikes = 0;
     const seenHashes = new Set();
     let scrollAttempts = 0;
-    const maxLikes = Math.floor(Math.random() * 20) + 10; // 10 to 29 posts like in random
+    const maxLikes = Math.floor(Math.random() * 20) + 5; // 10 to 29 posts like in random
     noNewPost = 0
 
-    while (likedPosts < maxLikes) {
+    while ((likedPosts + skippedLikes) < maxLikes) {
         const postHandles = await page.$$('div.x1a2a7pz');
 
         let newPostsFound = false;
@@ -342,14 +348,15 @@ async function likeRandomPostFromPage(page, masterPassword) {
                 const spanWithI = await likeDiv.$('span > i.x1b0d499.x1d69dk1');
                 if (spanWithI) {
                     try {
-                        if (Math.random() < 0.7) {
-                            // 70% chance to like 
+                        if (Math.random() < 0.025) {
+                            // 2.5% chance to like 
                             await likeDiv.click();
                             likedPosts++;
                             writeLog(`✔️ Liked post (${likedPosts}/${maxLikes})`, masterPassword);
                             insertPost(pageUrl, hash, 1); // no liked
                         } else {
                             writeLog(`❌ Skipping Like`, masterPassword);
+                            skippedLikes++;
                             insertPost(pageUrl, hash, 0); // no liked
                         }
                         await waitMust(5);
@@ -394,7 +401,7 @@ async function watchVideos(page, userId, masterPassword) {
      * We watch videos here from the keyword.
      */
     try {
-        const { keyword, id } = await getARandomKeyword(userId);
+        const { keyword, id } = await getARandomKeyword(userId, masterPassword);
         writeLog(`Searching pages for keyword: ${keyword}`, masterPassword);
         const url = `https://www.facebook.com/watch/search/?q=${keyword}`;
         await page.goto(url);

@@ -75,7 +75,7 @@ async function addKeywordsForUser(userId, keywords, masterPassword) {
 
 
 // Get a random active keyword for a user
-function getARandomKeyword(userId) {
+function getARandomKeyword(userId, masterPassword) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
         db.all(
@@ -87,8 +87,15 @@ function getARandomKeyword(userId) {
                 if (!rows || rows.length === 0) return resolve(null);
 
                 const randomIndex = Math.floor(Math.random() * rows.length);
+                let decrypted;
+                try {
+                    decrypted = aesDecrypt(rows[randomIndex].text, masterPassword);
+                } catch (e) {
+                    writeLog(`⚠️ Failed to decrypt keyword with id ${row.id}: ${e.message}`, masterPassword);
+                    decrypted = rows[randomIndex].text; // fallback to encrypted
+                }
                 resolve({
-                    keyword: rows[randomIndex].text,
+                    keyword: decrypted,
                     id: rows[randomIndex].id
                 });
             }

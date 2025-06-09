@@ -12,8 +12,22 @@ if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }
 
-function addAPage({ keywordId, pageUrl, isLiked = 0 }) {
+/** 
+ * All hail to encryption and decryption 
+ * and logging. but logging is secondary :p
+*/
+const { aesEncrypt, aesDecrypt } = require('../utility/crypt');
+const { writeLog } = require('../utility/logmanager');
+
+function addAPage({ keywordId, pageUrl, isLiked = 0 }, masterPassword) {
     return new Promise((resolve, reject) => {
+        let encryptedUrl;
+        try {
+            encryptedUrl = aesEncrypt(pageUrl, masterPassword);
+        } catch (e) {
+            writeLog(`❌ Failed to encrypt pageUrl: ${e.message}`, masterPassword);
+            return reject(e);
+        }
         const db = new sqlite3.Database(dbPath);
 
         db.get(`SELECT id FROM pages WHERE pageUrl = ?`, [pageUrl], (err, row) => {
@@ -50,7 +64,7 @@ function addAPage({ keywordId, pageUrl, isLiked = 0 }) {
     });
 }
 
-function getARandomPageUrl(isLiked = 0) {
+function getARandomPageUrl(isLiked = 0, masterPassword) {
     /**
      * gets a random page URL, if the page is already liked or not liked.
      */
@@ -69,8 +83,20 @@ function getARandomPageUrl(isLiked = 0) {
                     resolve(null);
                 } else {
                     const randomRow = rows[Math.floor(Math.random() * rows.length)];
-                    if (randomRow && typeof randomRow.pageUrl === 'string' && randomRow.pageUrl.startsWith('http')) {
-                        resolve(randomRow.pageUrl);
+                    if (randomRow && typeof randomRow.pageUrl === 'string') {
+                        let decryptedUrl;
+                        try {
+                            decryptedUrl = aesDecrypt(randomRow.pageUrl, masterPassword);
+                            if (decryptedUrl.startsWith('http')) {
+                                resolve(decryptedUrl);
+                            }
+                        } catch (e) {
+                            writeLog(`❌ Failed to decrypt pageUrl: ${e.message}`, masterPassword);
+                            if (randomRow.pageUrl.startsWith('http')) {
+                                resolve(randomRow.pageUrl);
+                            }
+                            resolve(null); // or reject with error
+                        }
                     } else {
                         resolve(null); // or reject with error
                     }
@@ -101,14 +127,14 @@ function disableAPage(pageUrl) {
     });
 }
 
-function markPageAsLiked(pageUrl) {
+function markPageAsLiked(pageUrl, masterPassword) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(dbPath);
         const updatedAt = new Date().toISOString();
 
         db.run(
             `UPDATE pages SET isLiked = 1, updatedAt = ? WHERE pageUrl = ?`,
-            [updatedAt, pageUrl],
+            [updatedAt, aesEncrypt(pageUrl, masterPassword)],
             function (err) {
                 db.close();
                 if (err) {
