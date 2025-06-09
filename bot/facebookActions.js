@@ -353,11 +353,11 @@ async function likeRandomPostFromPage(page, masterPassword) {
                             await likeDiv.click();
                             likedPosts++;
                             writeLog(`✔️ Liked post (${likedPosts}/${maxLikes})`, masterPassword);
-                            insertPost(pageUrl, hash, 1); // no liked
+                            insertPost(pageUrl, hash, 1, masterPassword); // no liked
                         } else {
                             writeLog(`❌ Skipping Like`, masterPassword);
                             skippedLikes++;
-                            insertPost(pageUrl, hash, 0); // no liked
+                            insertPost(pageUrl, hash, 0, masterPassword); // no liked
                         }
                         await waitMust(5);
                         await waitRandom(10);

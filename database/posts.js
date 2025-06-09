@@ -11,14 +11,23 @@ const dbPath = path.join(dbDir, 'users.db');
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }
-function insertPost(pageUrl, postTitle, isLiked = 0) {
+
+/** 
+ * All hail to encryption and decryption 
+ * and logging. but logging is secondary :p
+*/
+const { aesEncrypt, aesDecrypt } = require('../utility/crypt');
+const { writeLog } = require('../utility/logmanager');
+
+function insertPost(pageUrl, postTitle, isLiked = 0, masterPassword) {
     const db = new sqlite3.Database(dbPath);
     const postId = uuidv4();
     const createdAt = new Date().toISOString();
+    const encryptedPageUrl = aesEncrypt(pageUrl, masterPassword);
 
     db.get(
         `SELECT id FROM pages WHERE pageUrl = ?`,
-        [pageUrl],
+        [encryptedPageUrl],
         (err, row) => {
             if (err) {
                 console.error('❌ Error querying pages:', err.message);
