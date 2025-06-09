@@ -1,6 +1,6 @@
 {
   "name": "MetaPriv",
-  "version": "1.0.3-alpha",
+  "version": "1.0.4-nightly",
   "description": "An automated tool that allows Facebook users to obfuscate their data and conceal their real interests and habits from Facebook.",
   "main": "main.js",
   "build": {
