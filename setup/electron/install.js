@@ -39,7 +39,7 @@ ipcMain.on('start-setup', (event) => {
     const INSTALL_DIR = path.join(app.getPath('home'), 'Library', 'MetaPriv');
     const GIT_REPO = 'https://github.com/shepherd-06/MetaPriv.git';
     const GIT_TARGET_BRANCH = 'dev';
-    const GIT_TARGET_TAG = 'v0.1.0-pre-alpha';
+    const GIT_TARGET_TAG = 'v0.2.0-pre-alpha';
     const homeDir = os.homedir();
 
 

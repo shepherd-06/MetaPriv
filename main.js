@@ -55,6 +55,14 @@ const { ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
+require('dotenv').config(); // ⬅️ Load env vars from .env file
+const isDev = process.env.NODE_ENV === 'development';
+
+const iconPath = isDev
+    ? path.join(__dirname, 'assets', 'MetaPriv-32.png')
+    : path.join(process.resourcesPath, 'assets', 'MetaPriv-32.png');
+
+
 try {
     const axios = require('axios');
 } catch (err) {
@@ -125,7 +133,7 @@ function createWindow() {
     });
 
     // ✅ Setup Tray
-    tray = new Tray(path.join(__dirname, "assets", 'MetaPriv-32.png'));
+    tray = new Tray(iconPath);
     const contextMenu = Menu.buildFromTemplate([
         {
             label: 'Open MetaPriv',
