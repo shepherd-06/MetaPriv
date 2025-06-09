@@ -406,7 +406,7 @@ ipcMain.handle("fetch-keywords", async (_event, sessionId) => {
         };
     }
     try {
-        const result = await fetchAllKeywords(sessionId);
+        const result = await fetchAllKeywords(sessionId, masterPassword);
         return result; // This will return { success: true/false, message, keywords }
     } catch (error) {
         writeLog(`Error fetching keywords: ${error}`, masterPassword);
@@ -429,7 +429,7 @@ ipcMain.handle("add-keywords", async (_event, { sessionId, keywords }) => {
         };
     }
     try {
-        const result = await addKeywords(sessionId, keywords);
+        const result = await addKeywords(sessionId, keywords, masterPassword);
         return result;
     } catch (error) {
         writeLog(`Error adding keywords: ${error}`, masterPassword);

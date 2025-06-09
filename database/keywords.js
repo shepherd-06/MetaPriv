@@ -15,16 +15,22 @@ if (!fs.existsSync(dbDir)) {
 
 const { validateSession } = require("./session");
 
-// Add keywords for a user (array of strings)
-async function addKeywordsForUser(userId, keywords) {
+const { aesEncrypt, aesDecrypt } = require('../utility/crypt');
+const { writeLog } = require('../utility/logmanager');
+
+// Add keywords for a user (array of strings)/
+async function addKeywordsForUser(userId, keywords, masterPassword) {
     const db = new sqlite3.Database(dbPath);
     const now = new Date().toISOString();
 
     try {
         // Clean up keywords first (lowercase + trim)
         const cleanedKeywords = keywords.map(kw => kw.trim().toLowerCase()).filter(kw => kw.length > 0);
+        // encrypt all keywords
+        const encryptedKeywords = cleanedKeywords.map(kw => aesEncrypt(kw, masterPassword));
 
-        await Promise.all(cleanedKeywords.map(keyword => {
+        // only enter encrypted keywords that are not already in the database
+        await Promise.all(encryptedKeywords.map(keyword => {
             return new Promise((resolve, reject) => {
                 // First, check if the keyword already exists for this user
                 db.get(
@@ -122,7 +128,7 @@ function disableAllKeywords(userId) {
     });
 }
 
-function fetchKeywordsForUser(userId) {
+function fetchKeywordsForUser(userId, masterPassword) {
     return new Promise((resolve) => {
         const db = new sqlite3.Database(dbPath);
 
@@ -135,7 +141,24 @@ function fetchKeywordsForUser(userId) {
                     console.error("Error fetching keywords:", err);
                     resolve([]);
                 } else {
-                    resolve(rows);
+                    const result = rows.map(row => {
+                        let decrypted;
+                        try {
+                            decrypted = aesDecrypt(row.text, masterPassword);
+                        } catch (e) {
+                            writeLog(`⚠️ Failed to decrypt keyword with id ${row.id}: ${e.message}`, masterPassword);
+                            decrypted = row.text; // fallback to encrypted
+                        }
+
+                        return {
+                            id: row.id,
+                            text: decrypted,
+                            isActive: row.isActive,
+                            createdAt: row.createdAt
+                        };
+                    });
+
+                    resolve(result);
                 }
             }
         );
@@ -162,7 +185,7 @@ function count(userId) {
     });
 }
 
-async function fetchAllKeywords(sessionId) {
+async function fetchAllKeywords(sessionId, masterPassword) {
     const userId = await validateSession(sessionId);
     if (!userId) {
         return {
@@ -172,7 +195,7 @@ async function fetchAllKeywords(sessionId) {
         };
     }
 
-    const keywords = await fetchKeywordsForUser(userId);
+    const keywords = await fetchKeywordsForUser(userId, masterPassword);
 
     return {
         success: true,
@@ -182,7 +205,7 @@ async function fetchAllKeywords(sessionId) {
 }
 
 
-async function addKeywords(sessionId, keywords) {
+async function addKeywords(sessionId, keywords, masterPassword) {
     const userId = await validateSession(sessionId);
     if (!userId) {
         return {
@@ -191,7 +214,7 @@ async function addKeywords(sessionId, keywords) {
         };
     }
 
-    const result = await addKeywordsForUser(userId, keywords);
+    const result = await addKeywordsForUser(userId, keywords, masterPassword);
 
     if (result) {
         return {
