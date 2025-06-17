@@ -498,7 +498,7 @@ async function watchVideos(page, userId, masterPassword) {
                         screenshot_name: "",
                         liked: isLiked,
                         watchTime: watchTime,
-                    });
+                    }, masterPassword);
                     writeLog(`keyword: ${keyword}: db inset: ${status.message}`, masterPassword);
 
                     // await waitMust(watchTime / 2);

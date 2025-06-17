@@ -49,7 +49,7 @@ function addAPage({ keywordId, pageUrl, isLiked = 0 }, masterPassword) {
 
             db.run(
                 `INSERT INTO pages (id, keywordId, pageUrl, isLiked, createdAt) VALUES (?, ?, ?, ?, ?)`,
-                [id, keywordId, pageUrl, isLiked, createdAt],
+                [id, keywordId, encryptedUrl, isLiked, createdAt],
                 function (insertErr) {
                     db.close();
                     if (insertErr) {
