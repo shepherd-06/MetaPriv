@@ -1,6 +1,6 @@
 {
   "name": "MetaPriv",
-  "version": "1.0.4-nightly",
+  "version": "1.0.10-nightly",
   "description": "An automated tool that allows Facebook users to obfuscate their data and conceal their real interests and habits from Facebook.",
   "main": "main.js",
   "build": {
@@ -26,9 +26,8 @@
     "bump": "node version-updater.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "react-build": "cd frontend && npm run build",
-    "postinstall": "npm run bump && electron-builder install-app-deps",
     "pack": "npm run bump && npm run react-build && electron-builder --dir",
-    "dist": "npm run postinstall && npm run react-build && electron-builder"
+    "dist": "npm run bump && electron-builder install-app-deps && npm run react-build && electron-builder"
   },
   "repository": {
     "type": "git",

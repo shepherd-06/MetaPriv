@@ -62,12 +62,7 @@ const iconPath = isDev
     ? path.join(__dirname, 'assets', 'MetaPriv-32.png')
     : path.join(process.resourcesPath, 'assets', 'MetaPriv-32.png');
 
-
-try {
-    const axios = require('axios');
-} catch (err) {
-    console.error("❌ Error loading AXIOS:", err);
-}
+const axios = require('axios');
 
 app.setAboutPanelOptions({}); // To initialize app early
 
@@ -98,7 +93,7 @@ function createWindow() {
         height: 600,
         title: "MetaPriv",
         webPreferences: {
-            nodeIntegration: true,
+            // nodeIntegration: true,
             preload: path.join(__dirname, "preload.js"),
             nodeIntegration: false,
         },
@@ -120,69 +115,88 @@ function createWindow() {
 
     /**
      * TRAAAAy
+     * commented out the tray code for now, as it is not working properly.
+     * It will be re-enabled later.
      */
     // Minimize to tray behavior
-    win.on('minimize', (event) => {
-        event.preventDefault();
-        win.hide();
-    });
+    // win.on('minimize', (event) => {
+    //     event.preventDefault();
+    //     win.hide();
+    // });
 
-    // Restore from tray when clicked on Dock (Mac)
-    app.on('activate', () => {
-        if (win) win.show();
-    });
+    // // Restore from tray when clicked on Dock (Mac)
+    // app.on('activate', () => {
+    //     if (win) win.show();
+    // });
 
     // ✅ Setup Tray
-    tray = new Tray(iconPath);
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Open MetaPriv',
-            click: () => {
-                win.show();
-            },
-        },
-        {
-            label: 'Close MetaPriv',
-            click: () => {
-                app.quit();
-            },
-        },
-    ]);
-    tray.setToolTip('MetaPriv');
-    tray.setContextMenu(contextMenu);
-
-    // ✅ Show on click (optional)
-    tray.on('click', () => {
-        win.show();
-    });
+    // tray = new Tray(iconPath);
+    // const contextMenu = Menu.buildFromTemplate([
+    //     // {
+    //     // When MetaPriv is closed, this will crash.
+    //     //     label: 'Open MetaPriv',
+    //     //     click: () => {
+    //     //         win.show();
+    //     //     },
+    //     // },
+    //     {
+    //         label: 'Close MetaPriv',
+    //         click: () => {
+    //             app.quit();
+    //         },
+    //     },
+    // ]);
+    // tray.setToolTip('MetaPriv');
+    // tray.setContextMenu(contextMenu);
 }
 
 async function initBrowser() {
     const userDataPath = path.join(app.getPath('userData'), 'user_data');
 
-    // Ensure the directory exists
     if (!fs.existsSync(userDataPath)) {
         fs.mkdirSync(userDataPath, { recursive: true });
     }
+
     const isFirstRun = !fs.existsSync(userDataPath);
 
-    if (!browser) {
-        browser = await puppeteer.launch({
-            headless: false,
-            args: [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--force-device-scale-factor=1",
-                "--disable-notifications",
-                "--disable-gpu",
-                "--disable-features=VizDisplayCompositor",
-            ],
-            userDataDir: userDataPath, // Set the userDataDir to persist session data
-        });
+    let executablePath;
+    try {
+        executablePath = puppeteer.executablePath();
+        if (!fs.existsSync(executablePath)) {
+            throw new Error("Chromium not found");
+        }
+    } catch (err) {
+        console.log("⚠️ Chromium not found or puppeteer was installed with PUPPETEER_SKIP_DOWNLOAD");
+        console.log("📥 Attempting to download Chromium manually...");
+
+        const install = require('puppeteer/install.js');
+        await install();
+
+        executablePath = puppeteer.executablePath();
+
+        if (!fs.existsSync(executablePath)) {
+            console.error("❌ Failed to download Chromium.");
+            return false;
+        }
     }
 
-    return isFirstRun; // Return whether it's the first run based on the existence of user_data
+    browser = await puppeteer.launch({
+        headless: false,
+        executablePath,
+        userDataDir: userDataPath,
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--force-device-scale-factor=1",
+            "--disable-notifications",
+            "--disable-gpu",
+            "--disable-features=VizDisplayCompositor",
+        ],
+    });
+
+    return isFirstRun;
 }
+
 
 async function testWindow() {
     const win = new BrowserWindow({
@@ -234,11 +248,11 @@ app.on("window-all-closed", () => {
     }
 });
 
-app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
-});
+// app.on("activate", () => {
+//     if (BrowserWindow.getAllWindows().length === 0) {
+//         createWindow();
+//     }
+// });
 
 /**
  * Inter Process Communication
